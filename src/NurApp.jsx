@@ -283,10 +283,13 @@ export default function NurApp() {
 
       if (res.status === 429) {
         setRemaining(0); setCachedRemaining(0);
-        setMessages(newMessages.slice(0, -1));
+        // Keep user message visible — just lock the input
         return;
       }
-      if (!res.ok) throw new Error(data.error || "Server error");
+      if (!res.ok) {
+        setError(`Server error: ${data.error || res.status}`);
+        return;
+      }
 
       if (data.unlocked) {
         setUnlocked(true);
@@ -298,9 +301,9 @@ export default function NurApp() {
       if (newRemaining !== 999) setCachedRemaining(newRemaining);
       setMessages([...newMessages, { role:"assistant", content:data.reply }]);
 
-    } catch {
-      setError("Could not connect. Please check your internet and try again.");
-      setMessages(newMessages.slice(0, -1));
+    } catch (err) {
+      setError(`Connection error: ${err.message || "Could not reach server"}`);
+      // Keep user message visible so they don't lose their question
     } finally {
       setLoading(false);
     }
