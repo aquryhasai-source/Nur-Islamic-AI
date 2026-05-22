@@ -2,19 +2,27 @@
 
 ## Project Structure
 ```
-nur-pwa/
-├── index.html          ← Entry point with PWA meta tags + install banner
+Nur-Islamic-AI/
+│
+├── index.html          ← REPLACE (Nunito font added)
+├── package.json        ← keep, no change
+├── vite.config.js      ← keep, no change
+├── vercel.json         ← keep, no change
+│
 ├── public/
-│   ├── manifest.json   ← PWA manifest
-│   ├── sw.js           ← Service worker (offline support)
-│   ├── icon-192.png    ← App icon (you need to add this)
-│   └── icon-512.png    ← App icon (you need to add this)
-├── src/
-│   ├── main.jsx        ← React entry
-│   └── NurApp.jsx      ← Main app component
-├── vite.config.js
-├── package.json
-└── vercel.json
+│   ├── manifest.json   ← keep, no change
+│   ├── sw.js           ← keep, no change
+│   ├── icon-192.png    ← still needed (add if not done)
+│   └── icon-512.png    ← still needed (add if not done)
+│
+└── src/
+    ├── Main.jsx        ← keep, no change
+    ├── NurApp.jsx      ← REPLACE (new shell with tabs)
+    ├── ChatTab.jsx     ← NEW
+    ├── QuranTab.jsx    ← NEW
+    ├── HadithTab.jsx   ← NEW
+    ├── Sidebar.jsx     ← NEW
+    └── utils.js        ← NEW
 ```
 
 ## Before deploying — add these to Supabase
