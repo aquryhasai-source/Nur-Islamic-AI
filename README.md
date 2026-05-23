@@ -4,25 +4,25 @@
 ```
 Nur-Islamic-AI/
 │
-├── index.html          ← REPLACE (Nunito font added)
-├── package.json        ← keep, no change
-├── vite.config.js      ← keep, no change
-├── vercel.json         ← keep, no change
+├── index.html
+├── package.json
+├── vite.config.js
+├── vercel.json
 │
 ├── public/
-│   ├── manifest.json   ← keep, no change
-│   ├── sw.js           ← keep, no change
-│   ├── icon-192.png    ← still needed (add if not done)
-│   └── icon-512.png    ← still needed (add if not done)
+│   ├── manifest.json
+│   ├── sw.js      
+│   ├── icon-192.png   
+│   └── icon-512.png    
 │
 └── src/
-    ├── Main.jsx        ← keep, no change
-    ├── NurApp.jsx      ← REPLACE (new shell with tabs)
-    ├── ChatTab.jsx     ← NEW
-    ├── QuranTab.jsx    ← NEW
-    ├── HadithTab.jsx   ← NEW
-    ├── Sidebar.jsx     ← NEW
-    └── utils.js        ← NEW
+    ├── Main.jsx      
+    ├── NurApp.jsx      
+    ├── ChatTab.jsx    
+    ├── QuranTab.jsx  
+    ├── HadithTab.jsx  
+    ├── Sidebar.jsx    
+    └── utils.js      
 ```
 
 ## Before deploying — add these to Supabase
