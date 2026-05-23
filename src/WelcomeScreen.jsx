@@ -382,7 +382,7 @@ function Page3({ onDone }) {
             ))}
           </div>
           <div style={{ marginTop: "12px", fontSize: "12px", color: "rgba(139,90,43,0.5)", textAlign: "center" }}>
-            One-time payment · ₹299 India · $2.99 Worldwide
+            One-time payment
           </div>
         </div>
 
