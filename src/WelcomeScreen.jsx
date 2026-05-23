@@ -71,7 +71,7 @@ function Page1({ onNext }) {
 
       {/* Actual image — loads on top of fallback */}
       <img
-        src="/welcome-bg.jpg"
+        src="/welcome-bg.png"
         alt="NŪR Welcome"
         style={{
           position: "absolute", inset: 0, width: "100%", height: "100%",
