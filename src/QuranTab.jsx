@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { QURAN_TRANSLATIONS } from "./utils.js";
+import { QURAN_TRANSLATIONS, isBookmarked } from "./utils.js";
 
 const BASE = "https://api.alquran.cloud/v1";
 
-// Module-level cache
 const surahCache  = {};
 const searchCache = {};
 
@@ -12,17 +11,25 @@ const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="c
 
 function Loader() {
   return (
-    <div style={{ display: "flex", justifyContent: "center", alignItems: "center", padding: "60px 20px", gap: "6px" }}>
-      {[0, 1, 2].map(d => <div key={d} style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#c9a84c", animation: "pulse 1.4s ease-in-out infinite", animationDelay: `${d * 0.2}s`, opacity: 0.7 }}/>)}
+    <div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"60px 20px", gap:"6px" }}>
+      {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#c9a84c", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
     </div>
   );
 }
 
 // ─── Surah List ───────────────────────────────────────────────────────────────
-function SurahList({ onSelect }) {
+function SurahList({ onSelect, lightMode }) {
   const [surahs,  setSurahs]  = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter,  setFilter]  = useState("");
+
+  const gold    = lightMode ? "#7a5810" : "#c9a84c";
+  const goldDim = lightMode ? "rgba(122,88,16,0.5)" : "rgba(201,168,76,0.5)";
+  const goldBdr = lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.2)";
+  const cardBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
+  const cardBdr = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
+  const textClr = lightMode ? "rgba(26,15,0,0.88)" : "rgba(255,255,240,0.88)";
+  const inputBg = lightMode ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.04)";
 
   useEffect(() => {
     if (surahCache.list) { setSurahs(surahCache.list); setLoading(false); return; }
@@ -40,28 +47,28 @@ function SurahList({ onSelect }) {
   );
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "12px", padding: "9px 14px" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ padding:"12px 16px", borderBottom:`1px solid ${cardBdr}`, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"12px", padding:"9px 14px" }}>
           <SearchIcon/>
           <input value={filter} onChange={e => setFilter(e.target.value)} placeholder="Search Surah by name or number…"
-            style={{ flex: 1, background: "none", border: "none", outline: "none", color: "rgba(255,255,240,0.88)", fontSize: "14px", fontFamily: "Nunito,sans-serif" }}/>
+            style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:"14px", fontFamily:"Nunito,sans-serif" }}/>
         </div>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "8px 16px 16px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"8px 16px 16px" }}>
         {loading ? <Loader/> : filtered.map(s => (
           <button key={s.number} onClick={() => onSelect(s.number)}
-            style={{ display: "flex", alignItems: "center", gap: "14px", width: "100%", padding: "12px 14px", marginBottom: "6px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: "12px", cursor: "pointer", textAlign: "left", transition: "all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(201,168,76,0.08)"}
-            onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.03)"}>
-            <div style={{ width: "36px", height: "36px", borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-              <span style={{ color: "#c9a84c", fontSize: "12px", fontWeight: 700 }}>{s.number}</span>
+            style={{ display:"flex", alignItems:"center", gap:"14px", width:"100%", padding:"11px 14px", marginBottom:"6px", background:cardBg, border:`1px solid ${cardBdr}`, borderRadius:"12px", cursor:"pointer", textAlign:"left", transition:"all 0.15s" }}
+            onMouseEnter={e => e.currentTarget.style.background = lightMode?"rgba(122,88,16,0.08)":"rgba(201,168,76,0.08)"}
+            onMouseLeave={e => e.currentTarget.style.background = cardBg}>
+            <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:lightMode?"rgba(122,88,16,0.1)":"rgba(201,168,76,0.1)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{s.number}</span>
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "rgba(255,255,240,0.88)", fontSize: "14px", fontWeight: 600 }}>{s.englishName}</div>
-              <div style={{ color: "rgba(201,168,76,0.5)", fontSize: "12px", marginTop: "2px" }}>{s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType}</div>
+            <div style={{ flex:1 }}>
+              <div style={{ color:textClr, fontSize:"14px", fontWeight:600 }}>{s.englishName}</div>
+              <div style={{ color:goldDim, fontSize:"11px", marginTop:"2px" }}>{s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType}</div>
             </div>
-            <div style={{ color: "#c9a84c", fontSize: "18px", fontFamily: "Georgia,serif", opacity: 0.8 }}>{s.name}</div>
+            <div style={{ color:gold, fontSize:"17px", fontFamily:"Georgia,serif", opacity:0.8 }}>{s.name}</div>
           </button>
         ))}
       </div>
@@ -70,10 +77,17 @@ function SurahList({ onSelect }) {
 }
 
 // ─── Surah Reader ─────────────────────────────────────────────────────────────
-function SurahReader({ surahNumber, translation, onBack }) {
+function SurahReader({ surahNumber, translation, onBack, bookmarks, onToggleBookmark, lightMode }) {
   const [data,    setData]    = useState(null);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+
+  const gold    = lightMode ? "#7a5810" : "#c9a84c";
+  const goldDim = lightMode ? "rgba(122,88,16,0.5)" : "rgba(201,168,76,0.5)";
+  const goldBdr = lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.1)";
+  const cardBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
+  const textClr = lightMode ? "rgba(26,15,0,0.65)" : "rgba(255,255,255,0.65)";
+  const headerBg = lightMode ? "rgba(253,248,237,0.9)" : "rgba(8,21,16,0.8)";
 
   const cacheKey = `${surahNumber}-${translation}`;
 
@@ -92,7 +106,7 @@ function SurahReader({ surahNumber, translation, onBack }) {
   }, [surahNumber, translation]);
 
   if (loading) return <Loader/>;
-  if (error)   return <div style={{ color: "#e07b54", textAlign: "center", padding: "40px 20px", fontSize: "14px" }}>{error}</div>;
+  if (error)   return <div style={{ color:"#e07b54", textAlign:"center", padding:"40px 20px", fontSize:"14px" }}>{error}</div>;
   if (!data)   return null;
 
   const arabic = data[0];
@@ -100,51 +114,79 @@ function SurahReader({ surahNumber, translation, onBack }) {
   const meta   = arabic;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
       {/* Surah header */}
-      <div style={{ padding: "14px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)", background: "rgba(8,21,16,0.8)", flexShrink: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
-          <button onClick={onBack} style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", padding: "4px" }}><BackIcon/></button>
+      <div style={{ padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"4px" }}>
+          <button onClick={onBack} style={{ background:"none", border:"none", color:gold, cursor:"pointer", padding:"4px" }}><BackIcon/></button>
           <div>
-            <div style={{ color: "#c9a84c", fontSize: "16px", fontWeight: 700 }}>{meta.englishName} · {meta.name}</div>
-            <div style={{ color: "rgba(201,168,76,0.5)", fontSize: "12px" }}>{meta.englishNameTranslation} · {meta.numberOfAyahs} Ayahs · {meta.revelationType}</div>
+            <div style={{ color:gold, fontSize:"15px", fontWeight:700 }}>{meta.englishName} · {meta.name}</div>
+            <div style={{ color:goldDim, fontSize:"11px" }}>{meta.englishNameTranslation} · {meta.numberOfAyahs} Ayahs · {meta.revelationType}</div>
           </div>
         </div>
         {surahNumber !== 9 && (
-          <div style={{ textAlign: "center", color: "#c9a84c", fontSize: "18px", fontFamily: "Georgia,serif", marginTop: "8px", letterSpacing: "1px" }}>
+          <div style={{ textAlign:"center", color:gold, fontSize:"17px", fontFamily:"Georgia,serif", marginTop:"6px", letterSpacing:"1px" }}>
             بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
           </div>
         )}
       </div>
 
       {/* Ayahs */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "16px" }}>
-        {arabic.ayahs.map((ayah, i) => (
-          <div key={ayah.number} style={{ marginBottom: "20px", padding: "16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: "14px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px" }}>
-              <div style={{ width: "28px", height: "28px", borderRadius: "50%", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <span style={{ color: "#c9a84c", fontSize: "11px", fontWeight: 700 }}>{ayah.numberInSurah}</span>
+      <div style={{ flex:1, overflowY:"auto", padding:"14px 16px" }}>
+        {arabic.ayahs.map((ayah, i) => {
+          const bmId   = `quran-${meta.number}-${ayah.numberInSurah}`;
+          const bmItem = {
+            id:     bmId,
+            type:   "quran",
+            title:  `${meta.englishName} ${meta.number}:${ayah.numberInSurah}`,
+            arabic: ayah.text,
+            text:   trans.ayahs[i]?.text || "",
+          };
+          const saved = isBookmarked(bmId, bookmarks);
+
+          return (
+            <div key={ayah.number} style={{ marginBottom:"18px", padding:"14px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                  <div style={{ width:"26px", height:"26px", borderRadius:"50%", background:lightMode?"rgba(122,88,16,0.1)":"rgba(201,168,76,0.1)", border:`1px solid ${lightMode?"rgba(122,88,16,0.25)":"rgba(201,168,76,0.25)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{ayah.numberInSurah}</span>
+                  </div>
+                  <span style={{ color:goldDim, fontSize:"11px" }}>{meta.number}:{ayah.numberInSurah}</span>
+                </div>
+                {/* Bookmark button */}
+                <button
+                  onClick={() => onToggleBookmark(bmItem)}
+                  title={saved ? "Remove bookmark" : "Bookmark this ayah"}
+                  style={{ background:"none", border:"none", fontSize:"16px", cursor:"pointer", padding:"2px 6px", lineHeight:1, opacity: saved ? 1 : 0.4, transition:"opacity 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = "1"}
+                  onMouseLeave={e => e.currentTarget.style.opacity = saved ? "1" : "0.4"}>
+                  🔖
+                </button>
               </div>
-              <span style={{ color: "rgba(201,168,76,0.3)", fontSize: "11px" }}>{meta.number}:{ayah.numberInSurah}</span>
+              <div style={{ color:gold, fontSize:"20px", fontFamily:"Georgia,serif", textAlign:"right", lineHeight:2.2, marginBottom:"10px", direction:"rtl" }}>
+                {ayah.text}
+              </div>
+              <div style={{ color:textClr, fontSize:"13px", lineHeight:1.8, borderTop:`1px solid ${goldBdr}`, paddingTop:"8px" }}>
+                {trans.ayahs[i]?.text}
+              </div>
             </div>
-            <div style={{ color: "#c9a84c", fontSize: "20px", fontFamily: "Georgia,serif", textAlign: "right", lineHeight: 2.2, marginBottom: "12px", direction: "rtl" }}>
-              {ayah.text}
-            </div>
-            <div style={{ color: "rgba(255,255,255,0.65)", fontSize: "13px", lineHeight: 1.8, borderTop: "1px solid rgba(201,168,76,0.08)", paddingTop: "10px" }}>
-              {trans.ayahs[i]?.text}
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
 
 // ─── Search Results ───────────────────────────────────────────────────────────
-function SearchResults({ query, translation, onSurahSelect, onBack }) {
+function SearchResults({ query, translation, onSurahSelect, onBack, lightMode }) {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
+
+  const gold    = lightMode ? "#7a5810" : "#c9a84c";
+  const cardBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
+  const cardBdr = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
+  const textClr = lightMode ? "rgba(26,15,0,0.7)" : "rgba(255,255,255,0.7)";
 
   const lang = QURAN_TRANSLATIONS.find(t => t.code === translation)?.lang || "en";
   const cacheKey = `${query}-${lang}`;
@@ -165,26 +207,26 @@ function SearchResults({ query, translation, onSurahSelect, onBack }) {
   }, [query, lang]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-      <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)", display: "flex", alignItems: "center", gap: "10px", flexShrink: 0 }}>
-        <button onClick={onBack} style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer" }}><BackIcon/></button>
-        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: "14px" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ padding:"12px 16px", borderBottom:`1px solid ${cardBdr}`, display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, cursor:"pointer" }}><BackIcon/></button>
+        <span style={{ color:textClr, fontSize:"14px" }}>
           {loading ? "Searching…" : `${results.length} results for "${query}"`}
         </span>
       </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 16px" }}>
+      <div style={{ flex:1, overflowY:"auto", padding:"12px 16px" }}>
         {loading && <Loader/>}
-        {error && <div style={{ color: "#e07b54", textAlign: "center", padding: "40px", fontSize: "14px" }}>{error}</div>}
+        {error && <div style={{ color:"#e07b54", textAlign:"center", padding:"40px", fontSize:"14px" }}>{error}</div>}
         {!loading && results.length === 0 && !error && (
-          <div style={{ textAlign: "center", color: "rgba(255,255,255,0.3)", padding: "40px", fontSize: "14px" }}>No results found for "{query}"</div>
+          <div style={{ textAlign:"center", color:textClr, padding:"40px", fontSize:"14px", opacity:0.5 }}>No results found for "{query}"</div>
         )}
         {results.map((r, i) => (
-          <div key={i} style={{ marginBottom: "12px", padding: "14px 16px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: "12px" }}>
+          <div key={i} style={{ marginBottom:"12px", padding:"14px 16px", background:cardBg, border:`1px solid ${cardBdr}`, borderRadius:"12px" }}>
             <button onClick={() => onSurahSelect(r.surah.number)}
-              style={{ background: "none", border: "none", color: "#c9a84c", fontSize: "12px", fontWeight: 700, cursor: "pointer", padding: 0, fontFamily: "Nunito,sans-serif", marginBottom: "8px", display: "block" }}>
+              style={{ background:"none", border:"none", color:gold, fontSize:"12px", fontWeight:700, cursor:"pointer", padding:0, fontFamily:"Nunito,sans-serif", marginBottom:"8px", display:"block" }}>
               {r.surah.englishName} {r.surah.number}:{r.numberInSurah} →
             </button>
-            <div style={{ color: "rgba(255,255,255,0.7)", fontSize: "13px", lineHeight: 1.8 }}>{r.text}</div>
+            <div style={{ color:textClr, fontSize:"13px", lineHeight:1.8 }}>{r.text}</div>
           </div>
         ))}
       </div>
@@ -193,13 +235,19 @@ function SearchResults({ query, translation, onSurahSelect, onBack }) {
 }
 
 // ─── Main QuranTab ────────────────────────────────────────────────────────────
-export default function QuranTab({ initialSurah }) {
-  const [view,        setView]        = useState("list"); // list | surah | search
+export default function QuranTab({ initialSurah, bookmarks = [], onToggleBookmark, lightMode }) {
+  const [view,          setView]          = useState("list");
   const [selectedSurah, setSelectedSurah] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [activeQuery, setActiveQuery] = useState("");
-  const [translation, setTranslation] = useState("en.sahih");
-  const searchRef = useRef(null);
+  const [searchQuery,   setSearchQuery]   = useState("");
+  const [activeQuery,   setActiveQuery]   = useState("");
+  const [translation,   setTranslation]   = useState("en.sahih");
+
+  const gold    = lightMode ? "#7a5810" : "#c9a84c";
+  const goldBdr = lightMode ? "rgba(122,88,16,0.18)" : "rgba(201,168,76,0.18)";
+  const inputBg = lightMode ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.04)";
+  const textClr = lightMode ? "rgba(26,15,0,0.88)" : "rgba(255,255,240,0.88)";
+  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.9)";
+  const barBdr  = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
 
   useEffect(() => {
     if (initialSurah) { setSelectedSurah(initialSurah); setView("surah"); }
@@ -212,37 +260,50 @@ export default function QuranTab({ initialSurah }) {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-      {/* Tab toolbar */}
-      <div style={{ padding: "10px 16px", borderBottom: "1px solid rgba(201,168,76,0.1)", background: "rgba(8,21,16,0.9)", flexShrink: 0, display: "flex", gap: "8px", alignItems: "center" }}>
+    <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
+      {/* Toolbar */}
+      <div style={{ padding:"10px 16px", borderBottom:`1px solid ${barBdr}`, background:headerBg, flexShrink:0, display:"flex", gap:"8px", alignItems:"center" }}>
         {view !== "list" && (
-          <button onClick={() => setView("list")} style={{ background: "none", border: "none", color: "#c9a84c", cursor: "pointer", padding: "4px", flexShrink: 0 }}><BackIcon/></button>
+          <button onClick={() => setView("list")} style={{ background:"none", border:"none", color:gold, cursor:"pointer", padding:"4px", flexShrink:0 }}><BackIcon/></button>
         )}
-        <div style={{ flex: 1, display: "flex", alignItems: "center", gap: "8px", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(201,168,76,0.18)", borderRadius: "10px", padding: "7px 12px" }}>
+        <div style={{ flex:1, display:"flex", alignItems:"center", gap:"8px", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"7px 12px" }}>
           <SearchIcon/>
-          <input ref={searchRef} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key === "Enter" && doSearch()}
-            placeholder="Search by keyword, e.g. 'water', 'patience'…"
-            style={{ flex: 1, background: "none", border: "none", outline: "none", color: "rgba(255,255,240,0.88)", fontSize: "13px", fontFamily: "Nunito,sans-serif" }}/>
+          <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key==="Enter" && doSearch()}
+            placeholder="Search by keyword…"
+            style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:"13px", fontFamily:"Nunito,sans-serif" }}/>
           {searchQuery && (
-            <button onClick={doSearch} style={{ background: "rgba(201,168,76,0.15)", border: "none", borderRadius: "6px", padding: "3px 10px", color: "#c9a84c", fontSize: "12px", cursor: "pointer", fontFamily: "Nunito,sans-serif", fontWeight: 600 }}>Go</button>
+            <button onClick={doSearch} style={{ background:lightMode?"rgba(122,88,16,0.15)":"rgba(201,168,76,0.15)", border:"none", borderRadius:"6px", padding:"3px 10px", color:gold, fontSize:"12px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:600 }}>Go</button>
           )}
         </div>
         <select value={translation} onChange={e => setTranslation(e.target.value)}
-          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: "8px", color: "#c9a84c", padding: "6px 8px", fontSize: "12px", outline: "none", fontFamily: "Nunito,sans-serif", cursor: "pointer", flexShrink: 0 }}>
-          {QURAN_TRANSLATIONS.map(t => <option key={t.code} value={t.code} style={{ background: "#0d1f14" }}>{t.label}</option>)}
+          style={{ background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"8px", color:gold, padding:"6px 8px", fontSize:"12px", outline:"none", fontFamily:"Nunito,sans-serif", cursor:"pointer", flexShrink:0 }}>
+          {QURAN_TRANSLATIONS.map(t => <option key={t.code} value={t.code}>{t.label}</option>)}
         </select>
       </div>
 
       {/* View */}
-      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
         {view === "list" && (
-          <SurahList onSelect={n => { setSelectedSurah(n); setView("surah"); }}/>
+          <SurahList onSelect={n => { setSelectedSurah(n); setView("surah"); }} lightMode={lightMode}/>
         )}
         {view === "surah" && (
-          <SurahReader surahNumber={selectedSurah} translation={translation} onBack={() => setView("list")}/>
+          <SurahReader
+            surahNumber={selectedSurah}
+            translation={translation}
+            onBack={() => setView("list")}
+            bookmarks={bookmarks}
+            onToggleBookmark={onToggleBookmark}
+            lightMode={lightMode}
+          />
         )}
         {view === "search" && (
-          <SearchResults query={activeQuery} translation={translation} onSurahSelect={n => { setSelectedSurah(n); setView("surah"); }} onBack={() => setView("list")}/>
+          <SearchResults
+            query={activeQuery}
+            translation={translation}
+            onSurahSelect={n => { setSelectedSurah(n); setView("surah"); }}
+            onBack={() => setView("list")}
+            lightMode={lightMode}
+          />
         )}
       </div>
 
