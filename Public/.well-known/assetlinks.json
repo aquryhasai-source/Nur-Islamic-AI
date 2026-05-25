@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "app.vercel.nur_islamic_ai.twa",
+    "sha256_cert_fingerprints": ["87:E0:79:61:13:82:35:B1:09:21:73:7E:6F:CB:81:51:0D:ED:E4:EA:78:BD:DD:BD:40:DE:09:15:9C:86:E9:5E"]
+  }
+}]
