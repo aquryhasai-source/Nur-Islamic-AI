@@ -178,7 +178,7 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
     el.style.height = Math.min(el.scrollHeight, 140) + "px";
   };
 
-  const sendMessage = async (text) => {
+    const sendMessage = async (text) => {
     const userText = (text || input).trim();
     if (!userText || loading || (!unlocked && remaining <= 0)) return;
     setInput(""); setError(null);
@@ -188,19 +188,51 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
     const newMessages = [...messages, { role:"user", content:prefixed, display:userText }];
     setMessages(newMessages);
     setLoading(true);
+
+    // 1. Optimistic Local Decrement: Instantly lower the count in the UI and Cache
+    let localRemaining = remaining;
+    if (!unlocked && remaining !== 999) {
+      localRemaining = Math.max(0, remaining - 1);
+      setRemaining(localRemaining);
+      setCachedRemaining(localRemaining);
+    }
+
     try {
-      const res  = await fetch(PROXY_URL, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ device_id:deviceId, messages:newMessages.map(m => ({ role:m.role, content:m.content })) }) });
+      const res  = await fetch(PROXY_URL, { 
+        method:"POST", 
+        headers:{"Content-Type":"application/json"}, 
+        body:JSON.stringify({ device_id:deviceId, messages:newMessages.map(m => ({ role:m.role, content:m.content })) }) 
+      });
       const data = await res.json();
+      
       if (res.status === 429) { setRemaining(0); setCachedRemaining(0); return; }
-      if (!res.ok) { setError(`Error: ${data.error || res.status}`); return; }
+      
+      // Throw error to trigger the catch block and rollback local limit
+      if (!res.ok) { throw new Error(data.error || res.status); } 
+      
       if (data.unlocked) { setUnlocked(true); localStorage.setItem(KEYS.UNLOCKED,"true"); }
-      const nr = data.remaining === 999 ? 999 : data.remaining;
-      setRemaining(nr);
-      if (nr !== 999) setCachedRemaining(nr);
+
+      // 2. Safe Backend Sync: Guard against stale proxy responses
+      if (data.remaining !== undefined) {
+        const nr = data.remaining === 999 ? 999 : Number(data.remaining);
+        
+        // Only accept the backend limit if it unlocks Pro (999) or is stricter than our local count
+        if (nr === 999 || nr < localRemaining) {
+          setRemaining(nr);
+          if (nr !== 999) setCachedRemaining(nr);
+        }
+      }
+
       const reply = data.reply;
       setMessages([...newMessages, { role:"assistant", content:reply }]);
       addChatEntry(userText, reply);
-    } catch (err) { setError(`Connection error: ${err.message}`); }
+      
+    } catch (err) {
+      setError(`Connection error: ${err.message}`);
+      // 3. Rollback: If the API fails, restore the lost token to the user
+      setRemaining(remaining);
+      setCachedRemaining(remaining);
+    }
     finally { setLoading(false); }
   };
 
