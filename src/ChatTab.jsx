@@ -80,7 +80,6 @@ function CityModal({ onSubmit, onClose }) {
   );
 }
 
-// ─── Locked screen — minimal, routes to GetProPage ────────────────────────────
 function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
   const gold = lightMode ? "#7a5810" : "#c9a84c";
   return (
@@ -99,10 +98,7 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
   );
 }
 
-// ─── Citation parser ──────────────────────────────────────────────────────────
-// Matches [anything X:Y anything] — handles [Surah Al-Baqarah, 2:286] and [2:286]
 const QURAN_CITATION  = /\[[^\]]*?(\d{1,3}):(\d{1,3})[^\]]*\]/g;
-// Matches [Sahih Bukhari #8] [Tirmidhi 2516] [Sahih Bukhari, Hadith 8] etc.
 const HADITH_CITATION = /\[((?:Sahih\s+)?(?:Bukhari|Muslim|Abu\s+Dawud|Tirmidhi|An-Nasai|Nasai|Ibn\s+Majah|Jami'[^\]]*?))[^\]]*?(\d+)\]/gi;
 
 const COLLECTION_MAP = {
@@ -143,10 +139,20 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
         const r = await checkIfRamadan();
         if (!r.isRamadan) return;
         setRamadan(r);
-        navigator.geolocation?.getCurrentPosition(
-          async ({ coords }) => { try { setPrayerTimes(await getPrayerTimes(coords.latitude, coords.longitude)); } catch {} },
-          () => { const city = localStorage.getItem(KEYS.CITY); if (city) getPrayerTimesByCity(city).then(setPrayerTimes).catch(() => {}); }
-        );
+        
+        const loadFallback = () => {
+          const city = localStorage.getItem(KEYS.CITY); 
+          if (city) getPrayerTimesByCity(city).then(setPrayerTimes).catch(() => {});
+        };
+
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async ({ coords }) => { try { setPrayerTimes(await getPrayerTimes(coords.latitude, coords.longitude)); } catch {} },
+            loadFallback
+          );
+        } else {
+          loadFallback();
+        }
       } catch {}
     })();
   }, []);
@@ -154,7 +160,11 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
   useEffect(() => {
     const tick = setInterval(() => {
       const today = new Date().toISOString().split("T")[0];
-      if (localStorage.getItem(KEYS.DATE) !== today) { setRemaining(DAILY_LIMIT); setCachedRemaining(DAILY_LIMIT); }
+      if (localStorage.getItem(KEYS.DATE) !== today) { 
+        setRemaining(DAILY_LIMIT); 
+        setCachedRemaining(DAILY_LIMIT); 
+        localStorage.setItem(KEYS.DATE, today);
+      }
     }, 60000);
     return () => clearInterval(tick);
   }, []);
@@ -189,7 +199,6 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
       if (nr !== 999) setCachedRemaining(nr);
       const reply = data.reply;
       setMessages([...newMessages, { role:"assistant", content:reply }]);
-      // Save to history
       addChatEntry(userText, reply);
     } catch (err) { setError(`Connection error: ${err.message}`); }
     finally { setLoading(false); }
@@ -197,14 +206,10 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
 
   const handleKeyDown = e => { if (e.key==="Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } };
 
-  // ─── Render assistant message with tappable citations ────────────────────
   const renderMessage = (text) => {
-    // Collect all citation positions and replace with markers
     const segments = [];
     let lastIndex  = 0;
     const combined = text;
-
-    // Find all citations in order
     const allMatches = [];
 
     let m;
@@ -214,14 +219,12 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
     }
     HADITH_CITATION.lastIndex = 0;
     while ((m = HADITH_CITATION.exec(combined)) !== null) {
-      // Guard: skip if this range already covered by a Quran match
       const collId = resolveCollection(m[1]);
       const num    = parseInt(m[2], 10);
       allMatches.push({ index:m.index, end:m.index+m[0].length, raw:m[0], type:"hadith", collection:collId, number:num });
     }
     allMatches.sort((a, b) => a.index - b.index);
 
-    // Build segments
     const lines = [];
     let cursor = 0;
     for (const match of allMatches) {
@@ -256,7 +259,6 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
       }
       cursor = match.end;
     }
-    // Remaining text
     if (cursor < combined.length) {
       combined.slice(cursor).split("\n").forEach((line, li, arr) => {
         lines.push(<span key={`end-${li}`}>{line}</span>);
@@ -275,10 +277,8 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
       {showCityModal && <CityModal onSubmit={t => { setPrayerTimes(t); setShowCityModal(false); }} onClose={() => setShowCityModal(false)}/>}
       {ramadan?.isRamadan && <RamadanBanner prayerTimes={prayerTimes} hijriDay={ramadan.hijriDay} onRequestCity={() => setShowCityModal(true)}/>}
 
-      {/* Locked state */}
       {isLocked && isEmpty && <LockedBanner navigateTo={navigateTo} lightMode={lightMode} textSize={textSize}/>}
 
-      {/* Chat area */}
       {!isLocked && (
         <>
           <div style={{ flex:1, overflowY:"auto", padding:"20px 16px", maxWidth:"760px", width:"100%", margin:"0 auto", boxSizing:"border-box" }}>
@@ -337,7 +337,6 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
             )}
           </div>
 
-          {/* Input bar */}
           <div style={{ background:inputBg, backdropFilter:"blur(16px)", borderTop:`1px solid ${inputBdr}`, padding:"12px 16px 14px", flexShrink:0 }}>
             <div style={{ maxWidth:"760px", margin:"0 auto" }}>
               <div style={{ display:"flex", gap:"10px", alignItems:"flex-end" }}>
@@ -358,8 +357,6 @@ export default function ChatTab({ remaining, setRemaining, unlocked, setUnlocked
           </div>
         </>
       )}
-
-      <style>{`@keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
     </div>
   );
 }
