@@ -77,7 +77,6 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
   const targetRef = useRef(null);
   const PER_PAGE = 20;
 
-  // Android back button — go from reader/search back to book list
   useEffect(() => {
     if (view !== "books") {
       window.history.pushState({ nurHadith: view }, "");
@@ -91,19 +90,19 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
   }, [view]);
+
+  useEffect(() => {
     if (!initialNav?.collectionId) return;
     const coll = HADITH_COLLECTIONS.find(c => c.id === initialNav.collectionId);
     if (coll) openBook(coll, initialNav.number);
   }, [initialNav]);
 
-  // Scroll to target hadith once loaded
   useEffect(() => {
     if (targetRef.current) {
       setTimeout(() => targetRef.current?.scrollIntoView({ behavior:"smooth", block:"center" }), 150);
     }
   }, [bookHadiths, targetHadith]);
 
-  // ── Theme ──────────────────────────────────────────────────────────────────
   const gold      = lightMode ? "#7a5810" : "#c9a84c";
   const goldDim   = lightMode ? "rgba(122,88,16,0.5)"   : "rgba(201,168,76,0.45)";
   const goldBdr   = lightMode ? "rgba(122,88,16,0.2)"   : "rgba(201,168,76,0.2)";
@@ -127,7 +126,6 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
       const withMeta = hadiths.map(h => ({ ...h, collectionId: coll.id, collectionLabel: coll.label }));
       setBookHadiths(withMeta);
       if (targetNumber) {
-        // Jump to the page containing this hadith number
         const idx = withMeta.findIndex(h => h.hadithnumber === targetNumber);
         if (idx >= 0) setPage(Math.ceil((idx + 1) / PER_PAGE));
         else setPage(1);
@@ -170,7 +168,6 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
 
   const cardProps = { bookmarks, onToggleBookmark, unlocked, navigateTo, gold, goldDim, goldBdr, cardBg, cardHdr, textClr, targetRef };
 
-  // ── SEARCH BAR (always at top) ─────────────────────────────────────────────
   const SearchBar = () => (
     <div style={{ padding:"10px 16px", borderBottom:`1px solid ${cardBdr}`, background:headerBg, flexShrink:0 }}>
       <div style={{ display:"flex", gap:"8px" }}>
@@ -192,7 +189,6 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
     </div>
   );
 
-  // ── BOOK LIST VIEW ─────────────────────────────────────────────────────────
   if (view === "books") {
     return (
       <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
@@ -216,12 +212,10 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
             </button>
           ))}
         </div>
-        <style>{`@keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
       </div>
     );
   }
 
-  // ── BOOK READER VIEW ───────────────────────────────────────────────────────
   if (view === "reader") {
     return (
       <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
@@ -246,12 +240,10 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
             </>
           )}
         </div>
-        <style>{`@keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
       </div>
     );
   }
 
-  // ── SEARCH RESULTS VIEW ────────────────────────────────────────────────────
   return (
     <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
       <SearchBar/>
@@ -272,7 +264,6 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
           </button>
         )}
       </div>
-      <style>{`@keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
     </div>
   );
 }
