@@ -102,7 +102,6 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
       .finally(() => setLoading(false));
   }, [surahNumber, translation]);
 
-  // Scroll to target ayah after surah loads
   useEffect(() => {
     if (!loading && data && initialAyah && targetAyahRef.current) {
       setTimeout(() => targetAyahRef.current?.scrollIntoView({ behavior:"smooth", block:"center" }), 200);
@@ -158,7 +157,6 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
                   </div>
                   <span style={{ color:goldDim, fontSize:`${11 * textSize}px` }}>{meta.number}:{ayah.numberInSurah}</span>
                 </div>
-                {/* Bookmark — pro gated */}
                 <button
                   onClick={() => {
                     if (!unlocked) { navigateTo("getpro"); return; }
@@ -254,7 +252,6 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
   const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.9)";
   const barBdr   = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
 
-  // Handle citation navigation from ChatTab
   useEffect(() => {
     if (initialNav?.surah) {
       setSelectedSurah(initialNav.surah);
@@ -263,7 +260,6 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
     }
   }, [initialNav]);
 
-  // Android back button — go from surah/search back to list
   useEffect(() => {
     if (view !== "list") {
       window.history.pushState({ nurQuran: view }, "");
@@ -329,8 +325,6 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
           />
         )}
       </div>
-
-      <style>{`@keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}`}</style>
     </div>
   );
 }
