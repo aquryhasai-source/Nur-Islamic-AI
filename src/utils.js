@@ -21,9 +21,16 @@ export function getAnonymousId() {
   return id;
 }
 
+// Returns "YYYY-MM-DD" in the user's LOCAL timezone — not UTC.
+// This ensures the daily reset happens at the user's local midnight,
+// not at a fixed UTC time that may be morning/afternoon in their region.
+function getLocalDateString() {
+  return new Date().toLocaleDateString("en-CA"); // "en-CA" locale gives YYYY-MM-DD format
+}
+
 export function getCachedRemaining() {
   if (localStorage.getItem(KEYS.UNLOCKED) === "true") return 999;
-  const today = new Date().toISOString().split("T")[0];
+  const today = getLocalDateString();
   if (localStorage.getItem(KEYS.DATE) !== today) {
     localStorage.setItem(KEYS.DATE, today);
     localStorage.setItem(KEYS.REMAINING, String(DAILY_LIMIT));
@@ -33,8 +40,12 @@ export function getCachedRemaining() {
 }
 
 export function setCachedRemaining(val) {
-  localStorage.setItem(KEYS.DATE, new Date().toISOString().split("T")[0]);
+  localStorage.setItem(KEYS.DATE, getLocalDateString());
   localStorage.setItem(KEYS.REMAINING, String(val));
+}
+
+export function getLocalDate() {
+  return getLocalDateString();
 }
 
 export function getProfile() {
