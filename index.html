@@ -26,6 +26,21 @@
 
   <title>NŪR — Islamic Knowledge Assistant</title>
 
+  <!-- OneSignal Web SDK -->
+  <script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+  <script>
+    window.OneSignalDeferred = window.OneSignalDeferred || [];
+    OneSignalDeferred.push(async function(OneSignal) {
+      await OneSignal.init({
+        appId: "86fafaea-14ad-4786-8cf8-c4ee7d41fb16",
+        serviceWorkerParam: { scope: "/" },
+        serviceWorkerPath: "sw.js",
+        notifyButton: { enable: false },
+        allowLocalhostAsSecureOrigin: true,
+      });
+    });
+  </script>
+
   <style>
     *{margin:0;padding:0;box-sizing:border-box;}
     html,body,#root{height:100%;background:#081510;font-family:'Nunito',Georgia,sans-serif;}
