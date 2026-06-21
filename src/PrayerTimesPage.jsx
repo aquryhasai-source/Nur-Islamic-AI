@@ -348,8 +348,7 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
 
             {/* Footer note */}
             <div style={{ textAlign:"center", marginTop:"20px", color:textDim, fontSize:"11px", lineHeight:1.8 }}>
-              Alarms fire while the app is open or installed on your home screen.<br/>
-              Add <strong style={{ color:goldDim }}>/azan.mp3</strong> to your Public folder for azan audio.
+              Alarms fire while the app is open or installed on your home screen.<br/>              
             </div>
           </>
         )}
