@@ -13,8 +13,8 @@ import { useEffect, useRef } from "react";
 //
 // Until the key is set, this component renders nothing (safe to deploy now).
 // ─────────────────────────────────────────────────────────────────────────────
-const ADSTERRA_KEY        = "";   // ← Paste your Adsterra key here
-const ADSTERRA_INVOKE_URL = "";   // ← Paste your Adsterra invoke.js URL here
+const ADSTERRA_KEY        = "b5330d4e1e27c1ffd3e87c17a432aec8";   // ← Paste your Adsterra key here
+const ADSTERRA_INVOKE_URL = "https://www.highperformanceformat.com/b5330d4e1e27c1ffd3e87c17a432aec8/invoke.js";   // ← Paste your Adsterra invoke.js URL here
 
 export default function AdBanner({ unlocked, lightMode }) {
   const containerRef = useRef(null);
