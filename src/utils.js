@@ -2,18 +2,19 @@ export const PROXY_URL   = "https://dvcuisgpptxhjgiasqlp.supabase.co/functions/v
 export const DAILY_LIMIT = 15;
 
 export const KEYS = {
-  ID:           "nur_device_id",
-  REMAINING:    "nur_remaining",
-  DATE:         "nur_date",
-  UNLOCKED:     "nur_unlocked",
-  PROFILE:      "nur_profile",
-  INSTALLED:    "nur_pwa_installed",
-  CITY:         "nur_ramadan_city",
-  BOOKMARKS:    "nur_bookmarks",
-  THEME:        "nur_theme",
-  TEXT_SIZE:    "nur_text_size",
-  CHAT_HISTORY: "nur_chat_history",
-  PRAYER_ALARMS:"nur_prayer_alarms",
+  ID:             "nur_device_id",
+  REMAINING:      "nur_remaining",
+  DATE:           "nur_date",
+  UNLOCKED:       "nur_unlocked",
+  PROFILE:        "nur_profile",
+  INSTALLED:      "nur_pwa_installed",
+  CITY:           "nur_ramadan_city",
+  BOOKMARKS:      "nur_bookmarks",
+  THEME:          "nur_theme",
+  TEXT_SIZE:      "nur_text_size",
+  SESSIONS:       "nur_sessions",
+  ACTIVE_SESSION: "nur_active_session",
+  PRAYER_ALARMS:  "nur_prayer_alarms",
 };
 
 export function getAnonymousId() {
@@ -155,23 +156,101 @@ export function isBookmarked(id, bookmarks) {
   return bookmarks.some(b => b.id === id);
 }
 
-// ─── Chat History ─────────────────────────────────────────────────────────────
-export function getChatHistory() {
-  try { return JSON.parse(localStorage.getItem(KEYS.CHAT_HISTORY) || "[]"); }
+// ─── Sessions system ──────────────────────────────────────────────────────────
+export const MAX_SESSIONS = 50;
+
+export function getSessions() {
+  try { return JSON.parse(localStorage.getItem(KEYS.SESSIONS) || "[]"); }
   catch { return []; }
 }
 
-export function addChatEntry(question, answer) {
-  const history = getChatHistory();
-  const entry = {
-    id: crypto.randomUUID(),
-    question: question.slice(0, 200),
-    answer: answer.slice(0, 500),
-    timestamp: Date.now(),
+export function getSession(id) {
+  return getSessions().find(s => s.id === id) || null;
+}
+
+export function createNewSession() {
+  return {
+    id:        crypto.randomUUID(),
+    title:     "New conversation",
+    messages:  [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
-  const updated = [entry, ...history].slice(0, 100);
-  localStorage.setItem(KEYS.CHAT_HISTORY, JSON.stringify(updated));
+}
+
+export function saveSession(session) {
+  const all     = getSessions().filter(s => s.id !== session.id);
+  const updated = [session, ...all].slice(0, MAX_SESSIONS);
+  localStorage.setItem(KEYS.SESSIONS, JSON.stringify(updated));
+  return session;
+}
+
+export function updateSessionMessages(id, messages) {
+  const session = getSession(id);
+  if (!session) return null;
+  const firstUser = messages.find(m => m.role === "user");
+  const title     = firstUser
+    ? (firstUser.display || firstUser.content || "").slice(0, 70)
+    : "New conversation";
+  const updated = { ...session, messages, title, updatedAt: Date.now() };
+  saveSession(updated);
   return updated;
+}
+
+export function deleteSession(id) {
+  const updated = getSessions().filter(s => s.id !== id);
+  localStorage.setItem(KEYS.SESSIONS, JSON.stringify(updated));
+  return updated;
+}
+
+export function clearAllSessions() {
+  localStorage.removeItem(KEYS.SESSIONS);
+  localStorage.removeItem(KEYS.ACTIVE_SESSION);
+}
+
+// ─── Backup / Restore ─────────────────────────────────────────────────────────
+export function buildBackupJSON() {
+  const sessions = getSessions();
+  return JSON.stringify({
+    app:        "NŪR Islamic Knowledge Assistant",
+    exportedAt: new Date().toISOString(),
+    version:    "2.0",
+    sessions:   sessions.map(s => ({
+      id:        s.id,
+      title:     s.title,
+      createdAt: s.createdAt,
+      updatedAt: s.updatedAt,
+      messages:  s.messages.map(m => ({ role: m.role, content: m.content, display: m.display })),
+    })),
+  }, null, 2);
+}
+
+export function importBackupJSON(jsonStr) {
+  const data = JSON.parse(jsonStr);
+  if (!Array.isArray(data.sessions)) throw new Error("Invalid backup file");
+  const existing    = getSessions();
+  const existingIds = new Set(existing.map(s => s.id));
+  const toImport    = data.sessions.filter(s => !existingIds.has(s.id));
+  const merged      = [...toImport, ...existing].slice(0, MAX_SESSIONS);
+  localStorage.setItem(KEYS.SESSIONS, JSON.stringify(merged));
+  return { imported: toImport.length, total: merged.length };
+}
+
+export async function shareOrDownloadBackup() {
+  const json     = buildBackupJSON();
+  const blob     = new Blob([json], { type: "application/json" });
+  const fileName = `nur-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  const file     = new File([blob], fileName, { type: "application/json" });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    await navigator.share({ files: [file], title: "NŪR Chat Backup", text: "My NŪR conversation history" });
+    return "shared";
+  }
+  // Desktop fallback — trigger download
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement("a");
+  a.href = url; a.download = fileName; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return "downloaded";
 }
 
 // ─── Qibla calculation ────────────────────────────────────────────────────────
