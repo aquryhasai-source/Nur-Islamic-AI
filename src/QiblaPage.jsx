@@ -287,31 +287,56 @@ export default function QiblaPage({ onBack, lightMode, textSize = 1 }) {
   const inputBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
 
   // ── Smoothed compass bearing (exponential moving average) ───────────────────
+  // Root cause of 30° offset bug:
+  //   Both deviceorientationabsolute (magnetic-north-referenced) and
+  //   deviceorientation (arbitrary/relative on Android) were calling the same
+  //   handler. The relative event fires more frequently and kept overwriting
+  //   the correct absolute reading, causing a persistent offset.
+  // Fix: separate handlers — once absolute data arrives, relative is ignored.
   useEffect(() => {
-    const onOrientation = (e) => {
-      if (e.alpha == null) return;
-      // Shortest-path interpolation to avoid wrap-around jumps
-      const raw  = e.alpha;
-      const diff = ((raw - smoothRef.current) + 540) % 360 - 180;
-      smoothRef.current = (smoothRef.current + diff * 0.14 + 360) % 360;
+    let usingAbsolute = false;
+
+    const applySmoothing = (alpha) => {
+      const diff = ((alpha - smoothRef.current) + 540) % 360 - 180;
+      smoothRef.current = (smoothRef.current + diff * 0.18 + 360) % 360;
       setBearing(Math.round(smoothRef.current * 10) / 10);
+    };
+
+    // deviceorientationabsolute — alpha is always magnetic-north-referenced
+    const onAbsolute = (e) => {
+      if (e.alpha == null) return;
+      usingAbsolute = true;
+      applySmoothing(e.alpha);
+    };
+
+    // deviceorientation — alpha may be relative on Android; only use as fallback
+    const onRelative = (e) => {
+      if (usingAbsolute || e.alpha == null) return;
+      applySmoothing(e.alpha);
     };
 
     if (
       typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function"
     ) {
+      // iOS: requestPermission required; deviceorientation IS north-referenced on iOS
       DeviceOrientationEvent.requestPermission()
-        .then(p => { if (p === "granted") window.addEventListener("deviceorientation", onOrientation); })
+        .then(p => {
+          if (p === "granted") {
+            window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+            window.addEventListener("deviceorientation", onRelative);
+          }
+        })
         .catch(() => {});
     } else {
-      window.addEventListener("deviceorientationabsolute", onOrientation, true);
-      window.addEventListener("deviceorientation", onOrientation);
+      // Android / Desktop
+      window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+      window.addEventListener("deviceorientation", onRelative);
     }
 
     return () => {
-      window.removeEventListener("deviceorientation", onOrientation);
-      window.removeEventListener("deviceorientationabsolute", onOrientation);
+      window.removeEventListener("deviceorientationabsolute", onAbsolute);
+      window.removeEventListener("deviceorientation", onRelative);
     };
   }, []);
 
