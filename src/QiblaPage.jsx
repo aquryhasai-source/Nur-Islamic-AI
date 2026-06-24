@@ -31,23 +31,34 @@ const GeoBg = ({ lightMode }) => (
   </svg>
 );
 
-// ─── Redesigned Compass SVG ───────────────────────────────────────────────────
+// ─── Compass SVG — rotating ring design ──────────────────────────────────────
+//
+// HOW IT WORKS:
+//   • The RING (N/E/S/W labels + ticks) rotates by -bearing so N always tracks
+//     true magnetic north regardless of which way the phone is pointing.
+//   • The NEEDLE is a completely separate SVG group. It rotates by
+//     (qibla - bearing) so it always points toward Mecca in world space.
+//   • A fixed gold triangle at 12 o'clock (never rotates) shows where
+//     the phone is currently pointing. When needle aligns with it → Facing Qibla.
+//
 const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
   const r  = size / 2;
   const cx = r;
   const cy = r;
-  const GOLD       = "#c9a84c";
-  const NORTH_RED  = "#e07575";
+  const GOLD      = "#c9a84c";
+  const NORTH_RED = "#e07575";
 
-  // Needle rotation: positive = clockwise, 0 = pointing straight up toward Qibla
+  // Ring rotates opposite to bearing → N tracks true north on screen
+  const ringAngle   = -bearing;
+  // Needle points toward Qibla in world space → screen angle = qibla - bearing
   const needleAngle = ((qibla - bearing) % 360 + 360) % 360;
 
-  // ── Tick marks: 72 total (every 5°) ──────────────────────────────────────
+  // ── Tick marks (live inside the rotating ring group) ─────────────────────
   const ticks = Array.from({ length: 72 }, (_, i) => {
     const deg    = i * 5;
-    const isCard = deg % 90 === 0;          // cardinal  — 4 ticks
-    const isMed  = !isCard && deg % 30 === 0; // mid label — 8 ticks
-    const isTen  = !isMed  && !isCard && deg % 10 === 0; // every 10°
+    const isCard = deg % 90 === 0;
+    const isMed  = !isCard && deg % 30 === 0;
+    const isTen  = !isMed && !isCard && deg % 10 === 0;
     const len    = isCard ? 20 : isMed ? 13 : isTen ? 8 : 4;
     const sw     = isCard ? 2.2 : isMed ? 1.3 : 0.75;
     const op     = isCard ? 1   : isMed ? 0.65 : isTen ? 0.38 : 0.22;
@@ -61,31 +72,27 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
     };
   });
 
-  // ── Label positions ───────────────────────────────────────────────────────
-  const LABEL_R = r - 40;
-  const DEG_R   = r - 41;
-
   const pos = (deg, dist) => {
     const rad = (deg - 90) * (Math.PI / 180);
     return { x: cx + dist * Math.cos(rad), y: cy + dist * Math.sin(rad) };
   };
 
+  const LABEL_R  = r - 40;
+  const DEG_R    = r - 41;
   const cardinals = [
     { d: 0,   l: "N", fill: NORTH_RED, fs: 16, fw: "800" },
     { d: 90,  l: "E", fill: GOLD,      fs: 13, fw: "700" },
     { d: 180, l: "S", fill: GOLD,      fs: 13, fw: "700" },
     { d: 270, l: "W", fill: GOLD,      fs: 13, fw: "700" },
   ];
-
   const degLabels = [30, 60, 120, 150, 210, 240, 300, 330];
 
   // ── Needle geometry ───────────────────────────────────────────────────────
-  const TIP  = cy - (r - 57);   // tip of needle (above center)
-  const BASE = cy + 22;          // base wings  (below center)
-  const MID  = cy + 12;          // narrowing point
-
-  const TAIL_TIP  = cy + (r - 62); // tail bottom
-  const TAIL_WING = cy - 16;        // tail wing spread
+  const TIP       = cy - (r - 57);
+  const BASE      = cy + 22;
+  const MID       = cy + 12;
+  const TAIL_TIP  = cy + (r - 62);
+  const TAIL_WING = cy - 16;
 
   return (
     <svg
@@ -100,130 +107,126 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
       }}
     >
       <defs>
-        {/* Compass face gradient */}
         <radialGradient id="qFace" cx="50%" cy="50%" r="50%">
           <stop offset="0%"
-            stopColor={lightMode ? "#fef9ee" : "#112218"}
-            stopOpacity="0.92"/>
+            stopColor={lightMode ? "#fef9ee" : "#112218"} stopOpacity="0.92"/>
           <stop offset="100%"
-            stopColor={lightMode ? "#ede4cc" : "#08130f"}
-            stopOpacity="1"/>
+            stopColor={lightMode ? "#ede4cc" : "#08130f"} stopOpacity="1"/>
         </radialGradient>
-
-        {/* Needle glow (active when aligned) */}
         <filter id="qNeedleGlow" x="-60%" y="-30%" width="220%" height="160%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
           <feFlood floodColor={GOLD} floodOpacity="0.75" result="color"/>
           <feComposite in="color" in2="blur" operator="in" result="glow"/>
-          <feMerge>
-            <feMergeNode in="glow"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
+          <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-
-        {/* Kaaba glow */}
         <filter id="qKaabaGlow" x="-80%" y="-80%" width="260%" height="260%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="9" result="blur"/>
           <feFlood floodColor={GOLD} floodOpacity="1" result="color"/>
           <feComposite in="color" in2="blur" operator="in" result="glow"/>
-          <feMerge>
-            <feMergeNode in="glow"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
+          <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
 
-      {/* ── Outer decorative rings ── */}
+      {/* ── Static outer shell (never rotates) ── */}
       <circle cx={cx} cy={cy} r={r - 2}
         fill="none" stroke={GOLD} strokeWidth="0.4" opacity="0.2"/>
-
-      {/* Alignment pulse ring — shown only when aligned */}
       {aligned && (
         <circle cx={cx} cy={cy} r={r - 7}
           fill="none" stroke={GOLD} strokeWidth="2" opacity="0.35"
           className="q-align-ring"/>
       )}
-
-      {/* Tick ring border */}
-      <circle cx={cx} cy={cy} r={r - 11}
-        fill="none" stroke={GOLD} strokeWidth="1.2" opacity="0.5"/>
-
-      {/* Compass face */}
+      {/* Compass face fill */}
       <circle cx={cx} cy={cy} r={r - 27} fill="url(#qFace)"/>
-
-      {/* Inner ring detail */}
       <circle cx={cx} cy={cy} r={r - 27}
         fill="none" stroke={GOLD} strokeWidth="0.7" opacity="0.28"/>
-
-      {/* Second inner ring */}
       <circle cx={cx} cy={cy} r={r - 38}
         fill="none" stroke={GOLD} strokeWidth="0.3" opacity="0.15"/>
 
-      {/* ── Tick marks ── */}
-      {ticks.map((t, i) => (
-        <line key={i}
-          x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
-          stroke={GOLD} strokeWidth={t.sw} opacity={t.op}/>
-      ))}
+      {/* ══════════════════════════════════════════════════════════════════
+          ROTATING RING — tracks true magnetic north
+          Ring rotates by -bearing so N always points to geographic North
+      ══════════════════════════════════════════════════════════════════ */}
+      <g style={{
+        transformOrigin: `${cx}px ${cy}px`,
+        transform: `rotate(${ringAngle}deg)`,
+        transition: "transform 0.35s cubic-bezier(0.23, 1, 0.32, 1)",
+      }}>
+        {/* Tick ring border */}
+        <circle cx={cx} cy={cy} r={r - 11}
+          fill="none" stroke={GOLD} strokeWidth="1.2" opacity="0.5"/>
 
-      {/* ── Cardinal labels ── */}
-      {cardinals.map(({ d, l, fill, fs, fw }) => {
-        const { x, y } = pos(d, LABEL_R);
-        return (
-          <text key={d} x={x} y={y}
-            textAnchor="middle" dominantBaseline="central"
-            fill={fill} fontSize={fs} fontWeight={fw}
-            fontFamily="Georgia, serif">
-            {l}
-          </text>
-        );
-      })}
+        {/* Tick marks */}
+        {ticks.map((t, i) => (
+          <line key={i}
+            x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
+            stroke={GOLD} strokeWidth={t.sw} opacity={t.op}/>
+        ))}
 
-      {/* ── Degree labels (30° intervals, non-cardinal) ── */}
-      {degLabels.map(d => {
-        const { x, y } = pos(d, DEG_R - 2);
-        return (
-          <text key={d} x={x} y={y}
-            textAnchor="middle" dominantBaseline="central"
-            fill={GOLD} fontSize="8.5"
-            fontFamily="Georgia, serif" opacity="0.42">
-            {d}
-          </text>
-        );
-      })}
+        {/* Cardinal labels */}
+        {cardinals.map(({ d, l, fill, fs, fw }) => {
+          const { x, y } = pos(d, LABEL_R);
+          return (
+            <text key={d} x={x} y={y}
+              textAnchor="middle" dominantBaseline="central"
+              fill={fill} fontSize={fs} fontWeight={fw}
+              fontFamily="Georgia, serif">
+              {l}
+            </text>
+          );
+        })}
 
-      {/* ── Subtle crosshair ── */}
-      <line x1={cx} y1={cy - 20} x2={cx} y2={cy + 20}
-        stroke={GOLD} strokeWidth="0.35" opacity="0.14"/>
-      <line x1={cx - 20} y1={cy} x2={cx + 20} y2={cy}
-        stroke={GOLD} strokeWidth="0.35" opacity="0.14"/>
+        {/* Degree labels at 30° intervals */}
+        {degLabels.map(d => {
+          const { x, y } = pos(d, DEG_R - 2);
+          return (
+            <text key={d} x={x} y={y}
+              textAnchor="middle" dominantBaseline="central"
+              fill={GOLD} fontSize="8.5"
+              fontFamily="Georgia, serif" opacity="0.42">
+              {d}
+            </text>
+          );
+        })}
 
-      {/* ── North arrow notch on outer ring ── */}
+        {/* North marker (red triangle at N position on the ring) */}
+        <path
+          d={`M${cx},${cy - (r - 10)} L${cx - 5},${cy - (r - 20)} L${cx + 5},${cy - (r - 20)} Z`}
+          fill={NORTH_RED} opacity="0.9"/>
+      </g>
+
+      {/* ── Fixed heading indicator — gold triangle at 12 o'clock ── */}
+      {/* This never rotates. It shows where the phone is currently pointing.  */}
+      {/* When the Qibla needle aligns with this triangle → Facing Qibla.      */}
       <path
-        d={`M${cx},${cy - (r - 10)} L${cx - 5},${cy - (r - 20)} L${cx + 5},${cy - (r - 20)} Z`}
-        fill={NORTH_RED} opacity="0.85"/>
+        d={`M${cx},${cy - (r - 13)} L${cx - 6},${cy - (r - 26)} L${cx + 6},${cy - (r - 26)} Z`}
+        fill={GOLD} opacity="0.9"/>
 
-      {/* ═══════════════════════════════════════════════════════════════════
-          Rotating needle — points toward Qibla
-          CSS transform used for smooth transition (more reliable than SVG attr)
-      ═══════════════════════════════════════════════════════════════════ */}
+      {/* Subtle center crosshair */}
+      <line x1={cx} y1={cy - 18} x2={cx} y2={cy + 18}
+        stroke={GOLD} strokeWidth="0.35" opacity="0.12"/>
+      <line x1={cx - 18} y1={cy} x2={cx + 18} y2={cy}
+        stroke={GOLD} strokeWidth="0.35" opacity="0.12"/>
+
+      {/* ══════════════════════════════════════════════════════════════════
+          QIBLA NEEDLE — completely independent of the ring
+          Rotates by (qibla - bearing) to always point toward Mecca
+          in world space, regardless of phone orientation.
+      ══════════════════════════════════════════════════════════════════ */}
       <g style={{
         transformOrigin: `${cx}px ${cy}px`,
         transform: `rotate(${needleAngle}deg)`,
         transition: "transform 0.42s cubic-bezier(0.23, 1, 0.32, 1)",
       }}>
-
-        {/* Kaaba aura — subtle pulse when aligned */}
+        {/* Kaaba aura pulse when aligned */}
         {aligned && (
           <circle
-            cx={cx} cy={TIP + 6}
-            r="22" fill={GOLD}
+            cx={cx} cy={TIP + 6} r="22" fill={GOLD}
             className="q-kaaba-pulse"
             style={{ transformBox: "fill-box", transformOrigin: "center" }}
           />
         )}
 
-        {/* ── Main needle body (Qibla direction — upward) ── */}
+        {/* Needle body (points toward Qibla = upward at 0°) */}
         <path
           d={`M${cx},${TIP} L${cx - 9},${BASE} L${cx},${MID} L${cx + 9},${BASE} Z`}
           fill={GOLD}
@@ -231,13 +234,13 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
           filter={aligned ? "url(#qNeedleGlow)" : undefined}
         />
 
-        {/* ── Tail (away from Qibla) ── */}
+        {/* Needle tail */}
         <path
           d={`M${cx},${TAIL_TIP} L${cx - 6},${TAIL_WING} L${cx},${TAIL_WING + 10} L${cx + 6},${TAIL_WING} Z`}
           fill={GOLD} opacity="0.2"
         />
 
-        {/* ── Kaaba emoji marker at needle tip ── */}
+        {/* Kaaba emoji at needle tip */}
         <text
           x={cx} y={TIP + 8}
           textAnchor="middle" dominantBaseline="central"
@@ -254,7 +257,7 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
         </text>
       </g>
 
-      {/* ── Center cap ── */}
+      {/* ── Center cap (always on top) ── */}
       <circle cx={cx} cy={cy} r="13"
         fill={lightMode ? "#fdf8ed" : "#091610"}
         stroke={GOLD} strokeWidth="2.5"/>
@@ -286,32 +289,32 @@ export default function QiblaPage({ onBack, lightMode, textSize = 1 }) {
   const headerBg  = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
   const inputBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
 
-  // ── Smoothed compass bearing (exponential moving average) ───────────────────
-  // Root cause of 30° offset bug:
-  //   Both deviceorientationabsolute (magnetic-north-referenced) and
-  //   deviceorientation (arbitrary/relative on Android) were calling the same
-  //   handler. The relative event fires more frequently and kept overwriting
-  //   the correct absolute reading, causing a persistent offset.
-  // Fix: separate handlers — once absolute data arrives, relative is ignored.
+  // ── Compass bearing — absolute priority with timestamp fallback ─────────────
+  // Strategy: prefer deviceorientationabsolute (always north-referenced) but
+  // fall back to deviceorientation if absolute goes silent for >1s.
+  // Previous bug: usingAbsolute=true permanently blocked relative events,
+  // so if absolute fired once then stopped, bearing froze completely.
   useEffect(() => {
-    let usingAbsolute = false;
+    let lastAbsoluteMs = 0;
+    const STALE_MS = 1000;
 
     const applySmoothing = (alpha) => {
       const diff = ((alpha - smoothRef.current) + 540) % 360 - 180;
-      smoothRef.current = (smoothRef.current + diff * 0.18 + 360) % 360;
+      smoothRef.current = (smoothRef.current + diff * 0.2 + 360) % 360;
       setBearing(Math.round(smoothRef.current * 10) / 10);
     };
 
-    // deviceorientationabsolute — alpha is always magnetic-north-referenced
+    // deviceorientationabsolute — always magnetic-north-referenced on Android
     const onAbsolute = (e) => {
       if (e.alpha == null) return;
-      usingAbsolute = true;
+      lastAbsoluteMs = Date.now();
       applySmoothing(e.alpha);
     };
 
-    // deviceorientation — alpha may be relative on Android; only use as fallback
+    // deviceorientation — relative on Android; used only when absolute is stale
     const onRelative = (e) => {
-      if (usingAbsolute || e.alpha == null) return;
+      if (e.alpha == null) return;
+      if (Date.now() - lastAbsoluteMs < STALE_MS) return; // absolute is fresh, skip
       applySmoothing(e.alpha);
     };
 
@@ -319,7 +322,7 @@ export default function QiblaPage({ onBack, lightMode, textSize = 1 }) {
       typeof DeviceOrientationEvent !== "undefined" &&
       typeof DeviceOrientationEvent.requestPermission === "function"
     ) {
-      // iOS: requestPermission required; deviceorientation IS north-referenced on iOS
+      // iOS — requestPermission required; deviceorientation IS north-referenced on iOS
       DeviceOrientationEvent.requestPermission()
         .then(p => {
           if (p === "granted") {
