@@ -182,7 +182,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, lightMode = false
       <style>{`@keyframes cardShine{0%{left:-100%}60%,100%{left:200%}}`}</style>
 
       {/* HEADER */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 15px",borderBottom:`1px solid ${goldBdr}`,background:headerBg,backdropFilter:"blur(16px)",flexShrink:0,zIndex:20}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"relative",padding:"11px 15px",borderBottom:`1px solid ${goldBdr}`,background:headerBg,backdropFilter:"blur(16px)",flexShrink:0,zIndex:20}}>
         <button onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1}}>←</button>
         <span style={{color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px"}}>Islamic Calendar</span>
       </div>
