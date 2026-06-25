@@ -185,7 +185,6 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, lightMode = false
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 15px",borderBottom:`1px solid ${goldBdr}`,background:headerBg,backdropFilter:"blur(16px)",flexShrink:0,zIndex:20}}>
         <button onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1}}>←</button>
         <span style={{color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px"}}>Islamic Calendar</span>
-        <button style={{background:"none",border:"none",color:goldDim,fontSize:"17px",cursor:"pointer",padding:"4px 6px",lineHeight:1}}>⚙</button>
       </div>
 
       {/* SCROLL */}
