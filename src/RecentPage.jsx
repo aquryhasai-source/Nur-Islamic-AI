@@ -18,13 +18,13 @@ function msgCount(session) {
   return `${pairs} exchange${pairs !== 1 ? "s" : ""}`;
 }
 
-export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1 }) {
+export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMode, textSize = 1 }) {
   const [sessions,    setSessions]    = useState(() => getSessions());
   const [expanded,    setExpanded]    = useState(null);
   const [search,      setSearch]      = useState("");
   const [confirmAll,  setConfirmAll]  = useState(false);
-  const [backupState, setBackupState] = useState("idle"); // idle | saving | done | error
-  const [importState, setImportState] = useState("idle"); // idle | importing | done | error
+  const [backupState, setBackupState] = useState("idle");
+  const [importState, setImportState] = useState("idle");
   const [importMsg,   setImportMsg]   = useState("");
   const fileRef = useRef(null);
 
@@ -105,12 +105,17 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px", flex:1 }}>Chat History</div>
-        {sessions.length > 0 && (
-          <div style={{ color:goldDim, fontSize:"12px" }}>{sessions.length} conversation{sessions.length !== 1 ? "s" : ""}</div>
-        )}
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center" }}>
+          <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Chat History</span>
+          {sessions.length > 0 && <span style={{ color:goldDim, fontSize:`${11*textSize}px`, marginLeft:"8px" }}>{sessions.length} saved</span>}
+        </div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       {/* Search bar */}
@@ -133,7 +138,6 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
 
       <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 28px" }}>
 
-        {/* Empty state */}
         {sessions.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", textAlign:"center" }}>
             <div style={{ fontSize:"32px", marginBottom:"12px", opacity:0.4 }}>🕐</div>
@@ -141,7 +145,6 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
             <div style={{ color:textDim, fontSize:`${13 * textSize}px`, lineHeight:1.8, marginBottom:"24px" }}>
               Your conversations will appear here. Start chatting!
             </div>
-            {/* Import section even when empty */}
             <div style={{ width:"100%", maxWidth:"300px" }}>
               <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>
               <button onClick={() => fileRef.current?.click()}
@@ -149,7 +152,7 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                 📥 Restore from backup
               </button>
               {importMsg && (
-                <div style={{ color: importState === "error" ? dangerClr : greenClr, fontSize:"12px", marginTop:"8px", textAlign:"center" }}>
+                <div style={{ color: importState === "error" ? dangerClr : greenClr, fontSize:`${12*textSize}px`, marginTop:"8px", textAlign:"center" }}>
                   {importMsg}
                 </div>
               )}
@@ -157,24 +160,20 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
           </div>
         )}
 
-        {/* No search results */}
         {sessions.length > 0 && filtered.length === 0 && (
           <div style={{ textAlign:"center", color:textDim, padding:"40px 20px", fontSize:`${13 * textSize}px` }}>
             No conversations match "{search}"
           </div>
         )}
 
-        {/* Session cards */}
         {filtered.map((session) => {
-          const isOpen    = expanded === session.id;
-          const preview   = previewMessages(session);
-          const lastMsg   = (session.messages || []).filter(m => m.role === "assistant").slice(-1)[0];
+          const isOpen  = expanded === session.id;
+          const preview = previewMessages(session);
 
           return (
             <div key={session.id}
               style={{ marginBottom:"10px", background:cardBg, border:`1px solid ${isOpen ? `${gold}60` : goldBdr}`, borderRadius:"14px", overflow:"hidden", transition:"border-color 0.2s" }}>
 
-              {/* Session header — tap to expand */}
               <button
                 onClick={() => setExpanded(isOpen ? null : session.id)}
                 style={{ display:"flex", alignItems:"flex-start", gap:"10px", width:"100%", padding:"13px 14px", background:"none", border:"none", cursor:"pointer", textAlign:"left" }}>
@@ -183,9 +182,9 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                     {session.title}
                   </div>
                   <div style={{ display:"flex", gap:"10px", alignItems:"center" }}>
-                    <span style={{ color:textDim, fontSize:"10px" }}>{timeAgo(session.updatedAt)}</span>
-                    <span style={{ color:textDim, fontSize:"10px" }}>·</span>
-                    <span style={{ color:textDim, fontSize:"10px" }}>{msgCount(session)}</span>
+                    <span style={{ color:textDim, fontSize:`${10*textSize}px` }}>{timeAgo(session.updatedAt)}</span>
+                    <span style={{ color:textDim, fontSize:`${10*textSize}px` }}>·</span>
+                    <span style={{ color:textDim, fontSize:`${10*textSize}px` }}>{msgCount(session)}</span>
                   </div>
                 </div>
                 <div style={{ color:goldDim, fontSize:"18px", lineHeight:1, flexShrink:0, marginTop:"2px", transition:"transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
@@ -193,11 +192,8 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                 </div>
               </button>
 
-              {/* Expanded: preview + actions */}
               {isOpen && (
                 <div style={{ borderTop:`1px solid ${goldBdr}` }}>
-
-                  {/* Message preview */}
                   <div style={{ padding:"12px 14px", display:"flex", flexDirection:"column", gap:"10px", maxHeight:"260px", overflowY:"auto" }}>
                     {preview.map((msg, i) => (
                       <div key={i} style={{
@@ -210,7 +206,7 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                         borderRadius: msg.role === "user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
                         padding:"8px 12px",
                       }}>
-                        <div style={{ color:textDim, fontSize:"9px", marginBottom:"3px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
+                        <div style={{ color:textDim, fontSize:`${9*textSize}px`, marginBottom:"3px", textTransform:"uppercase", letterSpacing:"0.5px" }}>
                           {msg.role === "user" ? "You" : "NŪR"}
                         </div>
                         <div style={{ color:textClr, fontSize:`${12 * textSize}px`, lineHeight:1.6 }}>
@@ -220,13 +216,11 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                       </div>
                     ))}
                     {(session.messages || []).length > 6 && (
-                      <div style={{ color:textDim, fontSize:"11px", textAlign:"center" }}>
+                      <div style={{ color:textDim, fontSize:`${11*textSize}px`, textAlign:"center" }}>
                         + {(session.messages || []).length - 6} more messages
                       </div>
                     )}
                   </div>
-
-                  {/* Actions */}
                   <div style={{ padding:"0 14px 13px", display:"flex", gap:"8px" }}>
                     <button
                       onClick={() => onContinue(session)}
@@ -245,17 +239,14 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
           );
         })}
 
-        {/* Backup / Restore section */}
         {sessions.length > 0 && (
           <div style={{ marginTop:"20px", padding:"16px", background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-            <div style={{ color:goldDim, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"12px" }}>
+            <div style={{ color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"12px" }}>
               Backup & Restore
             </div>
             <div style={{ color:textDim, fontSize:`${11 * textSize}px`, lineHeight:1.7, marginBottom:"14px" }}>
               Chats are stored only on this device. Back up to your Drive, iCloud, or email to keep them safe.
             </div>
-
-            {/* Export */}
             <button
               onClick={handleBackup}
               disabled={backupState === "saving"}
@@ -264,13 +255,8 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                 border:`1px solid ${backupState === "done" ? greenClr : goldBdr}`,
                 color: backupState === "done" ? greenClr : gold,
                 fontSize:`${13 * textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-              {backupState === "saving" ? "Preparing…"
-               : backupState === "done"  ? "✓ Backup saved!"
-               : backupState === "error" ? "Failed — try again"
-               : "📤 Save backup to Drive / Files"}
+              {backupState === "saving" ? "Preparing…" : backupState === "done" ? "✓ Backup saved!" : backupState === "error" ? "Failed — try again" : "📤 Save backup to Drive / Files"}
             </button>
-
-            {/* Import */}
             <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>
             <button
               onClick={() => fileRef.current?.click()}
@@ -280,14 +266,11 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                 border:`1px solid ${importState === "done" ? greenClr : importState === "error" ? dangerClr : goldBdr}`,
                 color: importState === "done" ? greenClr : importState === "error" ? dangerClr : goldDim,
                 fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-              {importState === "importing" ? "Importing…"
-               : importMsg ? importMsg
-               : "📥 Restore from backup file"}
+              {importState === "importing" ? "Importing…" : importMsg ? importMsg : "📥 Restore from backup file"}
             </button>
           </div>
         )}
 
-        {/* Clear all */}
         {sessions.length > 0 && !search && (
           <div style={{ marginTop:"16px", textAlign:"center" }}>
             {confirmAll ? (
@@ -295,18 +278,18 @@ export default function RecentPage({ onBack, onContinue, lightMode, textSize = 1
                 <div style={{ color:dangerClr, fontSize:`${13 * textSize}px`, fontWeight:600 }}>Delete all conversations?</div>
                 <div style={{ display:"flex", gap:"10px" }}>
                   <button onClick={() => setConfirmAll(false)}
-                    style={{ padding:"8px 20px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:"13px", cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    style={{ padding:"8px 20px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
                     Cancel
                   </button>
                   <button onClick={handleClearAll}
-                    style={{ padding:"8px 20px", borderRadius:"10px", background:"rgba(224,123,84,0.15)", border:"1px solid rgba(224,123,84,0.35)", color:dangerClr, fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    style={{ padding:"8px 20px", borderRadius:"10px", background:"rgba(224,123,84,0.15)", border:"1px solid rgba(224,123,84,0.35)", color:dangerClr, fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
                     Delete All
                   </button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setConfirmAll(true)}
-                style={{ background:"none", border:"none", color:textDim, fontSize:"12px", cursor:"pointer", fontFamily:"Nunito,sans-serif", textDecoration:"underline", padding:"8px" }}>
+                style={{ background:"none", border:"none", color:textDim, fontSize:`${12*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", textDecoration:"underline", padding:"8px" }}>
                 Delete all conversations
               </button>
             )}
