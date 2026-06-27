@@ -2,12 +2,14 @@ import { useState } from "react";
 import { saveProfile, KEYS, DAILY_LIMIT } from "./utils.js";
 
 const TEXT_SIZES = [
-  { label: "S", value: 0.88, name: "Small"  },
-  { label: "M", value: 1.0,  name: "Medium" },
-  { label: "L", value: 1.14, name: "Large"  },
+  { label: "XS", value: 0.75,  name: "Tiny"   },
+  { label: "S",  value: 0.88,  name: "Small"  },
+  { label: "M",  value: 1.0,   name: "Medium" },
+  { label: "L",  value: 1.14,  name: "Large"  },
+  { label: "XL", value: 1.28,  name: "Huge"   },
 ];
 
-export default function ProfilePage({ onBack, profile, setProfile, remaining, unlocked, textSize, setTextSize, lightMode }) {
+export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, setTextSize, lightMode }) {
   const [name,        setName]        = useState(profile.name || "");
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
 
@@ -42,7 +44,7 @@ export default function ProfilePage({ onBack, profile, setProfile, remaining, un
     outline:"none", fontFamily:"Nunito,sans-serif", boxSizing:"border-box",
   };
   const labelStyle = {
-    color:goldDim, fontSize:"10px", letterSpacing:"2px",
+    color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px",
     textTransform:"uppercase", marginBottom:"10px", display:"block",
   };
   const divider = <div style={{ height:"1px", background:goldBdr, margin:"22px 0" }}/>;
@@ -50,9 +52,14 @@ export default function ProfilePage({ onBack, profile, setProfile, remaining, un
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Profile</div>
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Profile</div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 40px" }}>
@@ -71,7 +78,7 @@ export default function ProfilePage({ onBack, profile, setProfile, remaining, un
               <div style={{ height:"5px", background:lightMode?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.07)", borderRadius:"4px", overflow:"hidden" }}>
                 <div style={{ height:"100%", width:`${pct}%`, background:barColor, borderRadius:"4px", transition:"width 0.4s" }}/>
               </div>
-              <div style={{ color:textDim, fontSize:"11px", marginTop:"8px" }}>Resets at midnight</div>
+              <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"8px" }}>Resets at midnight</div>
             </>
           )}
         </div>
@@ -91,14 +98,14 @@ export default function ProfilePage({ onBack, profile, setProfile, remaining, un
           placeholder="e.g. 2005" type="number" min="1900" max={new Date().getFullYear()}
           style={inputStyle}/>
         {ageLabel && (
-          <div style={{ color:goldDim, fontSize:"12px", marginTop:"8px" }}>{ageLabel}</div>
+          <div style={{ color:goldDim, fontSize:`${12*textSize}px`, marginTop:"8px" }}>{ageLabel}</div>
         )}
 
         {divider}
 
-        {/* Text size */}
+        {/* Text size — 5 levels */}
         <span style={labelStyle}>Text Size</span>
-        <div style={{ display:"flex", gap:"10px" }}>
+        <div style={{ display:"flex", gap:"6px" }}>
           {TEXT_SIZES.map(({ label, value, name: sizeName }) => {
             const active = Math.abs(textSize - value) < 0.05;
             return (
@@ -107,18 +114,18 @@ export default function ProfilePage({ onBack, profile, setProfile, remaining, un
                   setTextSize(value);
                   localStorage.setItem(KEYS.TEXT_SIZE, String(value));
                 }}
-                style={{ flex:1, padding:"14px 8px", borderRadius:"12px",
+                style={{ flex:1, padding:"10px 4px", borderRadius:"12px",
                   background: active ? `linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})` : goldFaint,
                   border:`1px solid ${active ? gold : goldBdr}`,
                   color: active ? (lightMode?"#fff":"#0d1f14") : goldDim,
                   cursor:"pointer", fontFamily:"Nunito,sans-serif", transition:"all 0.2s" }}>
-                <div style={{ fontSize: active ? `${18 * value}px` : "16px", fontWeight:800, marginBottom:"4px" }}>{label}</div>
-                <div style={{ fontSize:"10px", opacity:0.7 }}>{sizeName}</div>
+                <div style={{ fontSize:`${active ? 16*value : 14}px`, fontWeight:800, marginBottom:"3px" }}>{label}</div>
+                <div style={{ fontSize:"9px", opacity:0.75 }}>{sizeName}</div>
               </button>
             );
           })}
         </div>
-        <div style={{ color:textDim, fontSize:"11px", marginTop:"10px" }}>
+        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"10px" }}>
           Applies to chat, Quran, Hadith and all pages.
         </div>
 
