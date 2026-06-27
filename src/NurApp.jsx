@@ -57,7 +57,7 @@ const FloatingPatterns = () => (
 const InstallModal = ({ onClose, isIOS }) => {
   const steps = isIOS
     ? [["1","Open this page in","Safari browser"],["2","Tap the Share button","□↑  at the bottom"],["3","Scroll down and tap",'"Add to Home Screen"'],["4","Tap",'"Add" to confirm']]
-    : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap",'"Add" to confirm'],["4","Find NŪR","on your home screen"]];
+    : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap','"Add" to confirm'],["4","Find NŪR","on your home screen"]];
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)", zIndex:200, display:"flex", alignItems:"flex-end", padding:"20px" }}>
       <div style={{ background:"linear-gradient(160deg,#0d1f14,#081510)", border:"1px solid rgba(201,168,76,0.25)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto" }}>
@@ -92,15 +92,17 @@ export default function NurApp() {
   const [showInstall,  setShowInstall]  = useState(false);
   const [isIOS,        setIsIOS]        = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const [quranNav,     setQuranNav]     = useState(null); // { surah, ayah }
-  const [hadithNav,    setHadithNav]    = useState(null); // { collectionId, number }
+  const [quranNav,     setQuranNav]     = useState(null);
+  const [hadithNav,    setHadithNav]    = useState(null);
   const [hadithSearch, setHadithSearch] = useState(null);
   const [showWelcome,  setShowWelcome]  = useState(() => !localStorage.getItem(WELCOME_KEY));
   const [bookmarks,    setBookmarks]    = useState(() => getBookmarks());
   const [lightMode,    setLightMode]    = useState(() => localStorage.getItem(KEYS.THEME) === "light");
   const [textSize,     setTextSize]     = useState(() => parseFloat(localStorage.getItem(KEYS.TEXT_SIZE) || "1"));
-  const installPrompt  = useRef(null);
-  const sessionTracked = useRef(false);
+  const installPrompt   = useRef(null);
+  const sessionTracked  = useRef(false);
+  // Swipe-from-left-edge to open sidebar (works on page overlays too)
+  const pageSwipeStartX = useRef(null);
 
   // ── Session management ─────────────────────────────────────────────────────
   const [activeSession, setActiveSession] = useState(() => {
@@ -138,7 +140,7 @@ export default function NurApp() {
     localStorage.setItem(KEYS.THEME, lightMode ? "light" : "dark");
   }, [lightMode]);
 
-  // ── Analytics: session start + global error handler ───────────────────────
+  // ── Analytics ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (sessionTracked.current) return;
     sessionTracked.current = true;
@@ -156,7 +158,6 @@ export default function NurApp() {
     };
   }, []);
 
-  // ── Analytics: tab changes ────────────────────────────────────────────────
   useEffect(() => { trackEvent("tab_view", { tab }); }, [tab]);
 
   // PWA install
@@ -190,10 +191,18 @@ export default function NurApp() {
   };
 
   // ── Page navigation ────────────────────────────────────────────────────────
-  const navigateTo = (page) => { setSidebarOpen(false); setActivePage(page); trackEvent("page_view", { page }); };
-  const goBack       = () => setActivePage(null);
+  const navigateTo = (page) => {
+    setSidebarOpen(false);
+    if (page === "home") {
+      setActivePage(null);
+      return;
+    }
+    setActivePage(page);
+    trackEvent("page_view", { page });
+  };
+  const goBack = () => setActivePage(null);
 
-  // ── Swipe to change tabs ───────────────────────────────────────────────────
+  // ── Swipe to change tabs (main view) ──────────────────────────────────────
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
   const onTouchStart = (e) => { touchStartX.current = e.touches[0].clientX; touchStartY.current = e.touches[0].clientY; };
@@ -209,6 +218,19 @@ export default function NurApp() {
     touchStartX.current = null; touchStartY.current = null;
   };
 
+  // ── Swipe-from-left-edge on page overlays to open sidebar ─────────────────
+  const onPageTouchStart = (e) => {
+    pageSwipeStartX.current = e.touches[0].clientX < 44 ? e.touches[0].clientX : null;
+  };
+  const onPageTouchEnd = (e) => {
+    if (pageSwipeStartX.current !== null) {
+      if (e.changedTouches[0].clientX - pageSwipeStartX.current > 52) {
+        setSidebarOpen(true);
+      }
+      pageSwipeStartX.current = null;
+    }
+  };
+
   const handleToggleBookmark = (item) => setBookmarks(prev => toggleBookmark(item, prev));
 
   // Citation navigation from ChatTab
@@ -217,23 +239,20 @@ export default function NurApp() {
   const handleHadithNav    = (nav)         => { setHadithNav(nav); setTimeout(() => setHadithNav(null), 800); };
   const handleHadithSearch = (q)           => { setHadithSearch(q); setTimeout(() => setHadithSearch(null), 500); };
 
-  // ── Android back button — intercept so it navigates within app ─────────────
+  // ── Android back button ───────────────────────────────────────────────────
   useEffect(() => {
-    // Push initial guard state so back button always has something to pop
     window.history.pushState({ nur: true }, "");
   }, []);
 
   useEffect(() => {
     const handler = () => {
-      if (activePage) {
-        setActivePage(null);
-      }
-      // Re-push guard so next back press is also intercepted
+      if (sidebarOpen) { setSidebarOpen(false); }
+      else if (activePage) { setActivePage(null); }
       window.history.pushState({ nur: true }, "");
     };
     window.addEventListener("popstate", handler);
     return () => window.removeEventListener("popstate", handler);
-  }, [activePage]);
+  }, [activePage, sidebarOpen]);
 
   // Theme vars
   const appBg    = lightMode ? "linear-gradient(160deg,#fdf8ed 0%,#f4e9cf 50%,#faf3e2 100%)" : "linear-gradient(160deg,#0d1f14 0%,#081510 50%,#0a1a10 100%)";
@@ -245,8 +264,15 @@ export default function NurApp() {
 
   if (showWelcome) return <WelcomeScreen onDone={() => setShowWelcome(false)}/>;
 
-  // Common page props
-  const pageProps = { onBack:goBack, lightMode, textSize, unlocked, navigateTo };
+  // Common page props — includes onOpenSidebar for every page
+  const pageProps = {
+    onBack:         goBack,
+    onOpenSidebar:  () => setSidebarOpen(true),
+    lightMode,
+    textSize,
+    unlocked,
+    navigateTo,
+  };
 
   return (
     <div style={{ height:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:appBg, fontFamily:"'Nunito',sans-serif", position:"relative", color:lightMode?"rgba(26,15,0,0.88)":"rgba(255,255,240,0.88)" }}>
@@ -258,6 +284,7 @@ export default function NurApp() {
         isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
         unlocked={unlocked} lightMode={lightMode} setLightMode={setLightMode}
         onNavigate={navigateTo}
+        textSize={textSize}
       />
 
       {/* ── HEADER ── */}
@@ -269,18 +296,18 @@ export default function NurApp() {
         </button>
         <div style={{ textAlign:"center" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"6px", justifyContent:"center" }}>
-            <div style={{ color:gold, fontSize:"20px", letterSpacing:"3px", fontVariant:"small-caps", fontWeight:700, lineHeight:1 }}>NŪR</div>
-            <span style={{ background:`${gold}22`, border:`1px solid ${gold}55`, borderRadius:"5px", color:gold, fontSize:"8px", fontWeight:800, letterSpacing:"1.5px", padding:"2px 6px", lineHeight:1.4 }}>BETA</span>
+            <div style={{ color:gold, fontSize:`${20*textSize}px`, letterSpacing:"3px", fontVariant:"small-caps", fontWeight:700, lineHeight:1 }}>NŪR</div>
+            <span style={{ background:`${gold}22`, border:`1px solid ${gold}55`, borderRadius:"5px", color:gold, fontSize:`${8*textSize}px`, fontWeight:800, letterSpacing:"1.5px", padding:"2px 6px", lineHeight:1.4 }}>BETA</span>
           </div>
-          <div style={{ color:goldDim, fontSize:"9px", letterSpacing:"2px", textTransform:"uppercase", marginTop:"2px" }}>Free while we grow</div>
+          <div style={{ color:goldDim, fontSize:`${9*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginTop:"2px" }}>Free while we grow</div>
         </div>
         <div style={{ minWidth:"60px", display:"flex", justifyContent:"flex-end", alignItems:"center", gap:"8px" }}>
           {showInstall && (
-            <button onClick={handleInstall} style={{ background:`rgba(${lightMode?"122,88,16":"201,168,76"},0.1)`, border:`1px solid ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.3)"}`, borderRadius:"10px", color:gold, fontSize:"11px", padding:"6px 10px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:700 }}>
+            <button onClick={handleInstall} style={{ background:`rgba(${lightMode?"122,88,16":"201,168,76"},0.1)`, border:`1px solid ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.3)"}`, borderRadius:"10px", color:gold, fontSize:`${11*textSize}px`, padding:"6px 10px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:700 }}>
               + Home
             </button>
           )}
-          {!showInstall && unlocked && <div style={{ fontSize:"10px", color:"rgba(76,175,132,0.75)", letterSpacing:"1px", fontWeight:600 }}>✦ Pro</div>}
+          {!showInstall && unlocked && <div style={{ fontSize:`${10*textSize}px`, color:"rgba(76,175,132,0.75)", letterSpacing:"1px", fontWeight:600 }}>✦ Pro</div>}
         </div>
       </header>
 
@@ -289,14 +316,14 @@ export default function NurApp() {
         {Object.entries(TAB_LABELS).map(([key, label]) => {
           const isActive = tab === key;
           return (
-            <button key={key} onClick={() => setTab(key)} style={{ flex:1, padding:"10px 4px", background:"none", border:"none", borderBottom:isActive?`2px solid ${gold}`:"2px solid transparent", color:isActive?gold:goldDim, fontSize:"11px", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:isActive?700:400, transition:"all 0.2s" }}>
+            <button key={key} onClick={() => setTab(key)} style={{ flex:1, padding:"10px 4px", background:"none", border:"none", borderBottom:isActive?`2px solid ${gold}`:"2px solid transparent", color:isActive?gold:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:isActive?700:400, transition:"all 0.2s" }}>
               {label}
             </button>
           );
         })}
       </div>
 
-      {/* ── AD BANNER — hidden for Pro users ── */}
+      {/* ── AD BANNER ── */}
       <AdBanner unlocked={unlocked} lightMode={lightMode}/>
 
       {/* ── TAB CONTENT ── */}
@@ -335,9 +362,13 @@ export default function NurApp() {
         </div>
       </div>
 
-      {/* ── PAGE OVERLAY ── */}
+      {/* ── PAGE OVERLAY — swipe-from-left opens sidebar ── */}
       {activePage && (
-        <div style={{ position:"fixed", inset:0, zIndex:30, background:appBg, animation:"slideInRight 0.28s ease", display:"flex", flexDirection:"column" }}>
+        <div
+          style={{ position:"fixed", inset:0, zIndex:30, background:appBg, animation:"slideInRight 0.28s ease", display:"flex", flexDirection:"column" }}
+          onTouchStart={onPageTouchStart}
+          onTouchEnd={onPageTouchEnd}
+        >
           {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining} setTextSize={setTextSize}/>}
           {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
           {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}
