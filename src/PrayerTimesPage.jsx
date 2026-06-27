@@ -10,8 +10,6 @@ const PRAYER_LIST = [
   { key:"Isha",    label:"Isha",    arabic:"العشاء", icon:"🌙", hasAlarm:true  },
 ];
 
-// Plays /azan.mp3 from your Public folder — add the file there.
-// Falls back to a gentle beep tone if file is missing.
 function playAlarmSound() {
   const audio = new Audio("/azan.mp3");
   audio.play().catch(() => {
@@ -32,6 +30,26 @@ function playAlarmSound() {
       });
     } catch {}
   });
+}
+
+function fireNotification(label, pTime, fireKey) {
+  const title = `🕌 ${label} — Time to Pray`;
+  const opts  = {
+    body:  `It is ${pTime} — time for ${label} prayer`,
+    icon:  "/icon-192.png",
+    badge: "/icon-192.png",
+    tag:   fireKey,
+    requireInteraction: false,
+    silent: false,
+  };
+  // Use ServiceWorker showNotification for PWA (body shows reliably)
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready
+      .then(reg => reg.showNotification(title, opts))
+      .catch(() => { try { new Notification(title, opts); } catch {} });
+  } else {
+    try { new Notification(title, opts); } catch {}
+  }
 }
 
 function getNextPrayerKey(prayerTimes) {
@@ -63,7 +81,7 @@ function getCurrentPrayerKey(prayerTimes) {
   return current?.key;
 }
 
-export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
+export default function PrayerTimesPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const [prayerTimes,   setPrayerTimes]   = useState(null);
   const [alarms,        setAlarms]        = useState(() => {
     try { return JSON.parse(localStorage.getItem(KEYS.PRAYER_ALARMS) || "{}"); }
@@ -93,7 +111,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
   const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
   const inputBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
 
-  // ── Load prayer times ───────────────────────────────────────────────────────
   useEffect(() => {
     const loadByCity = async (cityName) => {
       try {
@@ -134,7 +151,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
     }
   }, []);
 
-  // ── Countdown + next/current prayer (1-second tick) ─────────────────────────
   useEffect(() => {
     if (!prayerTimes) return;
     const tick = () => {
@@ -152,7 +168,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
     return () => clearInterval(t);
   }, [prayerTimes]);
 
-  // ── Alarm checker (every 30 seconds) ────────────────────────────────────────
   useEffect(() => {
     if (!prayerTimes) return;
     const check = () => {
@@ -161,17 +176,13 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
       const date = now.toLocaleDateString("en-CA");
       PRAYER_LIST.forEach(prayer => {
         if (!prayer.hasAlarm || !alarms[prayer.key]) return;
-        const pTime    = prayerTimes[prayer.key];
-        const fireKey  = `${prayer.key}-${date}-${pTime}`;
+        const pTime   = prayerTimes[prayer.key];
+        const fireKey = `${prayer.key}-${date}-${pTime}`;
         if (pTime === time && !firedAlarms.current.has(fireKey)) {
           firedAlarms.current.add(fireKey);
           playAlarmSound();
           if (Notification.permission === "granted") {
-            new Notification(`🕌 ${prayer.label} — Time to Pray`, {
-              body:  `It is ${pTime} — time for ${prayer.label} prayer`,
-              icon:  "/icon-192.png",
-              tag:   fireKey,
-            });
+            fireNotification(prayer.label, pTime, fireKey);
           }
         }
       });
@@ -181,7 +192,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
     return () => clearInterval(t);
   }, [prayerTimes, alarms]);
 
-  // ── Toggle alarm for a prayer ────────────────────────────────────────────────
   const toggleAlarm = async (prayerKey) => {
     setPermError("");
     if (!alarms[prayerKey]) {
@@ -208,7 +218,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
     localStorage.setItem(KEYS.PRAYER_ALARMS, JSON.stringify(updated));
   };
 
-  // ── Load city manually ───────────────────────────────────────────────────────
   const lookupCity = async () => {
     if (!city.trim()) return;
     setLoading(true); setLocError(null);
@@ -227,45 +236,50 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
 
-      {/* ── Header ── */}
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ flex:1 }}>
-          <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Prayer Times</div>
-          {locationName && <div style={{ color:goldDim, fontSize:"11px" }}>{locationName}</div>}
-        </div>
-        <button onClick={() => setShowCityInput(v => !v)}
-          style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"8px", padding:"5px 12px", color:goldDim, fontSize:"11px", cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-          📍 City
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
+        <div style={{ flex:1, textAlign:"center" }}>
+          <div style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Prayer Times</div>
+          {locationName && <div style={{ color:goldDim, fontSize:`${11*textSize}px` }}>{locationName}</div>}
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:"6px", flexShrink:0 }}>
+          <button onClick={() => setShowCityInput(v => !v)}
+            style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"8px", padding:"5px 10px", color:goldDim, fontSize:`${11*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            📍
+          </button>
+          <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 4px", flexShrink:0 }}>←</button>
+        </div>
       </div>
 
-      {/* ── City input ── */}
+      {/* City input */}
       {showCityInput && (
         <div style={{ padding:"10px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, flexShrink:0 }}>
           <div style={{ display:"flex", gap:"8px" }}>
             <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key==="Enter" && lookupCity()}
               placeholder="e.g. London, Cairo, Karachi…"
-              style={{ flex:1, background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:"13px", outline:"none", fontFamily:"Nunito,sans-serif" }}/>
+              style={{ flex:1, background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"Nunito,sans-serif" }}/>
             <button onClick={lookupCity}
-              style={{ padding:"9px 18px", borderRadius:"10px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, border:"none", color:lightMode?"#fff":"#0d1f14", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+              style={{ padding:"9px 18px", borderRadius:"10px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, border:"none", color:lightMode?"#fff":"#0d1f14", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
               Go
             </button>
           </div>
-          {locError && <div style={{ color:"#e07b54", fontSize:"12px", marginTop:"8px" }}>{locError}</div>}
+          {locError && <div style={{ color:"#e07b54", fontSize:`${12*textSize}px`, marginTop:"8px" }}>{locError}</div>}
         </div>
       )}
 
       <div style={{ flex:1, overflowY:"auto", padding:"16px 16px 40px" }}>
 
-        {/* Loading */}
         {loading && (
           <div style={{ display:"flex", justifyContent:"center", padding:"50px", gap:"6px" }}>
             {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:gold, animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
           </div>
         )}
 
-        {/* Error (no times) */}
         {!loading && !prayerTimes && (
           <div style={{ textAlign:"center", color:textDim, padding:"32px 20px", fontSize:`${13 * textSize}px` }}>
             {locError || "Could not load prayer times."}
@@ -274,22 +288,20 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
 
         {prayerTimes && (
           <>
-            {/* Next prayer countdown card */}
             {nextPrayer && (
               <div style={{ background:`linear-gradient(135deg,${goldFaint},transparent)`, border:`1px solid ${goldBdr}`, borderRadius:"16px", padding:"20px", marginBottom:"16px", textAlign:"center" }}>
-                <div style={{ color:goldDim, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"6px" }}>
+                <div style={{ color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"6px" }}>
                   Next Prayer · {nextPrayer.label} {nextPrayer.arabic}
                 </div>
                 <div style={{ color:gold, fontSize:`${34 * textSize}px`, fontWeight:900, fontVariantNumeric:"tabular-nums", letterSpacing:"3px" }}>
                   {countdown}
                 </div>
-                <div style={{ color:textDim, fontSize:"11px", marginTop:"4px" }}>
+                <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"4px" }}>
                   {prayerTimes[nextPrayer.key]}
                 </div>
               </div>
             )}
 
-            {/* Notification permission error */}
             {permError && (
               <div style={{ background:"rgba(224,123,84,0.08)", border:"1px solid rgba(224,123,84,0.25)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", fontSize:`${12 * textSize}px`, color:"#e07b54" }}>
                 {permError}
@@ -302,7 +314,6 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
               </div>
             )}
 
-            {/* Prayer list */}
             <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
               {PRAYER_LIST.map(prayer => {
                 const time      = prayerTimes[prayer.key];
@@ -313,27 +324,19 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
                 return (
                   <div key={prayer.key}
                     style={{ display:"flex", alignItems:"center", gap:"14px", padding:"13px 16px", background: isNext ? `${gold}10` : cardBg, border:`1px solid ${isNext ? `${gold}60` : goldBdr}`, borderRadius:"14px", transition:"all 0.2s" }}>
-
-                    {/* Icon */}
                     <div style={{ width:"40px", height:"40px", borderRadius:"11px", background: isCurrent ? `${gold}20` : goldFaint, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", flexShrink:0 }}>
                       {prayer.icon}
                     </div>
-
-                    {/* Name */}
                     <div style={{ flex:1 }}>
                       <div style={{ color: isNext ? gold : textClr, fontSize:`${14 * textSize}px`, fontWeight: isNext ? 800 : 600 }}>
                         {prayer.label}
-                        {isCurrent && <span style={{ marginLeft:"8px", fontSize:"10px", color:gold, background:`${gold}15`, padding:"2px 7px", borderRadius:"6px" }}>Now</span>}
+                        {isCurrent && <span style={{ marginLeft:"8px", fontSize:`${10*textSize}px`, color:gold, background:`${gold}15`, padding:"2px 7px", borderRadius:"6px" }}>Now</span>}
                       </div>
                       <div style={{ color:goldDim, fontSize:`${11 * textSize}px`, fontFamily:"Georgia,serif", marginTop:"1px" }}>{prayer.arabic}</div>
                     </div>
-
-                    {/* Time */}
                     <div style={{ color: isNext ? gold : textClr, fontSize:`${16 * textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums", marginRight: prayer.hasAlarm ? "10px" : "0" }}>
                       {time || "--:--"}
                     </div>
-
-                    {/* Alarm toggle */}
                     {prayer.hasAlarm && (
                       <button onClick={() => toggleAlarm(prayer.key)}
                         title={alarmOn ? "Disable alarm" : "Enable alarm"}
@@ -346,9 +349,8 @@ export default function PrayerTimesPage({ onBack, lightMode, textSize = 1 }) {
               })}
             </div>
 
-            {/* Footer note */}
-            <div style={{ textAlign:"center", marginTop:"20px", color:textDim, fontSize:"11px", lineHeight:1.8 }}>
-              Alarms fire while the app is open or installed on your home screen.<br/>              
+            <div style={{ textAlign:"center", marginTop:"20px", color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.8 }}>
+              Alarms fire while the app is open or installed on your home screen.
             </div>
           </>
         )}
