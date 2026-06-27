@@ -9,7 +9,7 @@ const CATEGORIES = [
   { key:"general", icon:"💬", label:"General Feedback" },
 ];
 
-export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
+export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const [category, setCategory] = useState("general");
   const [message,  setMessage]  = useState("");
   const [loading,  setLoading]  = useState(false);
@@ -24,7 +24,7 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
   const textDim  = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.38)";
   const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
   const inputBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.05)";
-  const labelStyle = { color:goldDim, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"10px", display:"block" };
+  const labelStyle = { color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"10px", display:"block" };
 
   const submit = async () => {
     if (!message.trim() || loading) return;
@@ -58,14 +58,18 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Feedback & Support</div>
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Feedback & Support</div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 48px" }}>
 
-        {/* Intro */}
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"14px 16px", marginBottom:"28px" }}>
           <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:700, marginBottom:"5px" }}>Help us improve NŪR</div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
@@ -73,7 +77,6 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
           </div>
         </div>
 
-        {/* Category */}
         <span style={labelStyle}>Category</span>
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px", marginBottom:"24px" }}>
           {CATEGORIES.map(cat => {
@@ -92,7 +95,6 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
           })}
         </div>
 
-        {/* Message */}
         <span style={labelStyle}>Your Message</span>
         <textarea
           value={message}
@@ -103,14 +105,12 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
           style={{ width:"100%", background:inputBg, border:`1px solid ${error ? "rgba(224,123,84,0.6)" : goldBdr}`, borderRadius:"14px", padding:"14px 16px", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.7, marginBottom:"14px", opacity:loading?0.6:1 }}
         />
 
-        {/* Error */}
         {error && (
           <div style={{ background:"rgba(224,123,84,0.08)", border:"1px solid rgba(224,123,84,0.3)", borderRadius:"10px", padding:"10px 14px", marginBottom:"12px", color:"#e07b54", fontSize:`${12 * textSize}px` }}>
             {error}
           </div>
         )}
 
-        {/* Submit */}
         {sent ? (
           <div style={{ textAlign:"center", padding:"14px", background:"rgba(76,175,132,0.1)", border:"1px solid rgba(76,175,132,0.3)", borderRadius:"12px", color:"#4caf84", fontSize:`${14 * textSize}px`, fontWeight:700 }}>
             ✦ JazakAllahu Khairan! Your feedback is on its way 🌙
@@ -128,11 +128,9 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
           </button>
         )}
 
-        {/* Divider */}
         <div style={{ height:"1px", background:goldBdr, margin:"28px 0" }}/>
 
-        {/* Other ways */}
-        <div style={{ color:goldDim, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"14px" }}>Also find us on</div>
+        <div style={{ color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"14px" }}>Also find us on</div>
 
         <a href="https://instagram.com/nur.islamic.ai" target="_blank" rel="noreferrer"
           style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", textDecoration:"none" }}>
@@ -141,12 +139,12 @@ export default function FeedbackPage({ onBack, lightMode, textSize = 1 }) {
           </div>
           <div>
             <div style={{ color:textClr, fontSize:`${13 * textSize}px`, fontWeight:700 }}>Instagram</div>
-            <div style={{ color:goldDim, fontSize:"11px" }}>@nur.islamic.ai · DM us anytime</div>
+            <div style={{ color:goldDim, fontSize:`${11*textSize}px` }}>@nur.islamic.ai · DM us anytime</div>
           </div>
           <div style={{ color:goldDim, fontSize:"18px", marginLeft:"auto" }}>›</div>
         </a>
 
-        <div style={{ textAlign:"center", marginTop:"32px", color:textDim, fontSize:"11px", lineHeight:1.8 }}>
+        <div style={{ textAlign:"center", marginTop:"32px", color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.8 }}>
           NŪR is in Beta — your feedback directly shapes what gets built next.<br/>
           <span style={{ color:gold }}>بَارَكَ اللَّهُ فِيكَ</span>
         </div>
