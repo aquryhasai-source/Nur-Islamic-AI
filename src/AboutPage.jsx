@@ -1,4 +1,4 @@
-export default function AboutPage({ onBack, lightMode, textSize = 1 }) {
+export default function AboutPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
   const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
   const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
@@ -19,17 +19,22 @@ export default function AboutPage({ onBack, lightMode, textSize = 1 }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>About</div>
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>About</div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 48px" }}>
 
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:"32px" }}>
-          <div style={{ fontSize:"52px", color:gold, fontWeight:900, letterSpacing:"8px", marginBottom:"6px" }}>NŪR</div>
-          <div style={{ color:goldDim, fontSize:"11px", letterSpacing:"4px", textTransform:"uppercase" }}>Islamic Knowledge Assistant</div>
+          <div style={{ fontSize:`${52*textSize}px`, color:gold, fontWeight:900, letterSpacing:"8px", marginBottom:"6px" }}>NŪR</div>
+          <div style={{ color:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"4px", textTransform:"uppercase" }}>Islamic Knowledge Assistant</div>
           <div style={{ width:"40px", height:"1px", background:`linear-gradient(90deg,transparent,${gold},transparent)`, margin:"18px auto" }}/>
           <div style={{ color:gold, fontSize:`${22 * textSize}px`, fontFamily:"Georgia,serif", marginBottom:"6px" }}>
             وَقُل رَّبِّ زِدْنِي عِلْمًا
@@ -62,7 +67,7 @@ export default function AboutPage({ onBack, lightMode, textSize = 1 }) {
 
         <div style={{ textAlign:"center", marginTop:"32px" }}>
           <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"Georgia,serif", marginBottom:"4px" }}>وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ</div>
-          <div style={{ color:textDim, fontSize:"11px" }}>"My success is only through Allah" — Surah Hud 11:88</div>
+          <div style={{ color:textDim, fontSize:`${11*textSize}px` }}>"My success is only through Allah" — Surah Hud 11:88</div>
         </div>
 
       </div>
