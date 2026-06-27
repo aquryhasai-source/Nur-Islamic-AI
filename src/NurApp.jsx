@@ -57,7 +57,7 @@ const FloatingPatterns = () => (
 const InstallModal = ({ onClose, isIOS }) => {
   const steps = isIOS
     ? [["1","Open this page in","Safari browser"],["2","Tap the Share button","□↑  at the bottom"],["3","Scroll down and tap",'"Add to Home Screen"'],["4","Tap",'"Add" to confirm']]
-    : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap','"Add" to confirm'],["4","Find NŪR","on your home screen"]];
+    : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap",'"Add" to confirm'],["4","Find NŪR","on your home screen"]];
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)", zIndex:200, display:"flex", alignItems:"flex-end", padding:"20px" }}>
       <div style={{ background:"linear-gradient(160deg,#0d1f14,#081510)", border:"1px solid rgba(201,168,76,0.25)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto" }}>
