@@ -1,6 +1,6 @@
 import { isBookmarked } from "./utils.js";
 
-export default function BookmarksPage({ onBack, bookmarks, onToggle, unlocked, navigateTo, lightMode, textSize = 1 }) {
+export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onToggle, unlocked, navigateTo, lightMode, textSize = 1 }) {
   const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
   const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
   const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
@@ -12,16 +12,20 @@ export default function BookmarksPage({ onBack, bookmarks, onToggle, unlocked, n
   const hadithAccent = lightMode ? "#8b6914" : "#c9a84c";
 
   const Header = () => (
-    <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-      <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-      <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Bookmarks</div>
-      {bookmarks.length > 0 && (
-        <div style={{ marginLeft:"auto", color:goldDim, fontSize:"12px" }}>{bookmarks.length} saved</div>
-      )}
+    <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+      <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+        <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+      </button>
+      <div style={{ flex:1, textAlign:"center" }}>
+        <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Bookmarks</span>
+        {bookmarks.length > 0 && <span style={{ color:goldDim, fontSize:`${12*textSize}px`, marginLeft:"8px" }}>{bookmarks.length} saved</span>}
+      </div>
+      <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
     </div>
   );
 
-  // ── Empty state ───────────────────────────────────────────────────────────
   if (bookmarks.length === 0) {
     return (
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
@@ -45,7 +49,7 @@ export default function BookmarksPage({ onBack, bookmarks, onToggle, unlocked, n
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 14px", background:`${accent}15`, borderBottom:`1px solid ${accent}20` }}>
         <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
           <div style={{ width:"8px", height:"8px", borderRadius:"50%", background:accent, flexShrink:0 }}/>
-          <span style={{ color:accent, fontSize:"12px", fontWeight:700 }}>{bm.title}</span>
+          <span style={{ color:accent, fontSize:`${12*textSize}px`, fontWeight:700 }}>{bm.title}</span>
         </div>
         <button onClick={() => onToggle(bm)} style={{ background:"none", border:"none", fontSize:"15px", cursor:"pointer", lineHeight:1, color:accent, opacity:0.7 }}>✕</button>
       </div>
@@ -66,7 +70,7 @@ export default function BookmarksPage({ onBack, bookmarks, onToggle, unlocked, n
       <div style={{ flex:1, overflowY:"auto", padding:"14px 16px 28px" }}>
         {quranBm.length > 0 && (
           <>
-            <div style={{ color:quranAccent, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"10px", fontWeight:700 }}>
+            <div style={{ color:quranAccent, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"10px", fontWeight:700 }}>
               ● Quran — {quranBm.length} ayah{quranBm.length !== 1 ? "s" : ""}
             </div>
             {quranBm.map(bm => <Card key={bm.id} bm={bm} accent={quranAccent}/>)}
@@ -74,7 +78,7 @@ export default function BookmarksPage({ onBack, bookmarks, onToggle, unlocked, n
         )}
         {hadithBm.length > 0 && (
           <>
-            <div style={{ color:hadithAccent, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", margin:`${quranBm.length > 0 ? "16px" : "0"} 0 10px`, fontWeight:700 }}>
+            <div style={{ color:hadithAccent, fontSize:`${10*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", margin:`${quranBm.length > 0 ? "16px" : "0"} 0 10px`, fontWeight:700 }}>
               ● Hadith — {hadithBm.length} hadith{hadithBm.length !== 1 ? "s" : ""}
             </div>
             {hadithBm.map(bm => <Card key={bm.id} bm={bm} accent={hadithAccent}/>)}
