@@ -1,4 +1,4 @@
-export default function TermsPage({ onBack, lightMode, textSize = 1 }) {
+export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
   const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
   const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
@@ -29,16 +29,21 @@ export default function TermsPage({ onBack, lightMode, textSize = 1 }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Terms of Use</div>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Terms of Use</div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
 
-        <div style={{ color:textDim, fontSize:"11px", marginBottom:"20px" }}>Last updated: June 2026 · Beta Release</div>
+        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: June 2026 · Beta Release</div>
 
-        {/* Critical disclaimer */}
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
           <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:800, marginBottom:"8px" }}>
             ⚠️ Important — Read This First
@@ -82,11 +87,11 @@ export default function TermsPage({ onBack, lightMode, textSize = 1 }) {
         </Section>
 
         <Section title="Acceptable Use">
-          <P>You agree not to use NŪR to spread misinformation about Islam, attempt to circumvent usage limits through technical means, or use the app in any way that violates applicable laws in your jurisdiction.</P>
+          <P last>You agree not to use NŪR to spread misinformation about Islam, attempt to circumvent usage limits through technical means, or use the app in any way that violates applicable laws in your jurisdiction.</P>
         </Section>
 
         <Section title="Limitation of Liability">
-          <P>NŪR is provided "as is" without warranties of any kind. To the fullest extent permitted by law, we are not liable for decisions made based on AI-generated responses, service interruptions or data loss, or any harm arising from the use or inability to use NŪR.</P>
+          <P last>NŪR is provided "as is" without warranties of any kind. To the fullest extent permitted by law, we are not liable for decisions made based on AI-generated responses, service interruptions or data loss, or any harm arising from the use or inability to use NŪR.</P>
         </Section>
 
         <Section title="Changes & Contact">
@@ -98,7 +103,7 @@ export default function TermsPage({ onBack, lightMode, textSize = 1 }) {
           <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"Georgia,serif", marginBottom:"5px" }}>
             وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ
           </div>
-          <div style={{ color:textDim, fontSize:"11px" }}>"My success is only through Allah" — Hud 11:88</div>
+          <div style={{ color:textDim, fontSize:`${11*textSize}px` }}>"My success is only through Allah" — Hud 11:88</div>
         </div>
 
       </div>
