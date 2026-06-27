@@ -1,4 +1,4 @@
-export default function PrivacyPage({ onBack, lightMode, textSize = 1 }) {
+export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
   const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
   const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
@@ -32,16 +32,21 @@ export default function PrivacyPage({ onBack, lightMode, textSize = 1 }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"22px", cursor:"pointer", lineHeight:1, padding:"4px" }}>←</button>
-        <div style={{ color:gold, fontSize:"16px", fontWeight:700, letterSpacing:"1px" }}>Privacy Policy</div>
+      {/* Header */}
+      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
+          <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
+        </button>
+        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Privacy Policy</div>
+        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
 
-        <div style={{ color:textDim, fontSize:"11px", marginBottom:"20px" }}>Last updated: June 2026</div>
+        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: June 2026</div>
 
-        {/* Commitment */}
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
           <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:800, marginBottom:"6px" }}>Our Commitment</div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
@@ -50,19 +55,9 @@ export default function PrivacyPage({ onBack, lightMode, textSize = 1 }) {
         </div>
 
         <Section title="What We Collect">
-          <Row
-            label="Anonymous Device ID"
-            desc="A randomly generated identifier created the first time you open NŪR. Stored only in your browser. Not linked to your name, email, or any personal information. Used only to track your daily AI message count."
-          />
-          <Row
-            label="Daily Message Count"
-            desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone."
-          />
-          <Row
-            label="License Key (Pro users only)"
-            desc="If you purchase Pro, your license key is saved in your browser to activate Pro features. We do not store your payment details."
-            last
-          />
+          <Row label="Anonymous Device ID" desc="A randomly generated identifier created the first time you open NŪR. Stored only in your browser. Not linked to your name, email, or any personal information. Used only to track your daily AI message count."/>
+          <Row label="Daily Message Count" desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone."/>
+          <Row label="License Key (Pro users only)" desc="If you purchase Pro, your license key is saved in your browser to activate Pro features. We do not store your payment details." last/>
         </Section>
 
         <Section title="Stored Only in Your Browser">
@@ -87,7 +82,7 @@ export default function PrivacyPage({ onBack, lightMode, textSize = 1 }) {
           <P>· <strong style={{ color:textClr }}>Quran, Hadith & Islamic content</strong> — sourced from reputable Islamic content providers. No personal data is included in these requests.</P>
           <P>· <strong style={{ color:textClr }}>Prayer times & location</strong> — your city name or coordinates are shared only to compute your local prayer schedule, then discarded.</P>
           <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are processed through our secure server. They are not stored or used for model training.</P>
-          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — managed by OneSignal. If you opt in, your push token is handled under OneSignal's own privacy policy (onesignal.com/privacy).</P>
+          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — managed by OneSignal. If you opt in, your push token is handled under OneSignal's own privacy policy.</P>
           <P last>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive only confirmation of payment. Your card and payment details are never seen or stored by us.</P>
         </Section>
 
@@ -108,7 +103,7 @@ export default function PrivacyPage({ onBack, lightMode, textSize = 1 }) {
           <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"Georgia,serif", marginBottom:"5px" }}>
             وَاللَّهُ يَعْلَمُ وَأَنتُمْ لَا تَعْلَمُونَ
           </div>
-          <div style={{ color:textDim, fontSize:"11px" }}>"Allah knows and you do not know" — Al-Baqarah 2:216</div>
+          <div style={{ color:textDim, fontSize:`${11*textSize}px` }}>"Allah knows and you do not know" — Al-Baqarah 2:216</div>
         </div>
 
       </div>
