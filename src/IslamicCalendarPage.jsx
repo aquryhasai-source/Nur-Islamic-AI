@@ -225,7 +225,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                       <div style={{color:"#c9a84c",fontSize:`${15*ts}px`,fontWeight:800}}>{nextEvent.name}</div>
                       <div style={{color:"rgba(201,168,76,0.45)",fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.away===0?"Today!":`${nextEvent.away} days remaining`}</div>
                     </div>
-                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}}></div>
+                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}}>⏳</div>
                   </div>
                 </div>
               )}
