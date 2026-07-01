@@ -336,7 +336,7 @@ function Page3({ onDone }) {
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px" }}>
             <div style={{ fontSize: "16px", fontWeight: 800, color: "#2a1205" }}>Free Forever</div>
-            <div style={{ fontSize: "18px", fontWeight: 900, color: "#8b5a2b" }}>$0</div>
+            <div style={{ fontSize: "18px", fontWeight: 900, color: "#8b5a2b" }}></div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {freeItems.map((item, i) => (
