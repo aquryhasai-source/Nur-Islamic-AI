@@ -28,7 +28,12 @@ self.addEventListener("activate", (event) => {
 });
 
 // Fetch — network first, fallback to cache
-self.addEventListener("fetch", (event) => {
+self.addEventListener("fetch", (event) =>
+  // Only cache GET requests — cache.put() throws on POST/PUT/etc.
+  if (event.request.method !== "GET") {
+    return;
+  }
+
   // Don't cache API calls
   if (event.request.url.includes("supabase.co") || event.request.url.includes("groq.com")) {
     return;
