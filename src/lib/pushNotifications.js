@@ -54,12 +54,15 @@ export async function subscribeToPush(supabase, deviceId) {
 
   const subJson = subscription.toJSON();
 
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. "Asia/Kolkata"
+
   const { error } = await supabase.from('push_subscriptions').upsert(
     {
       device_id: deviceId,
       endpoint: subJson.endpoint,
       p256dh: subJson.keys.p256dh,
       auth: subJson.keys.auth,
+      timezone,
       last_seen_at: new Date().toISOString(),
     },
     { onConflict: 'endpoint' },
