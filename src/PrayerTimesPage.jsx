@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo } from "./utils.js";
-import { syncPrayerLocation } from "./lib/pushNotifications.js";
+import { syncPrayerLocation, subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 
 // ── Prayer list ───────────────────────────────────────────────────────────────
 const PRAYER_LIST = [
@@ -181,6 +181,7 @@ export default function PrayerTimesPage({
   const [locError,       setLocError]       = useState(null);
   const [showCityInput,  setShowCityInput]  = useState(false);
   const [city,           setCity]           = useState(localStorage.getItem(KEYS.CITY) || "");
+  const [locCoords,      setLocCoords]      = useState(null); // { lat, lon } or { city } — for syncing once push gets enabled
   const [notifPerm,      setNotifPerm]      = useState(
     typeof Notification !== "undefined" ? Notification.permission : "default"
   );
@@ -212,6 +213,7 @@ export default function PrayerTimesPage({
         const times = await getPrayerTimesByCity(cityName);
         setPrayerTimes(times);
         setLocationName(cityName);
+        setLocCoords({ city: cityName });
         syncPrayerLocation({ city: cityName });
       } catch {
         setLocError("Could not load times. Enter your city.");
@@ -227,6 +229,7 @@ export default function PrayerTimesPage({
             const times = await getPrayerTimes(coords.latitude, coords.longitude);
             setPrayerTimes(times);
             setLocationName("Current Location");
+            setLocCoords({ lat: coords.latitude, lon: coords.longitude });
             syncPrayerLocation({ lat: coords.latitude, lon: coords.longitude });
           } catch {
             const saved = localStorage.getItem(KEYS.CITY);
@@ -295,19 +298,27 @@ export default function PrayerTimesPage({
   const toggleAlarm = async (prayerKey) => {
     setPermError("");
     if (!alarms[prayerKey]) {
-      if (notifPerm === "denied") {
+      const state = getPushPermissionState();
+      if (state === "denied") {
         setPermError("Notifications are blocked. Enable them in your browser settings.");
         return;
       }
-      if (notifPerm === "default") {
+      if (state === "unsupported") {
+        setPermError("Notifications aren't supported in this browser.");
+        return;
+      }
+      if (state === "default") {
+        setPermError("Notifications are off — enabling now…");
         try {
-          const perm = await Notification.requestPermission();
-          setNotifPerm(perm);
-          if (perm !== "granted") {
-            setPermError("Permission denied. Allow notifications to enable alarms.");
-            return;
-          }
-        } catch { setPermError("Could not request notification permission."); return; }
+          await subscribeToPush();
+          setNotifPerm("granted");
+          setPermError("");
+          if (locCoords) syncPrayerLocation(locCoords); // attach location to the subscription just created
+        } catch (err) {
+          setNotifPerm(getPushPermissionState());
+          setPermError(err.message || "Could not enable notifications.");
+          return;
+        }
       }
     }
     const updated = { ...alarms, [prayerKey]: !alarms[prayerKey] };
@@ -324,6 +335,7 @@ export default function PrayerTimesPage({
       setPrayerTimes(times);
       setLocationName(city.trim());
       localStorage.setItem(KEYS.CITY, city.trim());
+      setLocCoords({ city: city.trim() });
       syncPrayerLocation({ city: city.trim() });
       setShowCityInput(false);
     } catch { setLocError("City not found. Try a nearby major city."); }
