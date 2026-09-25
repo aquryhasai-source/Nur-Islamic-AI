@@ -82,7 +82,7 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
           <P>· <strong style={{ color:textClr }}>Quran, Hadith & Islamic content</strong> — sourced from reputable Islamic content providers. No personal data is included in these requests.</P>
           <P>· <strong style={{ color:textClr }}>Prayer times & location</strong> — your city name or coordinates are shared only to compute your local prayer schedule, then discarded.</P>
           <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are processed through our secure server. They are not stored or used for model training.</P>
-          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — managed by OneSignal. If you opt in, your push token is handled under OneSignal's own privacy policy.</P>
+          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — if you opt in, your device's push subscription (endpoint and encryption keys, no personal data) is stored on our own Supabase backend and used only to send you app notifications like the daily Hadith.</P>
           <P last>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive only confirmation of payment. Your card and payment details are never seen or stored by us.</P>
         </Section>
 
