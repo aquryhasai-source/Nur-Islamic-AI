@@ -19,6 +19,7 @@ import FeedbackPage       from "./FeedbackPage.jsx";
 import PrivacyPage        from "./PrivacyPage.jsx";
 import TermsPage          from "./TermsPage.jsx";
 import AdBanner           from "./AdBanner.jsx";
+import NotificationPrompt from "./NotificationPrompt.jsx";
 
 // ─── Floating patterns ────────────────────────────────────────────────────────
 const SHAPES = [
@@ -343,6 +344,9 @@ export default function NurApp() {
 
       {/* ── AD BANNER ── */}
       <AdBanner unlocked={unlocked} lightMode={lightMode}/>
+
+      {/* ── NOTIFICATION PROMPT ── */}
+      <NotificationPrompt hasEngaged={activeSession.messages.length > 0} lightMode={lightMode} textSize={textSize}/>
 
       {/* ── TAB CONTENT ── */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", position:"relative", zIndex:1, minHeight:0 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>

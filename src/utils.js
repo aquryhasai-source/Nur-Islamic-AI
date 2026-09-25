@@ -15,6 +15,7 @@ export const KEYS = {
   SESSIONS:       "nur_sessions",
   ACTIVE_SESSION: "nur_active_session",
   PRAYER_ALARMS:  "nur_prayer_alarms",
+  NOTIF_PROMPT_DISMISSED: "nur_notif_prompt_dismissed",
 };
 
 export function getAnonymousId() {
