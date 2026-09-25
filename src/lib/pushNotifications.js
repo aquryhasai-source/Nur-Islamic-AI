@@ -96,3 +96,28 @@ export function getPushPermissionState() {
   if (!("Notification" in window)) return "unsupported";
   return Notification.permission; // "default" | "granted" | "denied"
 }
+
+// Silently attaches a location to this device's existing push subscription
+// (used for prayer-time alerts). Does nothing if the device hasn't enabled
+// notifications yet — there's no row to attach it to, by design.
+export async function syncPrayerLocation({ city, lat, lon }) {
+  const payload = {};
+  if (city) payload.city = city;
+  if (lat != null && lon != null) { payload.lat = lat; payload.lon = lon; }
+  if (Object.keys(payload).length === 0) return;
+
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?device_id=eq.${getAnonymousId()}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON,
+        Authorization: `Bearer ${SUPABASE_ANON}`,
+        Prefer: "return=minimal",
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch {
+    // best-effort — never break the Prayer Times page over this
+  }
+}

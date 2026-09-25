@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo } from "./utils.js";
+import { syncPrayerLocation } from "./lib/pushNotifications.js";
 
 // ── Prayer list ───────────────────────────────────────────────────────────────
 const PRAYER_LIST = [
@@ -211,6 +212,7 @@ export default function PrayerTimesPage({
         const times = await getPrayerTimesByCity(cityName);
         setPrayerTimes(times);
         setLocationName(cityName);
+        syncPrayerLocation({ city: cityName });
       } catch {
         setLocError("Could not load times. Enter your city.");
         setShowCityInput(true);
@@ -225,6 +227,7 @@ export default function PrayerTimesPage({
             const times = await getPrayerTimes(coords.latitude, coords.longitude);
             setPrayerTimes(times);
             setLocationName("Current Location");
+            syncPrayerLocation({ lat: coords.latitude, lon: coords.longitude });
           } catch {
             const saved = localStorage.getItem(KEYS.CITY);
             if (saved) await loadByCity(saved);
@@ -321,6 +324,7 @@ export default function PrayerTimesPage({
       setPrayerTimes(times);
       setLocationName(city.trim());
       localStorage.setItem(KEYS.CITY, city.trim());
+      syncPrayerLocation({ city: city.trim() });
       setShowCityInput(false);
     } catch { setLocError("City not found. Try a nearby major city."); }
     finally { setLoading(false); }
