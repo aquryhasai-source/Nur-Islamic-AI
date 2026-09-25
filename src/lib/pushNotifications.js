@@ -1,47 +1,38 @@
-// NUR Islamic AI — client-side push subscription helper (device_id-based)
-// Usage:
-//   import { subscribeToPush, unsubscribeFromPush } from './lib/pushNotifications';
-//   await subscribeToPush(supabase, deviceId);
+// NUR Islamic AI — push notification subscribe/unsubscribe
+// Matches the app's existing pattern (see analytics.js): plain fetch() to
+// the Supabase REST API with the anon key, no Supabase SDK needed.
 //
-// `supabase` is your existing Supabase client instance.
-// `deviceId` is whatever device identifier the app already generates/stores
-// for the events/feedback/device_usage tables — reuse that same value here
-// rather than generating a second one. If you don't have that logic handy,
-// getOrCreateDeviceId() below is a plain localStorage fallback.
+// Uses getAnonymousId() from utils.js so the push subscription is tied to
+// the SAME device_id already used for events/feedback/error_log.
 
+import { getAnonymousId } from "../utils";
+
+const SUPABASE_URL  = "https://dvcuisgpptxhjgiasqlp.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y3Vpc2dwcHR4aGpnaWFzcWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MzEzMTMsImV4cCI6MjA5MzIwNzMxM30.18-UGma8qHkfxcllgvnWY4QwXojL_ewvc983o_mciQg";
+
+// Public VAPID key — safe to ship in client code (the private key lives only
+// as a secret on the send-push Edge Function).
 const VAPID_PUBLIC_KEY =
-  'BHWyz3zqk3FJa7s6oAahqb2KBzpsJeoVnNokqnAsy1AY7o8tjAEVXxLn33NMI8D-_K5XerWC1PXmWjRXTng--qw';
+  "BHWyz3zqk3FJa7s6oAahqb2KBzpsJeoVnNokqnAsy1AY7o8tjAEVXxLn33NMI8D-_K5XerWC1PXmWjRXTng--qw";
 
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = atob(base64);
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-// Fallback only — prefer whatever device_id source the app already uses
-// for events/feedback so all your tables agree on the same identity.
-export function getOrCreateDeviceId() {
-  const key = 'nur_device_id';
-  let id = localStorage.getItem(key);
-  if (!id) {
-    id = crypto.randomUUID();
-    localStorage.setItem(key, id);
-  }
-  return id;
-}
-
-export async function subscribeToPush(supabase, deviceId) {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-    throw new Error('Push notifications are not supported in this browser.');
+export async function subscribeToPush() {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+    throw new Error("Push notifications are not supported in this browser.");
   }
 
-  const registration = await navigator.serviceWorker.register('/sw.js');
+  const registration = await navigator.serviceWorker.register("/sw.js");
   await navigator.serviceWorker.ready;
 
   const permission = await Notification.requestPermission();
-  if (permission !== 'granted') {
-    throw new Error('Notification permission was not granted.');
+  if (permission !== "granted") {
+    throw new Error("Notification permission was not granted.");
   }
 
   let subscription = await registration.pushManager.getSubscription();
@@ -53,28 +44,36 @@ export async function subscribeToPush(supabase, deviceId) {
   }
 
   const subJson = subscription.toJSON();
-
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. "Asia/Kolkata"
 
-  const { error } = await supabase.from('push_subscriptions').upsert(
-    {
-      device_id: deviceId,
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=endpoint`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_ANON,
+      Authorization: `Bearer ${SUPABASE_ANON}`,
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      device_id: getAnonymousId(),
       endpoint: subJson.endpoint,
       p256dh: subJson.keys.p256dh,
       auth: subJson.keys.auth,
       timezone,
       last_seen_at: new Date().toISOString(),
-    },
-    { onConflict: 'endpoint' },
-  );
+    }),
+  });
 
-  if (error) throw error;
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Could not save subscription (${res.status}): ${text}`);
+  }
 
   return subscription;
 }
 
-export async function unsubscribeFromPush(supabase) {
-  if (!('serviceWorker' in navigator)) return;
+export async function unsubscribeFromPush() {
+  if (!("serviceWorker" in navigator)) return;
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) return;
 
@@ -83,5 +82,17 @@ export async function unsubscribeFromPush(supabase) {
 
   const endpoint = subscription.endpoint;
   await subscription.unsubscribe();
-  await supabase.from('push_subscriptions').delete().eq('endpoint', endpoint);
+
+  await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`, {
+    method: "DELETE",
+    headers: {
+      apikey: SUPABASE_ANON,
+      Authorization: `Bearer ${SUPABASE_ANON}`,
+    },
+  });
+}
+
+export function getPushPermissionState() {
+  if (!("Notification" in window)) return "unsupported";
+  return Notification.permission; // "default" | "granted" | "denied"
 }

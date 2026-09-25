@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { saveProfile, KEYS, DAILY_LIMIT } from "./utils.js";
+import { subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
+import { trackEvent, trackError } from "./analytics.js";
 
 const TEXT_SIZES = [
   { label: "XS", value: 0.75,  name: "Tiny"   },
@@ -12,6 +14,26 @@ const TEXT_SIZES = [
 export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, setTextSize, lightMode }) {
   const [name,        setName]        = useState(profile.name || "");
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
+  const [pushStatus,  setPushStatus]  = useState("idle"); // idle | loading | granted | denied | unsupported | error
+  const [pushError,   setPushError]   = useState("");
+
+  useEffect(() => {
+    setPushStatus(getPushPermissionState());
+  }, []);
+
+  const handleEnableNotifications = async () => {
+    setPushStatus("loading");
+    setPushError("");
+    try {
+      await subscribeToPush();
+      setPushStatus("granted");
+      trackEvent("notifications_enabled");
+    } catch (err) {
+      setPushError(err.message || "Something went wrong enabling notifications.");
+      setPushStatus(getPushPermissionState() === "denied" ? "denied" : "error");
+      trackError(err.message, "enable_notifications");
+    }
+  };
 
   const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
   const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
@@ -127,6 +149,41 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         </div>
         <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"10px" }}>
           Applies to chat, Quran, Hadith and all pages.
+        </div>
+
+        {divider}
+
+        {/* Notifications */}
+        <span style={labelStyle}>Daily Reminders</span>
+        <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px" }}>
+          {pushStatus === "granted" ? (
+            <div style={{ color:"#4caf84", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Notifications enabled</div>
+          ) : pushStatus === "denied" ? (
+            <div style={{ color:textDim, fontSize:`${13 * textSize}px` }}>
+              Blocked in your browser settings. Enable them there to get the daily Hadith and prayer reminders.
+            </div>
+          ) : pushStatus === "unsupported" ? (
+            <div style={{ color:textDim, fontSize:`${13 * textSize}px` }}>
+              Not supported in this browser.
+            </div>
+          ) : (
+            <>
+              <div style={{ color:textDim, fontSize:`${13 * textSize}px`, marginBottom:"12px" }}>
+                Get a daily Hadith each morning, right on your device.
+              </div>
+              <button onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
+                style={{ width:"100%", padding:"12px", borderRadius:"12px",
+                  background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`,
+                  border:"none", color: lightMode?"#fff":"#0d1f14", fontWeight:700,
+                  cursor: pushStatus === "loading" ? "default" : "pointer",
+                  fontFamily:"Nunito,sans-serif", fontSize:`${14*textSize}px` }}>
+                {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
+              </button>
+              {pushError && (
+                <div style={{ color:"#e07b54", fontSize:`${11*textSize}px`, marginTop:"8px" }}>{pushError}</div>
+              )}
+            </>
+          )}
         </div>
 
       </div>
