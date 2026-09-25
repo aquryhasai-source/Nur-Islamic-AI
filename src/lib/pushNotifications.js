@@ -46,7 +46,7 @@ export async function subscribeToPush() {
   const subJson = subscription.toJSON();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. "Asia/Kolkata"
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=endpoint`, {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=device_id`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
