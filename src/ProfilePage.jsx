@@ -18,7 +18,14 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
   const [pushError,   setPushError]   = useState("");
 
   useEffect(() => {
-    setPushStatus(getPushPermissionState());
+    const state = getPushPermissionState();
+    setPushStatus(state);
+    if (state === "granted") {
+      // Permission may have been granted in an earlier attempt without the
+      // subscription actually reaching Supabase — resync quietly on load
+      // so the DB row always matches what the browser shows.
+      subscribeToPush().catch((err) => trackError(err.message, "resync_notifications"));
+    }
   }, []);
 
   const handleEnableNotifications = async () => {
