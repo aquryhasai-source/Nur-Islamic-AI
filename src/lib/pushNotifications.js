@@ -1,12 +1,14 @@
-// NUR Islamic AI — client-side push subscription helper
+// NUR Islamic AI — client-side push subscription helper (device_id-based)
 // Usage:
 //   import { subscribeToPush, unsubscribeFromPush } from './lib/pushNotifications';
-//   await subscribeToPush(supabase, user.id);
+//   await subscribeToPush(supabase, deviceId);
 //
 // `supabase` is your existing Supabase client instance.
-// `userId` is the authenticated user's id (auth.uid()).
+// `deviceId` is whatever device identifier the app already generates/stores
+// for the events/feedback/device_usage tables — reuse that same value here
+// rather than generating a second one. If you don't have that logic handy,
+// getOrCreateDeviceId() below is a plain localStorage fallback.
 
-// This is the PUBLIC VAPID key generated earlier — safe to ship in client code.
 const VAPID_PUBLIC_KEY =
   'BHWyz3zqk3FJa7s6oAahqb2KBzpsJeoVnNokqnAsy1AY7o8tjAEVXxLn33NMI8D-_K5XerWC1PXmWjRXTng--qw';
 
@@ -17,7 +19,19 @@ function urlBase64ToUint8Array(base64String) {
   return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
 }
 
-export async function subscribeToPush(supabase, userId) {
+// Fallback only — prefer whatever device_id source the app already uses
+// for events/feedback so all your tables agree on the same identity.
+export function getOrCreateDeviceId() {
+  const key = 'nur_device_id';
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
+export async function subscribeToPush(supabase, deviceId) {
   if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
     throw new Error('Push notifications are not supported in this browser.');
   }
@@ -42,7 +56,7 @@ export async function subscribeToPush(supabase, userId) {
 
   const { error } = await supabase.from('push_subscriptions').upsert(
     {
-      user_id: userId,
+      device_id: deviceId,
       endpoint: subJson.endpoint,
       p256dh: subJson.keys.p256dh,
       auth: subJson.keys.auth,
