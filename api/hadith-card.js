@@ -1,8 +1,13 @@
 // Renders a shareable "Hadith of the Day" card as a PNG image.
 // Public URL: https://nur-islamic-ai.vercel.app/api/hadith-card?text=...&ref=...
 // Meta's Graph API fetches this URL directly when posting to Facebook/Instagram.
+//
+// Written with React.createElement (no JSX) so this plain .js file needs no
+// JSX transform -- Vercel's zero-config Functions only recognize .js/.ts for
+// non-Next.js projects, not .jsx/.tsx.
 
 import { ImageResponse } from "@vercel/og";
+import React from "react";
 
 export const config = { runtime: "edge" };
 
@@ -12,9 +17,10 @@ export default async function handler(req) {
   const ref = searchParams.get("ref") || "";
 
   return new ImageResponse(
-    (
-      <div
-        style={{
+    React.createElement(
+      "div",
+      {
+        style: {
           height: "100%",
           width: "100%",
           display: "flex",
@@ -27,42 +33,47 @@ export default async function handler(req) {
           fontFamily: "sans-serif",
           padding: "90px",
           textAlign: "center",
-        }}
-      >
-        <div
-          style={{
+        },
+      },
+      React.createElement(
+        "div",
+        {
+          style: {
             display: "flex",
             fontSize: 34,
             color: "#c9a84c",
             letterSpacing: 4,
             marginBottom: 50,
             fontWeight: 700,
-          }}
-        >
-          NŪR &nbsp;·&nbsp; HADITH OF THE DAY
-        </div>
-        <div
-          style={{
+          },
+        },
+        "N\u016AR \u00B7 HADITH OF THE DAY",
+      ),
+      React.createElement(
+        "div",
+        {
+          style: {
             display: "flex",
             fontSize: 46,
             lineHeight: 1.45,
             maxWidth: 880,
             fontWeight: 500,
-          }}
-        >
-          "{text}"
-        </div>
-        <div
-          style={{
+          },
+        },
+        `"${text}"`,
+      ),
+      React.createElement(
+        "div",
+        {
+          style: {
             display: "flex",
             fontSize: 30,
             color: "#c9a84c",
             marginTop: 55,
-          }}
-        >
-          — {ref}
-        </div>
-      </div>
+          },
+        },
+        `\u2014 ${ref}`,
+      ),
     ),
     { width: 1080, height: 1080 },
   );
