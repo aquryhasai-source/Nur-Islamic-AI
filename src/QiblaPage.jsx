@@ -19,12 +19,12 @@ const GeoBg = ({ lightMode }) => (
         <polygon points="40,17 63,30 63,50 40,63 17,50 17,30"
           fill="none" stroke="#c9a84c" strokeWidth="0.45" opacity="0.7"/>
         <circle cx="40" cy="40" r="5" fill="none" stroke="#c9a84c" strokeWidth="0.5" opacity="0.55"/>
-        <circle cx="40" cy="3"  r="1.5" fill="#c9a84c" opacity="0.4"/>
+        <circle cx="40" cy="3" r="1.5" fill="#c9a84c" opacity="0.4"/>
         <circle cx="77" cy="22" r="1.5" fill="#c9a84c" opacity="0.4"/>
         <circle cx="77" cy="58" r="1.5" fill="#c9a84c" opacity="0.4"/>
         <circle cx="40" cy="77" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="3"  cy="58" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="3"  cy="22" r="1.5" fill="#c9a84c" opacity="0.4"/>
+        <circle cx="3" cy="58" r="1.5" fill="#c9a84c" opacity="0.4"/>
+        <circle cx="3" cy="22" r="1.5" fill="#c9a84c" opacity="0.4"/>
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#q-geo)"/>
@@ -34,37 +34,37 @@ const GeoBg = ({ lightMode }) => (
 // ─── Compass SVG — rotating ring design ──────────────────────────────────────
 //
 // HOW IT WORKS:
-//   • The RING (N/E/S/W labels + ticks) rotates by -bearing so N always tracks
-//     true magnetic north regardless of which way the phone is pointing.
-//   • The NEEDLE is a completely separate SVG group. It rotates by
-//     (qibla - bearing) so it always points toward Mecca in world space.
-//   • A fixed gold triangle at 12 o'clock (never rotates) shows where
-//     the phone is currently pointing. When needle aligns with it → Facing Qibla.
+// • The RING (N/E/S/W labels + ticks) rotates by -bearing so N always tracks
+//   true magnetic north regardless of which way the phone is pointing.
+// • The NEEDLE is a completely separate SVG group. It rotates by
+//   (qibla - bearing) so it always points toward Mecca in world space.
+// • A fixed gold triangle at 12 o'clock (never rotates) shows where
+//   the phone is currently pointing. When needle aligns with it → Facing Qibla.
 //
 const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
-  const r  = size / 2;
+  const r = size / 2;
   const cx = r;
   const cy = r;
-  const GOLD      = "#c9a84c";
+  const GOLD = "#c9a84c";
   const NORTH_RED = "#e07575";
 
   // Ring rotates opposite to bearing → N tracks true north on screen
-  const ringAngle   = -bearing;
+  const ringAngle = -bearing;
   // Needle points toward Qibla in world space → screen angle = qibla - bearing
   const needleAngle = ((qibla - bearing) % 360 + 360) % 360;
 
   // ── Tick marks (live inside the rotating ring group) ─────────────────────
   const ticks = Array.from({ length: 72 }, (_, i) => {
-    const deg    = i * 5;
+    const deg = i * 5;
     const isCard = deg % 90 === 0;
-    const isMed  = !isCard && deg % 30 === 0;
-    const isTen  = !isMed && !isCard && deg % 10 === 0;
-    const len    = isCard ? 20 : isMed ? 13 : isTen ? 8 : 4;
-    const sw     = isCard ? 2.2 : isMed ? 1.3 : 0.75;
-    const op     = isCard ? 1   : isMed ? 0.65 : isTen ? 0.38 : 0.22;
-    const rad    = (deg - 90) * (Math.PI / 180);
-    const outer  = r - 12;
-    const inner  = outer - len;
+    const isMed = !isCard && deg % 30 === 0;
+    const isTen = !isMed && !isCard && deg % 10 === 0;
+    const len = isCard ? 20 : isMed ? 13 : isTen ? 8 : 4;
+    const sw = isCard ? 2.2 : isMed ? 1.3 : 0.75;
+    const op = isCard ? 1 : isMed ? 0.65 : isTen ? 0.38 : 0.22;
+    const rad = (deg - 90) * (Math.PI / 180);
+    const outer = r - 12;
+    const inner = outer - len;
     return {
       x1: cx + inner * Math.cos(rad), y1: cy + inner * Math.sin(rad),
       x2: cx + outer * Math.cos(rad), y2: cy + outer * Math.sin(rad),
@@ -77,21 +77,23 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
     return { x: cx + dist * Math.cos(rad), y: cy + dist * Math.sin(rad) };
   };
 
-  const LABEL_R  = r - 40;
-  const DEG_R    = r - 41;
+  const LABEL_R = r - 40;
+  const DEG_R = r - 41;
+
   const cardinals = [
-    { d: 0,   l: "N", fill: NORTH_RED, fs: 16, fw: "800" },
-    { d: 90,  l: "E", fill: GOLD,      fs: 13, fw: "700" },
-    { d: 180, l: "S", fill: GOLD,      fs: 13, fw: "700" },
-    { d: 270, l: "W", fill: GOLD,      fs: 13, fw: "700" },
+    { d: 0, l: "N", fill: NORTH_RED, fs: 16, fw: "800" },
+    { d: 90, l: "E", fill: GOLD, fs: 13, fw: "700" },
+    { d: 180, l: "S", fill: GOLD, fs: 13, fw: "700" },
+    { d: 270, l: "W", fill: GOLD, fs: 13, fw: "700" },
   ];
+
   const degLabels = [30, 60, 120, 150, 210, 240, 300, 330];
 
   // ── Needle geometry ───────────────────────────────────────────────────────
-  const TIP       = cy - (r - 57);
-  const BASE      = cy + 22;
-  const MID       = cy + 12;
-  const TAIL_TIP  = cy + (r - 62);
+  const TIP = cy - (r - 57);
+  const BASE = cy + 22;
+  const MID = cy + 12;
+  const TAIL_TIP = cy + (r - 62);
   const TAIL_WING = cy - 16;
 
   return (
@@ -135,6 +137,7 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
           fill="none" stroke={GOLD} strokeWidth="2" opacity="0.35"
           className="q-align-ring"/>
       )}
+
       {/* Compass face fill */}
       <circle cx={cx} cy={cy} r={r - 27} fill="url(#qFace)"/>
       <circle cx={cx} cy={cy} r={r - 27}
@@ -145,7 +148,7 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
       {/* ══════════════════════════════════════════════════════════════════
           ROTATING RING — tracks true magnetic north
           Ring rotates by -bearing so N always points to geographic North
-      ══════════════════════════════════════════════════════════════════ */}
+          ══════════════════════════════════════════════════════════════════ */}
       <g style={{
         transformOrigin: `${cx}px ${cy}px`,
         transform: `rotate(${ringAngle}deg)`,
@@ -195,8 +198,8 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
       </g>
 
       {/* ── Fixed heading indicator — gold triangle at 12 o'clock ── */}
-      {/* This never rotates. It shows where the phone is currently pointing.  */}
-      {/* When the Qibla needle aligns with this triangle → Facing Qibla.      */}
+      {/* This never rotates. It shows where the phone is currently pointing. */}
+      {/* When the Qibla needle aligns with this triangle → Facing Qibla. */}
       <path
         d={`M${cx},${cy - (r - 13)} L${cx - 6},${cy - (r - 26)} L${cx + 6},${cy - (r - 26)} Z`}
         fill={GOLD} opacity="0.9"/>
@@ -211,7 +214,7 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
           QIBLA NEEDLE — completely independent of the ring
           Rotates by (qibla - bearing) to always point toward Mecca
           in world space, regardless of phone orientation.
-      ══════════════════════════════════════════════════════════════════ */}
+          ══════════════════════════════════════════════════════════════════ */}
       <g style={{
         transformOrigin: `${cx}px ${cy}px`,
         transform: `rotate(${needleAngle}deg)`,
@@ -268,83 +271,168 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
   );
 };
 
+// ─── Tunable smoothing / hysteresis constants ────────────────────────────────
+// FILTER_ALPHA      — low-pass filter strength for the compass heading.
+//                      Lower = smoother but slower to react to real turns.
+// DISPLAY_DEADZONE  — minimum change (deg) before a filtered reading is
+//                      pushed to React state at all. Filters out the residual
+//                      sub-degree noise that survives the low-pass filter.
+// RENDER_FPS_CAP    — max rate (Hz) at which bearing state (and therefore the
+//                      CSS-animated needle) updates. Decouples the render/
+//                      transition rate from the raw sensor event rate, which
+//                      is what actually stops the needle "wobbling" even when
+//                      the underlying value is already filtered.
+// ALIGN_ENTER_DEG / ALIGN_EXIT_DEG — asymmetric hysteresis band for the
+//                      "Facing Qibla" state, so it doesn't flicker in and out
+//                      right at the boundary.
+const FILTER_ALPHA = 0.15;
+const DISPLAY_DEADZONE_DEG = 0.4;
+const RENDER_FPS_CAP = 24;
+const ALIGN_ENTER_DEG = 3;
+const ALIGN_EXIT_DEG = 6;
+
 // ─── Main QiblaPage ───────────────────────────────────────────────────────────
 export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
-  const [qiblaAngle,   setQiblaAngle]   = useState(null);
-  const [bearing,      setBearing]      = useState(0);
-  const [locError,     setLocError]     = useState(null);
-  const [city,         setCity]         = useState("");
+  const [qiblaAngle, setQiblaAngle] = useState(null);
+  const [bearing, setBearing] = useState(0);
+  const [aligned, setAligned] = useState(false);
+  const [locError, setLocError] = useState(null);
+  const [city, setCity] = useState("");
   const [locationName, setLocationName] = useState("");
-  const [showCity,     setShowCity]     = useState(false);
-
+  const [showCity, setShowCity] = useState(false);
   const smoothRef = useRef(0);
+  const alignedRef = useRef(false);
 
   // ── Theme tokens ────────────────────────────────────────────────────────────
-  const gold      = lightMode ? "#7a5810"                 : "#c9a84c";
-  const goldDim   = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
-  const goldBdr   = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
-  const goldFaint = lightMode ? "rgba(122,88,16,0.08)"   : "rgba(201,168,76,0.07)";
-  const textClr   = lightMode ? "rgba(26,15,0,0.82)"     : "rgba(255,255,240,0.85)";
-  const textDim   = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.38)";
-  const headerBg  = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const inputBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
+  const gold = lightMode ? "#7a5810" : "#c9a84c";
+  const goldDim = lightMode ? "rgba(122,88,16,0.55)" : "rgba(201,168,76,0.5)";
+  const goldBdr = lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.2)";
+  const goldFaint = lightMode ? "rgba(122,88,16,0.08)" : "rgba(201,168,76,0.07)";
+  const textClr = lightMode ? "rgba(26,15,0,0.82)" : "rgba(255,255,240,0.85)";
+  const textDim = lightMode ? "rgba(26,15,0,0.4)" : "rgba(255,255,255,0.38)";
+  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
+  const inputBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
 
-  // ── Compass bearing — absolute priority with timestamp fallback ─────────────
-  // Strategy: prefer deviceorientationabsolute (always north-referenced) but
-  // fall back to deviceorientation if absolute goes silent for >1s.
-  // Previous bug: usingAbsolute=true permanently blocked relative events,
-  // so if absolute fired once then stopped, bearing froze completely.
+  // ── Compass bearing — sensor fusion + low-pass filter + render throttle ────
+  // Sensor priority:
+  //   1. Generic Sensor API `AbsoluteOrientationSensor` — reads the device's
+  //      fused rotation-vector sensor (accel + gyro + magnetometer) directly.
+  //      This is the "Rotation Vector sensor" path and is far less noisy than
+  //      raw magnetometer data.
+  //   2. deviceorientationabsolute / deviceorientation — used on iOS and on
+  //      browsers without Generic Sensor API support. On most Android
+  //      browsers these events are themselves backed by the same fused
+  //      rotation-vector sensor, so this fallback is still fusion-based on
+  //      most devices, just less directly controllable than option 1.
+  // Every raw sample, regardless of source, is pushed through the SAME
+  // low-pass filter and the SAME render-side dead zone below, so jitter is
+  // smoothed out consistently no matter which sensor path is active.
   useEffect(() => {
+    let sensor = null;
+    let animFrame = null;
+    let lastFrameTime = 0;
+    let pendingHeading = null;
+    let lastRenderedHeading = null;
     let lastAbsoluteMs = 0;
     const STALE_MS = 1000;
+    const frameInterval = 1000 / RENDER_FPS_CAP;
 
-    const applySmoothing = (alpha) => {
-      // DeviceOrientation alpha uses a counter-clockwise convention on many
-      // Android browsers. Convert to a standard compass bearing where:
-      // 0° = North, 90° = East, 180° = South, 270° = West.
-      const heading = (360 - alpha) % 360;
-
+    // Push one raw heading sample through the circular low-pass filter.
+    // Cheap — just updates refs, no re-render here.
+    const feedHeading = (heading) => {
       const diff = ((heading - smoothRef.current) + 540) % 360 - 180;
-      smoothRef.current = (smoothRef.current + diff * 0.2 + 360) % 360;
-      setBearing(Math.round(smoothRef.current * 10) / 10);
+      smoothRef.current = (smoothRef.current + diff * FILTER_ALPHA + 360) % 360;
+      pendingHeading = smoothRef.current;
     };
 
-    // deviceorientationabsolute — always magnetic-north-referenced on Android
+    // rAF loop, capped to RENDER_FPS_CAP, that actually commits the filtered
+    // heading to React state — and only when it moved more than the display
+    // dead zone since the last commit.
+    const renderLoop = (t) => {
+      if (t - lastFrameTime >= frameInterval) {
+        lastFrameTime = t;
+        if (pendingHeading !== null) {
+          const last = lastRenderedHeading;
+          const delta = last === null
+            ? Infinity
+            : Math.abs(((pendingHeading - last + 540) % 360) - 180);
+          if (delta >= DISPLAY_DEADZONE_DEG) {
+            lastRenderedHeading = pendingHeading;
+            setBearing(Math.round(pendingHeading * 10) / 10);
+          }
+        }
+      }
+      animFrame = requestAnimationFrame(renderLoop);
+    };
+    animFrame = requestAnimationFrame(renderLoop);
+
+    // DeviceOrientation alpha uses a counter-clockwise convention on many
+    // Android browsers. Convert to a standard compass bearing where:
+    // 0° = North, 90° = East, 180° = South, 270° = West.
     const onAbsolute = (e) => {
       if (e.alpha == null) return;
       lastAbsoluteMs = Date.now();
-      applySmoothing(e.alpha);
+      feedHeading((360 - e.alpha) % 360);
     };
-
-    // deviceorientation — relative on Android; used only when absolute is stale
     const onRelative = (e) => {
       if (e.alpha == null) return;
       if (Date.now() - lastAbsoluteMs < STALE_MS) return; // absolute is fresh, skip
-      applySmoothing(e.alpha);
+      feedHeading((360 - e.alpha) % 360);
     };
 
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function"
-    ) {
-      // iOS — requestPermission required; deviceorientation IS north-referenced on iOS
-      DeviceOrientationEvent.requestPermission()
-        .then(p => {
-          if (p === "granted") {
-            window.addEventListener("deviceorientationabsolute", onAbsolute, true);
-            window.addEventListener("deviceorientation", onRelative);
-          }
-        })
-        .catch(() => {});
+    const startDeviceOrientationFallback = () => {
+      if (
+        typeof DeviceOrientationEvent !== "undefined" &&
+        typeof DeviceOrientationEvent.requestPermission === "function"
+      ) {
+        // iOS — requestPermission required; deviceorientation IS north-referenced on iOS
+        DeviceOrientationEvent.requestPermission()
+          .then(p => {
+            if (p === "granted") {
+              window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+              window.addEventListener("deviceorientation", onRelative);
+            }
+          })
+          .catch(() => {});
+      } else {
+        // Android / Desktop
+        window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+        window.addEventListener("deviceorientation", onRelative);
+      }
+    };
+
+    if (typeof AbsoluteOrientationSensor !== "undefined") {
+      try {
+        sensor = new AbsoluteOrientationSensor({ frequency: 30, referenceFrame: "device" });
+        sensor.addEventListener("reading", () => {
+          const [qx, qy, qz, qw] = sensor.quaternion;
+          let heading = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
+          heading = (heading * 180) / Math.PI;
+          const screenAngle = window.screen?.orientation?.angle || 0;
+          feedHeading((heading + screenAngle + 360) % 360);
+        });
+        sensor.addEventListener("error", () => {
+          // Permission denied or sensor unavailable at runtime — fall back.
+          try { sensor.stop(); } catch {}
+          sensor = null;
+          startDeviceOrientationFallback();
+        });
+        sensor.start();
+      } catch {
+        // Construction can throw synchronously (e.g. permissions-policy
+        // blocks it, or the device lacks the underlying hardware).
+        sensor = null;
+        startDeviceOrientationFallback();
+      }
     } else {
-      // Android / Desktop
-      window.addEventListener("deviceorientationabsolute", onAbsolute, true);
-      window.addEventListener("deviceorientation", onRelative);
+      startDeviceOrientationFallback();
     }
 
     return () => {
+      if (sensor) { try { sensor.stop(); } catch {} }
       window.removeEventListener("deviceorientationabsolute", onAbsolute);
       window.removeEventListener("deviceorientation", onRelative);
+      if (animFrame) cancelAnimationFrame(animFrame);
     };
   }, []);
 
@@ -365,7 +453,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           );
           const d = await res.json();
           const a = d.address || {};
-          const name    = a.city || a.town || a.village || a.county || a.state || "Your Location";
+          const name = a.city || a.town || a.village || a.county || a.state || "Your Location";
           const country = a.country || "";
           setLocationName(country ? `${name}, ${country}` : name);
         } catch {
@@ -400,8 +488,30 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     ? (() => { let d = ((qiblaAngle - bearing) % 360 + 360) % 360; return d > 180 ? d - 360 : d; })()
     : null;
 
-  const aligned  = diff !== null && Math.abs(diff) <= 5;
-  const absDiff  = diff !== null ? Math.abs(Math.round(diff)) : null;
+  const absDiff = diff !== null ? Math.abs(Math.round(diff)) : null;
+
+  // Hysteresis for the "Facing Qibla" state: enter the aligned state once
+  // within ALIGN_ENTER_DEG, but only leave it once the drift exceeds
+  // ALIGN_EXIT_DEG. This dead zone stops the status pill, glow and needle
+  // highlight from flickering when the true heading sits right at the edge
+  // of a single fixed threshold.
+  useEffect(() => {
+    if (diff === null) {
+      if (alignedRef.current) {
+        alignedRef.current = false;
+        setAligned(false);
+      }
+      return;
+    }
+    const absD = Math.abs(diff);
+    if (!alignedRef.current && absD <= ALIGN_ENTER_DEG) {
+      alignedRef.current = true;
+      setAligned(true);
+    } else if (alignedRef.current && absD > ALIGN_EXIT_DEG) {
+      alignedRef.current = false;
+      setAligned(false);
+    }
+  }, [diff]);
 
   // Status pill config
   const status = diff !== null
@@ -409,52 +519,51 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       ? {
           icon: "✓",
           text: "Facing Qibla",
-          sub:  "Allahu Akbar · You are aligned with the Qibla",
+          sub: "Allahu Akbar · You are aligned with the Qibla",
           color: "#4caf84",
-          bg:    "rgba(76,175,132,0.11)",
-          bdr:   "rgba(76,175,132,0.42)",
+          bg: "rgba(76,175,132,0.11)",
+          bdr: "rgba(76,175,132,0.42)",
           shadow:"rgba(76,175,132,0.13)",
         }
       : diff > 0
-      ? {
-          icon: "↻",
-          text: `Turn Right  ${absDiff}°`,
-          sub:  "Rotate clockwise to face the Qibla",
-          color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
-        }
-      : {
-          icon: "↺",
-          text: `Turn Left  ${absDiff}°`,
-          sub:  "Rotate counter-clockwise to face the Qibla",
-          color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
-        }
+        ? {
+            icon: "↻",
+            text: `Turn Right ${absDiff}°`,
+            sub: "Rotate clockwise to face the Qibla",
+            color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
+          }
+        : {
+            icon: "↺",
+            text: `Turn Left ${absDiff}°`,
+            sub: "Rotate counter-clockwise to face the Qibla",
+            color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
+          }
     : null;
 
   const compassSize = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 390) - 48);
 
   // ── Info metrics for the row below the compass ─────────────────────────────
   const metrics = [
-    { label: "Qibla",   value: qiblaAngle !== null ? `${Math.round(qiblaAngle)}°` : "—", sub: "from North" },
-    { label: "Heading", value: `${Math.round(bearing)}°`,                                sub: "current"   },
-    { label: "Off by",  value: absDiff !== null ? `${absDiff}°` : "—",                  sub: "offset", highlight: aligned },
+    { label: "Qibla", value: qiblaAngle !== null ? `${Math.round(qiblaAngle)}°` : "—", sub: "from North" },
+    { label: "Heading", value: `${Math.round(bearing)}°`, sub: "current" },
+    { label: "Off by", value: absDiff !== null ? `${absDiff}°` : "—", sub: "offset", highlight: aligned },
   ];
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden", position:"relative" }}>
-
       {/* ── Global animations ── */}
       <style>{`
         @keyframes qAlignRing {
           0%, 100% { opacity: 0.22; }
-          50%       { opacity: 0.55; }
+          50% { opacity: 0.55; }
         }
         @keyframes qKaabaPulse {
-          0%, 100% { transform: scale(1);    opacity: 0.10; }
-          50%       { transform: scale(1.50); opacity: 0.19; }
+          0%, 100% { transform: scale(1); opacity: 0.10; }
+          50% { transform: scale(1.50); opacity: 0.19; }
         }
         @keyframes qStatusIn {
           from { opacity: 0; transform: translateY(7px); }
-          to   { opacity: 1; transform: translateY(0);   }
+          to { opacity: 1; transform: translateY(0); }
         }
         .q-align-ring {
           transform-box: fill-box;
@@ -473,7 +582,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
 
       {/* ══════════════════════════════════════════════════════
           HEADER
-      ══════════════════════════════════════════════════════ */}
+          ══════════════════════════════════════════════════════ */}
       <div style={{
         display:"flex", alignItems:"center",
         padding:"12px 16px",
@@ -561,7 +670,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
 
       {/* ══════════════════════════════════════════════════════
           MAIN CONTENT
-      ══════════════════════════════════════════════════════ */}
+          ══════════════════════════════════════════════════════ */}
       <div style={{
         flex:1, display:"flex", flexDirection:"column",
         alignItems:"center", justifyContent:"center",
@@ -569,7 +678,6 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         position:"relative", zIndex:1, overflow:"hidden",
         gap:"0px",
       }}>
-
         {qiblaAngle !== null ? (
           <>
             {/* ── Alignment status pill ─────────────────────── */}
