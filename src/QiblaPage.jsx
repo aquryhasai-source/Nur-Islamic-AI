@@ -41,6 +41,30 @@ const GeoBg = ({ lightMode }) => (
 // • A fixed gold triangle at 12 o'clock (never rotates) shows where
 //   the phone is currently pointing. When needle aligns with it → Facing Qibla.
 //
+// Keeps a continuously-accumulating ("unwrapped") version of an angle that
+// would otherwise be reported mod 360. Feeding the wrapped value straight
+// into a CSS `transform: rotate()` transition makes the browser interpolate
+// the raw numeric gap between the old and new values — so a real ~2° step
+// that happens to cross the 0°/360° seam (e.g. 359° → 1°) gets rendered as a
+// ~358° spin the WRONG way (this is exactly the "needle runs back around
+// through the south instead of crossing N" bug). rotate(361deg) looks
+// identical to rotate(1deg) but animates smoothly from rotate(359deg), so
+// this hook tracks the shortest signed step each render and accumulates it,
+// letting the value drift past 360 or below 0 instead of resetting.
+function useUnwrappedAngle(targetDeg) {
+  const prevWrapped = useRef(null);
+  const unwrapped = useRef(0);
+  if (prevWrapped.current === null) {
+    unwrapped.current = targetDeg;
+    prevWrapped.current = targetDeg;
+  } else {
+    const delta = ((targetDeg - prevWrapped.current + 540) % 360) - 180;
+    unwrapped.current += delta;
+    prevWrapped.current = targetDeg;
+  }
+  return unwrapped.current;
+}
+
 const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
   const r = size / 2;
   const cx = r;
@@ -48,10 +72,14 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
   const GOLD = "#c9a84c";
   const NORTH_RED = "#e07575";
 
-  // Ring rotates opposite to bearing → N tracks true north on screen
-  const ringAngle = -bearing;
-  // Needle points toward Qibla in world space → screen angle = qibla - bearing
-  const needleAngle = ((qibla - bearing) % 360 + 360) % 360;
+  // Ring rotates opposite to bearing → N tracks true north on screen.
+  // Needle points toward Qibla in world space → screen angle = qibla - bearing.
+  // Both go through useUnwrappedAngle so the transition never spins the long
+  // way around when the raw angle wraps past 0°/360°.
+  const rawRingAngle = -bearing;
+  const rawNeedleAngle = ((qibla - bearing) % 360 + 360) % 360;
+  const ringAngle = useUnwrappedAngle(rawRingAngle);
+  const needleAngle = useUnwrappedAngle(rawNeedleAngle);
 
   // ── Tick marks (live inside the rotating ring group) ─────────────────────
   const ticks = Array.from({ length: 72 }, (_, i) => {
@@ -313,22 +341,15 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
   const inputBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
 
-  // ── Compass bearing — sensor fusion + low-pass filter + render throttle ────
-  // Sensor priority:
-  //   1. Generic Sensor API `AbsoluteOrientationSensor` — reads the device's
-  //      fused rotation-vector sensor (accel + gyro + magnetometer) directly.
-  //      This is the "Rotation Vector sensor" path and is far less noisy than
-  //      raw magnetometer data.
-  //   2. deviceorientationabsolute / deviceorientation — used on iOS and on
-  //      browsers without Generic Sensor API support. On most Android
-  //      browsers these events are themselves backed by the same fused
-  //      rotation-vector sensor, so this fallback is still fusion-based on
-  //      most devices, just less directly controllable than option 1.
-  // Every raw sample, regardless of source, is pushed through the SAME
-  // low-pass filter and the SAME render-side dead zone below, so jitter is
-  // smoothed out consistently no matter which sensor path is active.
+  // ── Compass bearing — absolute priority with timestamp fallback ─────────────
+  // Reverted back to the original deviceorientationabsolute / deviceorientation
+  // approach (the Generic Sensor API experiment was removed — on-device it
+  // wasn't reporting a proper north-referenced heading, so the ring/needle
+  // ended up rotating WITH the phone instead of staying counter-rotated
+  // against it). Every raw sample still runs through the same low-pass
+  // filter, and commits to React state through a render-rate-capped,
+  // dead-zone-gated loop, which is what's actually cutting the jitter.
   useEffect(() => {
-    let sensor = null;
     let animFrame = null;
     let lastFrameTime = 0;
     let pendingHeading = null;
@@ -380,56 +401,26 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       feedHeading((360 - e.alpha) % 360);
     };
 
-    const startDeviceOrientationFallback = () => {
-      if (
-        typeof DeviceOrientationEvent !== "undefined" &&
-        typeof DeviceOrientationEvent.requestPermission === "function"
-      ) {
-        // iOS — requestPermission required; deviceorientation IS north-referenced on iOS
-        DeviceOrientationEvent.requestPermission()
-          .then(p => {
-            if (p === "granted") {
-              window.addEventListener("deviceorientationabsolute", onAbsolute, true);
-              window.addEventListener("deviceorientation", onRelative);
-            }
-          })
-          .catch(() => {});
-      } else {
-        // Android / Desktop
-        window.addEventListener("deviceorientationabsolute", onAbsolute, true);
-        window.addEventListener("deviceorientation", onRelative);
-      }
-    };
-
-    if (typeof AbsoluteOrientationSensor !== "undefined") {
-      try {
-        sensor = new AbsoluteOrientationSensor({ frequency: 30, referenceFrame: "device" });
-        sensor.addEventListener("reading", () => {
-          const [qx, qy, qz, qw] = sensor.quaternion;
-          let heading = Math.atan2(2 * (qw * qz + qx * qy), 1 - 2 * (qy * qy + qz * qz));
-          heading = (heading * 180) / Math.PI;
-          const screenAngle = window.screen?.orientation?.angle || 0;
-          feedHeading((heading + screenAngle + 360) % 360);
-        });
-        sensor.addEventListener("error", () => {
-          // Permission denied or sensor unavailable at runtime — fall back.
-          try { sensor.stop(); } catch {}
-          sensor = null;
-          startDeviceOrientationFallback();
-        });
-        sensor.start();
-      } catch {
-        // Construction can throw synchronously (e.g. permissions-policy
-        // blocks it, or the device lacks the underlying hardware).
-        sensor = null;
-        startDeviceOrientationFallback();
-      }
+    if (
+      typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function"
+    ) {
+      // iOS — requestPermission required; deviceorientation IS north-referenced on iOS
+      DeviceOrientationEvent.requestPermission()
+        .then(p => {
+          if (p === "granted") {
+            window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+            window.addEventListener("deviceorientation", onRelative);
+          }
+        })
+        .catch(() => {});
     } else {
-      startDeviceOrientationFallback();
+      // Android / Desktop
+      window.addEventListener("deviceorientationabsolute", onAbsolute, true);
+      window.addEventListener("deviceorientation", onRelative);
     }
 
     return () => {
-      if (sensor) { try { sensor.stop(); } catch {} }
       window.removeEventListener("deviceorientationabsolute", onAbsolute);
       window.removeEventListener("deviceorientation", onRelative);
       if (animFrame) cancelAnimationFrame(animFrame);
