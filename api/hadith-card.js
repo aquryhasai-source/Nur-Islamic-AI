@@ -1,6 +1,9 @@
 // Renders a shareable "Hadith of the Day" card as a PNG image.
 // Public URL: https://nur-islamic-ai.vercel.app/api/hadith-card?text=...&ref=...
-// Meta's Graph API fetches this URL directly when posting to Facebook/Instagram.
+// Add &format=reel to get a vertical (1080x1920) render for the video Reel;
+// omit it (or use any other value) for the original square (1080x1080) post image.
+// Meta's Graph API fetches this URL directly when posting to Facebook/Instagram,
+// and hadith-reel.js fetches the reel variant as the still frame for the video.
 //
 // Written with React.createElement (no JSX) so this plain .js file needs no
 // JSX transform -- Vercel's zero-config Functions only recognize .js/.ts for
@@ -15,6 +18,8 @@ export default async function handler(req) {
   const { searchParams } = new URL(req.url);
   const text = searchParams.get("text") || "";
   const ref = searchParams.get("ref") || "";
+  const isReel = searchParams.get("format") === "reel";
+  const dimensions = isReel ? { width: 1080, height: 1920 } : { width: 1080, height: 1080 };
 
   return new ImageResponse(
     React.createElement(
@@ -75,6 +80,6 @@ export default async function handler(req) {
         `\u2014 ${ref}`,
       ),
     ),
-    { width: 1080, height: 1080 },
+    dimensions,
   );
 }
