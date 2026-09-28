@@ -20,7 +20,8 @@ export const config = { maxDuration: 60 };
 
 const CARD_BASE_URL = "https://nur-islamic-ai.vercel.app/api/hadith-card";
 const GROQ_TTS_URL = "https://api.groq.com/openai/v1/audio/speech";
-const TTS_VOICE = "Atlas-PlayAI"; // deep, calm English voice -- swap here if you want a different one
+const TTS_MODEL = "canopylabs/orpheus-v1-english"; // playai-tts was decommissioned by Groq; this is the current model
+const TTS_VOICE = "daniel"; // English voices: autumn, diana, hannah, austin, daniel, troy -- swap here if you want a different one
 const MIN_DURATION = 5; // seconds -- clears Instagram's 3s Reels minimum with margin
 
 function runFfmpeg(args) {
@@ -69,7 +70,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "playai-tts",
+        model: TTS_MODEL,
         voice: TTS_VOICE,
         input: script,
         response_format: "wav",
