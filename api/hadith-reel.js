@@ -21,8 +21,9 @@ export const config = { maxDuration: 60 };
 const CARD_BASE_URL = "https://nur-islamic-ai.vercel.app/api/hadith-card";
 const GROQ_TTS_URL = "https://api.groq.com/openai/v1/audio/speech";
 const TTS_MODEL = "canopylabs/orpheus-v1-english"; // playai-tts was decommissioned by Groq; this is the current model
-const TTS_VOICE = "austin"; // English voices: autumn, diana, hannah, austin, daniel, troy -- swap here if you want a different one
+const TTS_VOICE = "troy"; // English voices: autumn, diana, hannah, austin, daniel, troy -- austin was too upbeat; swap here if troy still isn't right
 const MIN_DURATION = 5; // seconds -- clears Instagram's 3s Reels minimum with margin
+const PAD_SECONDS = 0.6; // fixed silence added before and after the narration
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
@@ -89,7 +90,7 @@ export default async function handler(req, res) {
       "-loop", "1", "-i", imagePath,
       "-i", voicePath,
       "-filter_complex",
-      `[1:a]aecho=0.7:0.6:40:0.15,apad=whole_dur=${MIN_DURATION}[a]`,
+      `[1:a]adelay=${PAD_SECONDS * 1000}|${PAD_SECONDS * 1000}:all=1,aecho=0.7:0.6:40:0.15,apad=pad_dur=${PAD_SECONDS},apad=whole_dur=${MIN_DURATION}[a]`,
       "-map", "0:v", "-map", "[a]",
       "-c:v", "libx264", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-r", "30",
       "-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2",
