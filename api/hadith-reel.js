@@ -23,7 +23,7 @@ const GROQ_TTS_URL = "https://api.groq.com/openai/v1/audio/speech";
 const TTS_MODEL = "canopylabs/orpheus-v1-english"; // playai-tts was decommissioned by Groq; this is the current model
 const TTS_VOICE = "troy"; // English voices: autumn, diana, hannah, austin, daniel, troy -- austin was too upbeat; swap here if troy still isn't right
 const MIN_DURATION = 5; // seconds -- clears Instagram's 3s Reels minimum with margin
-const PAD_SECONDS = 0.6; // fixed silence added before and after the narration
+const PAD_SECONDS = 2; // fixed silence added before and after the narration
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
