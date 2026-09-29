@@ -319,6 +319,322 @@ const RENDER_FPS_CAP = 24;
 const ALIGN_ENTER_DEG = 3;
 const ALIGN_EXIT_DEG = 6;
 
+// ═════════════════════════════════════════════════════════════════════════════
+// QIBLA PAGE EXTRAS (additive) — sensor status, level, distance, route, info.
+// Nothing below touches the compass heading / Qibla / alignment logic. It only
+// READS existing state (qiblaAngle, bearing, locationName) and adds separate,
+// read-only sensor listeners.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const KAABA = { lat: 21.422487, lon: 39.826206 };
+const EARTH_R_KM = 6371.0088;
+const LEVEL_OK_DEG = 15;      // max tilt (either axis) still treated as "level"
+const TILT_CLAMP_DEG = 30;    // bubble reaches the ring edge at this tilt
+const GOOD = "#4caf84";
+const WARN = "#d9a35b";
+
+// Great-circle (haversine) distance in km.
+function haversineKm(lat1, lon1, lat2, lon2) {
+  const rad = (d) => (d * Math.PI) / 180;
+  const dLat = rad(lat2 - lat1);
+  const dLon = rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_R_KM * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const CARD16 = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"];
+const cardinal16 = (deg) => CARD16[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16];
+const fmtKm = (km) => `${Math.round(km).toLocaleString("en-US")} km`;
+const trunc = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
+
+// ── Read-only sensor health ──────────────────────────────────────────────────
+// Only reports what the browser genuinely exposes:
+//   • tilt            — beta/gamma from DeviceOrientation (all platforms)
+//   • source          — whether north-referenced (absolute) events are arriving
+//   • iOS accuracy    — webkitCompassAccuracy (iOS Safari only)
+//   • magnetic field  — Generic Sensor Magnetometer magnitude (Chrome/Android,
+//                       where available). Shown as a plain value; never used
+//                       for heading and never labelled as "interference".
+// Android's DeviceOrientation API has no accuracy value, so none is invented.
+function useCompassHealth() {
+  const [h, setH] = useState({
+    beta: null, gamma: null, source: null, iosAcc: null,
+    fieldUT: null, fieldStable: false, needsCal: false,
+  });
+
+  useEffect(() => {
+    const s = { beta: null, gamma: null, absMs: 0, anyMs: 0, iosAcc: null, field: [], badSince: 0 };
+
+    const takeTilt = (e) => {
+      if (e.beta == null || e.gamma == null) return;
+      s.beta = s.beta === null ? e.beta : s.beta + (e.beta - s.beta) * 0.3;
+      s.gamma = s.gamma === null ? e.gamma : s.gamma + (e.gamma - s.gamma) * 0.3;
+    };
+    const onAbs = (e) => { const n = Date.now(); s.absMs = n; s.anyMs = n; takeTilt(e); };
+    const onRel = (e) => {
+      s.anyMs = Date.now();
+      takeTilt(e);
+      if (typeof e.webkitCompassAccuracy === "number") s.iosAcc = Math.round(e.webkitCompassAccuracy);
+    };
+    window.addEventListener("deviceorientationabsolute", onAbs, true);
+    window.addEventListener("deviceorientation", onRel);
+
+    let mag = null;
+    try {
+      if (typeof window.Magnetometer === "function") {
+        mag = new window.Magnetometer({ frequency: 5 });
+        mag.addEventListener("reading", () => {
+          const m = Math.hypot(mag.x, mag.y, mag.z);
+          if (Number.isFinite(m) && m > 0) {
+            s.field.push(m);
+            if (s.field.length > 10) s.field.shift();
+          }
+        });
+        mag.addEventListener("error", () => {});
+        mag.start();
+      }
+    } catch { mag = null; }
+
+    const tick = () => {
+      const now = Date.now();
+      const iosLike = s.iosAcc !== null;
+      const source = iosLike ? "ios" : now - s.absMs < 1500 ? "absolute" : now - s.anyMs < 1500 ? "relative" : null;
+
+      // Field magnitude is shown as measured. "Stable" is claimed only when the
+      // last ~2s of readings barely vary (evidence), never inferred from the value.
+      const n = s.field.length;
+      const fieldUT = n >= 3 ? s.field.reduce((x, y) => x + y, 0) / n : null;
+      let fieldStable = false;
+      if (n >= 10) {
+        const sd = Math.sqrt(s.field.reduce((x, y) => x + (y - fieldUT) ** 2, 0) / n);
+        fieldStable = sd <= 2;
+      }
+
+      // Calibration is only *recommended* (soft hint), after ~2s of iOS
+      // reporting poor accuracy. Magnetic field strength is display-only and
+      // never triggers this.
+      const iosBad = iosLike && (s.iosAcc < 0 || s.iosAcc > 30);
+      const bad = iosBad;
+      if (bad) { if (!s.badSince) s.badSince = now; } else s.badSince = 0;
+      const needsCal = bad && now - s.badSince > 2000;
+
+      const next = {
+        beta: s.beta === null ? null : Math.round(s.beta),
+        gamma: s.gamma === null ? null : Math.round(s.gamma),
+        source, iosAcc: s.iosAcc,
+        fieldUT: fieldUT === null ? null : Math.round(fieldUT),
+        fieldStable, needsCal,
+      };
+      setH((prev) => (Object.keys(next).every((k) => prev[k] === next[k]) ? prev : next));
+    };
+    const id = setInterval(tick, 200);
+
+    return () => {
+      clearInterval(id);
+      window.removeEventListener("deviceorientationabsolute", onAbs, true);
+      window.removeEventListener("deviceorientation", onRel);
+      try { if (mag) mag.stop(); } catch {}
+    };
+  }, []);
+
+  return h;
+}
+
+// ── Small pieces ─────────────────────────────────────────────────────────────
+function LevelBubble({ beta, gamma, color, t }) {
+  // Ball rolls toward the lower side of the phone, like a marble in a dish.
+  const dx = clamp(gamma / TILT_CLAMP_DEG, -1, 1) * 9;
+  const dy = clamp(beta / TILT_CLAMP_DEG, -1, 1) * 9;
+  return (
+    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <circle cx="15" cy="15" r="13.5" fill="none" stroke={t.goldBdr} strokeWidth="1"/>
+      <line x1="15" y1="3" x2="15" y2="27" stroke={t.gold} strokeWidth="0.4" opacity="0.25"/>
+      <line x1="3" y1="15" x2="27" y2="15" stroke={t.gold} strokeWidth="0.4" opacity="0.25"/>
+      <circle cx="15" cy="15" r="5" fill="none" stroke={color} strokeWidth="0.8" opacity="0.75"
+        style={{ transition: "stroke 0.4s ease" }}/>
+      <circle cx="15" cy="15" r="3.6" fill={color}
+        style={{ transform: `translate(${dx}px, ${dy}px)`, transition: "transform 0.25s ease-out, fill 0.4s ease" }}/>
+    </svg>
+  );
+}
+
+function StatCol({ t, textSize, label, value, sub, color, lead, first }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 0, padding: "11px 6px", textAlign: "center",
+      borderLeft: first ? "none" : `1px solid ${t.goldBdr}`,
+    }}>
+      <div style={{ color: t.goldDim, fontSize: "9px", letterSpacing: "1.8px", textTransform: "uppercase", marginBottom: "5px" }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "30px" }}>
+        {lead}
+        <span style={{ color, fontSize: `${12.5 * textSize}px`, fontWeight: 800, lineHeight: 1.25, transition: "color 0.5s ease" }}>
+          {value}
+        </span>
+      </div>
+      {sub && <div style={{ color: t.textDim, fontSize: "9px", marginTop: "3px" }}>{sub}</div>}
+    </div>
+  );
+}
+
+const Dot = ({ color }) => (
+  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: color, flexShrink: 0, transition: "background 0.5s ease" }}/>
+);
+
+// Lightweight geographic route: schematic great-circle arc from the user to
+// Makkah. Pure SVG — no map library, no tiles, no network.
+function QiblaRoute({ t, textSize, userName, distanceKm, qiblaAngle }) {
+  const atKaaba = distanceKm < 1;
+  return (
+    <svg viewBox="0 0 300 112" width="100%" role="img"
+      aria-label={`Qibla route: ${fmtKm(distanceKm)} to Makkah, bearing ${Math.round(qiblaAngle)} degrees`}
+      style={{ display: "block" }}>
+      <defs>
+        <marker id="qRouteArrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+          <path d="M0,0 L8,4 L0,8 Z" fill={t.gold} opacity="0.9"/>
+        </marker>
+      </defs>
+      {/* faint graticule */}
+      {[28, 56, 84].map((y) => (
+        <line key={y} x1="0" y1={y} x2="300" y2={y} stroke={t.gold} strokeWidth="0.4" strokeDasharray="1 5" opacity="0.14"/>
+      ))}
+      {[50, 100, 150, 200, 250].map((x) => (
+        <line key={x} x1={x} y1="0" x2={x} y2="112" stroke={t.gold} strokeWidth="0.4" strokeDasharray="1 5" opacity="0.1"/>
+      ))}
+      {!atKaaba && (
+        <path d="M49,66 Q150,12 251,66" fill="none" stroke={t.gold} strokeWidth="1.6"
+          strokeLinecap="round" opacity="0.75" markerEnd="url(#qRouteArrow)" className="q-route-flow"/>
+      )}
+      {/* you */}
+      <circle cx="40" cy="70" r="9" fill="none" stroke={t.gold} strokeWidth="0.8" opacity="0.4" className="q-align-ring"/>
+      <circle cx="40" cy="70" r="5" fill={t.gold}/>
+      <circle cx="40" cy="70" r="1.8" fill="#091610"/>
+      {/* Makkah */}
+      <circle cx="260" cy="70" r="12" fill="#091610" stroke={t.gold} strokeWidth="1.4"/>
+      <text x="260" y="71" textAnchor="middle" dominantBaseline="central" fontSize="13">🕋</text>
+      {/* labels */}
+      {!atKaaba && (
+        <>
+          <text x="150" y="30" textAnchor="middle" fill={t.gold} fontSize="13" fontWeight="800"
+            style={{ fontVariantNumeric: "tabular-nums" }}>{fmtKm(distanceKm)}</text>
+          <text x="150" y="56" textAnchor="middle" fill={t.textDim} fontSize="9" letterSpacing="0.4">
+            {Math.round(qiblaAngle)}° {cardinal16(qiblaAngle)}
+          </text>
+        </>
+      )}
+      {atKaaba && (
+        <text x="150" y="44" textAnchor="middle" fill={t.gold} fontSize="12" fontWeight="700">You are at the Kaaba</text>
+      )}
+      <text x="12" y="100" textAnchor="start" fill={t.textClr} fontSize="9.5" opacity="0.8">
+        {trunc(userName || "You", 16)}
+      </text>
+      <text x="288" y="100" textAnchor="end" fill={t.textClr} fontSize="9.5" opacity="0.8">Makkah</text>
+    </svg>
+  );
+}
+
+// ── Extras section, rendered below the existing metric row ───────────────────
+function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName, calDismissed, onDismissCal }) {
+  const glass = {
+    width: "100%", maxWidth: "340px",
+    background: t.goldFaint, border: `1px solid ${t.goldBdr}`, borderRadius: "16px",
+    backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+    animation: "qStatusIn 0.4s ease",
+  };
+
+  // Level
+  const hasTilt = health.beta !== null && health.gamma !== null;
+  const tiltMax = hasTilt ? Math.max(Math.abs(health.beta), Math.abs(health.gamma)) : null;
+  const isLevel = hasTilt && tiltMax <= LEVEL_OK_DEG;
+  const lvlColor = !hasTilt ? t.textDim : isLevel ? GOOD : WARN;
+
+  // Compass column — real values only
+  let cValue = "No signal", cSub = "check permissions", cColor = WARN;
+  if (health.source === "ios") {
+    const a = health.iosAcc;
+    const grade = a < 0 || a > 30 ? "Low" : a <= 15 ? "High" : "Medium";
+    cValue = grade;
+    cColor = grade === "High" ? GOOD : grade === "Medium" ? t.gold : WARN;
+    cSub = a >= 0 ? `± ${a}°` : "uncalibrated";
+  } else if (health.source === "absolute") {
+    cValue = "Active"; cColor = GOOD; cSub = "north-referenced";
+  } else if (health.source === "relative") {
+    cValue = "Relative"; cColor = WARN; cSub = "not north-locked";
+  }
+
+  // Magnetic field column — the measured value; "Stable" only with evidence
+  const hasField = health.fieldUT !== null;
+  const showCal = health.needsCal && !calDismissed;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%", marginTop: "16px" }}>
+
+      {/* ── Sensor status: compass · magnetic field · level ── */}
+      <div style={{ ...glass, display: "flex", overflow: "hidden" }}>
+        <StatCol first t={t} textSize={textSize} label="Compass" value={cValue} sub={cSub} color={cColor}
+          lead={<Dot color={cColor}/>}/>
+        {hasField && (
+          <StatCol t={t} textSize={textSize} label="Magnetic field"
+            value={health.fieldStable ? "Stable" : `${health.fieldUT} µT`}
+            sub={health.fieldStable ? `${health.fieldUT} µT` : null}
+            color={health.fieldStable ? GOOD : t.textClr}
+            lead={health.fieldStable ? <Dot color={GOOD}/> : null}/>
+        )}
+        <StatCol t={t} textSize={textSize} label="Level"
+          value={!hasTilt ? "—" : isLevel ? "Phone level ✓" : "Hold your phone level"}
+          sub={!hasTilt ? "no tilt data" : null} color={lvlColor}
+          lead={hasTilt ? <LevelBubble beta={health.beta} gamma={health.gamma} color={lvlColor} t={t}/> : null}/>
+      </div>
+
+      {/* ── Calibration hint (only when sensor data warrants it) ── */}
+      {showCal && (
+        <div style={{ ...glass, display: "flex", alignItems: "center", gap: "12px", padding: "10px 12px" }}>
+          <svg width="46" height="24" viewBox="0 0 48 24" aria-hidden="true" style={{ flexShrink: 0 }}>
+            <path d="M24,12 C24,4 8,4 8,12 C8,20 24,20 24,12 C24,4 40,4 40,12 C40,20 24,20 24,12"
+              fill="none" stroke={t.gold} strokeWidth="1" opacity="0.25"/>
+            <path d="M24,12 C24,4 8,4 8,12 C8,20 24,20 24,12 C24,4 40,4 40,12 C40,20 24,20 24,12"
+              fill="none" stroke={t.gold} strokeWidth="2" strokeLinecap="round" pathLength="100"
+              className="q-fig8"/>
+          </svg>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ color: t.gold, fontSize: `${12 * textSize}px`, fontWeight: 800 }}>Compass calibration recommended</div>
+            <div style={{ color: t.textDim, fontSize: `${11 * textSize}px`, marginTop: "2px" }}>Move your phone in a figure-8</div>
+          </div>
+          <button onClick={onDismissCal} aria-label="Dismiss calibration tip"
+            style={{ background: "none", border: "none", color: t.goldDim, fontSize: "18px", cursor: "pointer", padding: "4px", lineHeight: 1 }}>
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* ── Kaaba distance / bearing ── */}
+      {distanceKm !== null && (
+        <div style={{ ...glass, display: "flex", overflow: "hidden" }}>
+          <StatCol first t={t} textSize={textSize * 1.35} label="Kaaba"
+            value={fmtKm(distanceKm)} color={t.textClr}/>
+          <StatCol t={t} textSize={textSize * 1.35} label="Qibla bearing"
+            value={`${Math.round(qiblaAngle)}°`} sub={cardinal16(qiblaAngle)} color={t.textClr}/>
+        </div>
+      )}
+
+      {/* ── Mini Qibla route ── */}
+      {distanceKm !== null && (
+        <div style={{ ...glass, padding: "10px 12px 6px" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span style={{ color: t.goldDim, fontSize: "9px", letterSpacing: "1.8px", textTransform: "uppercase" }}>Qibla route</span>
+            <span style={{ color: t.textDim, fontSize: "9px" }}>great-circle · schematic</span>
+          </div>
+          <QiblaRoute t={t} textSize={textSize} userName={locationName} distanceKm={distanceKm} qiblaAngle={qiblaAngle}/>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main QiblaPage ───────────────────────────────────────────────────────────
 export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const [qiblaAngle, setQiblaAngle] = useState(null);
@@ -330,6 +646,14 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   const [showCity, setShowCity] = useState(false);
   const smoothRef = useRef(0);
   const alignedRef = useRef(false);
+
+  // ── Extras state (additive — does not affect compass logic) ────────────────
+  const [userPos, setUserPos] = useState(null);       // { lat, lon }
+  const [calDismissed, setCalDismissed] = useState(false);
+  const health = useCompassHealth();
+
+  // Re-arm the calibration tip once the sensor problem clears.
+  useEffect(() => { if (!health.needsCal) setCalDismissed(false); }, [health.needsCal]);
 
   // ── Theme tokens ────────────────────────────────────────────────────────────
   const gold = lightMode ? "#7a5810" : "#c9a84c";
@@ -437,6 +761,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     navigator.geolocation.getCurrentPosition(
       async ({ coords }) => {
         setQiblaAngle(calculateQibla(coords.latitude, coords.longitude));
+        setUserPos({ lat: coords.latitude, lon: coords.longitude });
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
@@ -467,6 +792,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       if (d.results?.[0]) {
         const { latitude, longitude, name, country } = d.results[0];
         setQiblaAngle(calculateQibla(latitude, longitude));
+        setUserPos({ lat: latitude, lon: longitude });
         setLocationName(country ? `${name}, ${country}` : name);
         setLocError(null);
         setShowCity(false);
@@ -533,6 +859,9 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
 
   const compassSize = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 390) - 48);
 
+  // Great-circle distance to the Kaaba, from the same coordinates used for the Qibla bearing.
+  const distanceKm = userPos ? haversineKm(userPos.lat, userPos.lon, KAABA.lat, KAABA.lon) : null;
+
   // ── Info metrics for the row below the compass ─────────────────────────────
   const metrics = [
     { label: "Qibla", value: qiblaAngle !== null ? `${Math.round(qiblaAngle)}°` : "—", sub: "from North" },
@@ -564,6 +893,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         .q-kaaba-pulse {
           animation: qKaabaPulse 2s ease-in-out infinite;
         }
+        @keyframes qRouteFlow { to { stroke-dashoffset: -22; } }
+        @keyframes qFig8 { to { stroke-dashoffset: -100; } }
+        .q-route-flow { stroke-dasharray: 5 6; animation: qRouteFlow 2.2s linear infinite; }
+        .q-fig8 { stroke-dasharray: 22 78; animation: qFig8 2.6s linear infinite; }
       `}</style>
 
       {/* ── Background pattern ── */}
@@ -664,9 +997,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           ══════════════════════════════════════════════════════ */}
       <div style={{
         flex:1, display:"flex", flexDirection:"column",
-        alignItems:"center", justifyContent:"center",
-        padding:"14px 24px 20px",
-        position:"relative", zIndex:1, overflow:"hidden",
+        alignItems:"center", justifyContent:"flex-start",
+        padding:"14px 24px 32px",
+        position:"relative", zIndex:1, overflowX:"hidden", overflowY:"auto",
+        WebkitOverflowScrolling:"touch",
         gap:"0px",
       }}>
         {qiblaAngle !== null ? (
@@ -774,10 +1108,21 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
             }}>
               Hold your phone level and follow the 🕋 marker
             </div>
+
+            <QiblaExtras
+              t={{ gold, goldDim, goldBdr, goldFaint, textClr, textDim }}
+              textSize={textSize}
+              health={health}
+              distanceKm={distanceKm}
+              qiblaAngle={qiblaAngle}
+              locationName={locationName}
+              calDismissed={calDismissed}
+              onDismissCal={() => setCalDismissed(true)}
+            />
           </>
         ) : (
           /* ── No location state ──────────────────────────── */
-          <div style={{ textAlign:"center", padding:"16px" }}>
+          <div style={{ textAlign:"center", padding:"16px", margin:"auto 0" }}>
             {locError ? (
               <>
                 <div style={{ fontSize:"40px", marginBottom:"18px", opacity:0.55 }}>📍</div>
