@@ -31,8 +31,8 @@ const THUNDER_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/rolling-thund
 const DURATION = 10; // seconds, fixed
 const FADE = 0.5; // seconds -- fade in/out on each looping bed so there's no audible hard edge
 const MAIN_VOLUME = 1.0;
-const LAKE_VOLUME = 0.7;
-const THUNDER_VOLUME = 0.3;
+const LAKE_VOLUME = 1.3;
+const THUNDER_VOLUME = 0.8;
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
