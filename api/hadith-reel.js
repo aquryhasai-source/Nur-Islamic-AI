@@ -1,6 +1,6 @@
 // Builds the daily Hadith Reel: static vertical hadith-card image over a
-// fixed-length ambient bed (melody + lake/wind ambience + rolling thunder),
-// uploaded to Vercel Blob. Returns { video_url } for the caller to post to Meta.
+// fixed-length ambient bed (melody + thunder + ocean waves), uploaded to
+// Vercel Blob. Returns { video_url } for the caller to post to Meta.
 //
 // No narration/TTS -- the no-narration version was confirmed as the final
 // design, so that path (and Groq TTS, reverb, ffprobe-based duration timing
@@ -25,14 +25,14 @@ export const config = { maxDuration: 60 };
 
 const CARD_BASE_URL = "https://nur-islamic-ai.vercel.app/api/hadith-card";
 const MAIN_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/bg-melody.mp3";
-const LAKE_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/lake-wind.mp3";
-const THUNDER_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/rolling-thunder.mp3"; // ~8.8s natural length -- left as a one-off rumble rather than looped/stretched to fill the full clip
+const THUNDER_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/thunder.mp3";
+const OCEAN_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/ocean-waves.mp3";
 
 const DURATION = 10; // seconds, fixed
-const FADE = 0.5; // seconds -- fade in/out on each looping bed so there's no audible hard edge
+const FADE = 0.5; // seconds -- fade in/out on each track so there's no audible hard edge
 const MAIN_VOLUME = 1.0;
-const LAKE_VOLUME = 1.3;
-const THUNDER_VOLUME = 0.8;
+const THUNDER_VOLUME = 0.7;
+const OCEAN_VOLUME = 0.5;
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
@@ -68,8 +68,8 @@ export default async function handler(req, res) {
   const tmpId = randomUUID();
   const imagePath = `/tmp/${tmpId}.png`;
   const mainPath = `/tmp/${tmpId}-main.mp3`;
-  const lakePath = `/tmp/${tmpId}-lake.mp3`;
   const thunderPath = `/tmp/${tmpId}-thunder.mp3`;
+  const oceanPath = `/tmp/${tmpId}-ocean.mp3`;
   const outputPath = `/tmp/${tmpId}.mp4`;
 
   try {
@@ -77,27 +77,30 @@ export default async function handler(req, res) {
     const imageUrl = `${CARD_BASE_URL}?text=${encodeURIComponent(hadith_text)}&ref=${encodeURIComponent(reference)}&format=reel`;
     await fetchToFile(imageUrl, imagePath);
 
-    // 2. Three-layer ambient bed
+    // 2. Three-layer ambient bed -- all three are now full-length tracks,
+    // each trimmed/faded identically
     await Promise.all([
       fetchToFile(MAIN_TRACK_URL, mainPath),
-      fetchToFile(LAKE_TRACK_URL, lakePath),
       fetchToFile(THUNDER_TRACK_URL, thunderPath),
+      fetchToFile(OCEAN_TRACK_URL, oceanPath),
     ]);
 
-    const thunderFadeStart = Math.max(0, 8.8 - FADE); // thunder track's own ~8.8s length, not the full clip
+    const layer = (inputIdx, label, volume) =>
+      `[${inputIdx}:a]atrim=0:${DURATION},afade=t=in:st=0:d=${FADE},afade=t=out:st=${DURATION - FADE}:d=${FADE},volume=${volume}[${label}]`;
+
     const filterComplex =
-      `[1:a]atrim=0:${DURATION},afade=t=in:st=0:d=${FADE},afade=t=out:st=${DURATION - FADE}:d=${FADE},volume=${MAIN_VOLUME}[main];` +
-      `[2:a]atrim=0:${DURATION},afade=t=in:st=0:d=${FADE},afade=t=out:st=${DURATION - FADE}:d=${FADE},volume=${LAKE_VOLUME}[lake];` +
-      `[3:a]afade=t=in:st=0:d=0.3,afade=t=out:st=${thunderFadeStart}:d=${FADE},volume=${THUNDER_VOLUME}[thunder];` +
-      `[main][lake][thunder]amix=inputs=3:duration=longest:dropout_transition=0[a]`;
+      `${layer(1, "main", MAIN_VOLUME)};` +
+      `${layer(2, "thunder", THUNDER_VOLUME)};` +
+      `${layer(3, "ocean", OCEAN_VOLUME)};` +
+      `[main][thunder][ocean]amix=inputs=3:duration=longest:dropout_transition=0[a]`;
 
     // 3. Mux: static image as video, fixed-duration 3-layer mix as audio
     await runFfmpeg([
       "-y",
       "-loop", "1", "-i", imagePath,
       "-i", mainPath,
-      "-i", lakePath,
       "-i", thunderPath,
+      "-i", oceanPath,
       "-filter_complex", filterComplex,
       "-map", "0:v", "-map", "[a]",
       "-c:v", "libx264", "-tune", "stillimage", "-pix_fmt", "yuv420p", "-r", "30",
@@ -118,6 +121,6 @@ export default async function handler(req, res) {
   } catch (err) {
     res.status(500).json({ error: String(err) });
   } finally {
-    await Promise.allSettled([unlink(imagePath), unlink(mainPath), unlink(lakePath), unlink(thunderPath), unlink(outputPath)]);
+    await Promise.allSettled([unlink(imagePath), unlink(mainPath), unlink(thunderPath), unlink(oceanPath), unlink(outputPath)]);
   }
 }
