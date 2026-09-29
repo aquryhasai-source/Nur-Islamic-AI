@@ -31,6 +31,161 @@ const GeoBg = ({ lightMode }) => (
   </svg>
 );
 
+// ─── Compass faces (paint only) ──────────────────────────────────────────────
+// Each face changes colours, tick density, labels and a decorative layer.
+// Rotation, needle, heading and alignment math are NOT part of this. "classic"
+// reproduces the original look exactly.
+const FACE_ORDER = ["classic", "minimal", "geometric", "emerald", "parchment", "onyx"];
+const FACE_LABELS = {
+  classic: "Classic", minimal: "Minimal", geometric: "Geometric",
+  emerald: "Emerald", parchment: "Parchment", onyx: "Onyx",
+};
+const FACE_STORAGE_KEY = "nur-qibla-face";
+
+function getFaceStyle(face, lightMode) {
+  const base = {
+    accent: "#c9a84c", north: "#e07575",
+    faceIn: lightMode ? "#fef9ee" : "#112218",
+    faceOut: lightMode ? "#ede4cc" : "#08130f",
+    cap: lightMode ? "#fdf8ed" : "#091610",
+    tickEvery: 5, degLabels: true, deco: "none",
+  };
+  switch (face) {
+    case "minimal":
+      return { ...base, accent: "#bfa050", tickEvery: 10, degLabels: false,
+        faceIn: lightMode ? "#f6efdc" : "#0d1c15", faceOut: lightMode ? "#f6efdc" : "#0d1c15" };
+    case "geometric":
+      return { ...base, deco: "star" };
+    case "emerald":
+      return { ...base, accent: "#d4b85a", deco: "dots",
+        faceIn: lightMode ? "#2a6a4c" : "#1f5a40", faceOut: lightMode ? "#123626" : "#0b2a1d",
+        cap: "#0b2a1d" };
+    case "parchment":
+      return { ...base, accent: "#96721f", north: "#c0453d", deco: "rings",
+        faceIn: lightMode ? "#efe2bd" : "#f4ebd2", faceOut: lightMode ? "#d9c797" : "#dccda6",
+        cap: "#fdf8ed" };
+    case "onyx":
+      return { ...base, accent: "#d9bd66", deco: "rays",
+        faceIn: lightMode ? "#2a2a24" : "#1b1b17", faceOut: lightMode ? "#0e0e0c" : "#070706",
+        cap: "#0a0a08" };
+    default:
+      return base;
+  }
+}
+
+// Decorative layer drawn inside the face. R = usable radius, k = stroke scale.
+function FaceDeco({ kind, cx, cy, R, accent, k = 1 }) {
+  const at = (rr, deg) => {
+    const a = ((deg - 90) * Math.PI) / 180;
+    return [cx + rr * Math.cos(a), cy + rr * Math.sin(a)];
+  };
+  if (kind === "star") {
+    const pts = (rOut, rIn, off) =>
+      Array.from({ length: 16 }, (_, i) => at(i % 2 === 0 ? rOut : rIn, i * 22.5 + off)
+        .map((v) => v.toFixed(2)).join(",")).join(" ");
+    return (
+      <g fill="none" stroke={accent} strokeLinejoin="round" aria-hidden="true">
+        <polygon points={pts(R, R * 0.58, 0)} strokeWidth={0.8 * k} opacity="0.28"/>
+        <polygon points={pts(R * 0.62, R * 0.36, 22.5)} strokeWidth={0.6 * k} opacity="0.2"/>
+        <circle cx={cx} cy={cy} r={R * 0.82} strokeWidth={0.4 * k} opacity="0.16"/>
+      </g>
+    );
+  }
+  if (kind === "rays") {
+    return (
+      <g stroke={accent} strokeLinecap="round" aria-hidden="true">
+        {Array.from({ length: 24 }, (_, i) => {
+          const major = i % 3 === 0;
+          const [x1, y1] = at(R * 0.24, i * 15);
+          const [x2, y2] = at(R * (major ? 1 : 0.82), i * 15);
+          return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2}
+            strokeWidth={(major ? 0.8 : 0.5) * k} opacity={major ? 0.28 : 0.15}/>;
+        })}
+        <circle cx={cx} cy={cy} r={R * 0.5} fill="none" strokeWidth={0.4 * k} opacity="0.18"/>
+      </g>
+    );
+  }
+  if (kind === "dots") {
+    return (
+      <g fill={accent} aria-hidden="true">
+        {Array.from({ length: 36 }, (_, i) => {
+          const [x, y] = at(R, i * 10);
+          return <circle key={`o${i}`} cx={x} cy={y} r={1.1 * k} opacity="0.35"/>;
+        })}
+        {Array.from({ length: 12 }, (_, i) => {
+          const [x, y] = at(R * 0.7, i * 30);
+          return <circle key={`i${i}`} cx={x} cy={y} r={1.6 * k} opacity="0.3"/>;
+        })}
+        <circle cx={cx} cy={cy} r={R * 0.48} fill="none" stroke={accent} strokeWidth={0.4 * k} opacity="0.18"/>
+      </g>
+    );
+  }
+  if (kind === "rings") {
+    return (
+      <g fill="none" stroke={accent} aria-hidden="true">
+        {[0.9, 0.68, 0.46, 0.24].map((f, i) => (
+          <circle key={f} cx={cx} cy={cy} r={R * f} strokeWidth={(i === 0 ? 0.8 : 0.45) * k} opacity={0.28 - i * 0.05}/>
+        ))}
+      </g>
+    );
+  }
+  return null;
+}
+
+// Small round preview used by the face picker.
+function FaceThumb({ face, lightMode, size = 40 }) {
+  const f = getFaceStyle(face, lightMode);
+  const gid = `qThumb-${face}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 44 44" aria-hidden="true" style={{ display: "block" }}>
+      <defs>
+        <radialGradient id={gid} cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor={f.faceIn}/>
+          <stop offset="100%" stopColor={f.faceOut}/>
+        </radialGradient>
+      </defs>
+      <circle cx="22" cy="22" r="20" fill={`url(#${gid})`} stroke={f.accent} strokeWidth="0.9" opacity="0.95"/>
+      <circle cx="22" cy="22" r="17.2" fill="none" stroke={f.accent} strokeWidth="2.2"
+        strokeDasharray={f.tickEvery === 10 ? "0.7 8.5" : "0.7 3.75"} opacity="0.55"/>
+      <FaceDeco kind={f.deco} cx={22} cy={22} R={12} accent={f.accent} k={0.6}/>
+      <path d="M22,7.5 L25,23 L22,20 L19,23 Z" fill={f.accent} transform="rotate(38 22 22)"/>
+      <circle cx="22" cy="22" r="3" fill={f.cap} stroke={f.accent} strokeWidth="1.2"/>
+    </svg>
+  );
+}
+
+function FaceTray({ t, face, lightMode, onPick }) {
+  return (
+    <div role="listbox" aria-label="Compass style" style={{
+      width: "100%", maxWidth: "360px", display: "flex", justifyContent: "space-between", gap: "4px",
+      padding: "10px 8px 8px", marginTop: "-6px", marginBottom: "18px", overflowX: "auto",
+      background: t.goldFaint, border: `1px solid ${t.goldBdr}`, borderRadius: "16px",
+      backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", animation: "qStatusIn 0.3s ease",
+    }}>
+      {FACE_ORDER.map((key) => {
+        const on = key === face;
+        return (
+          <button key={key} role="option" aria-selected={on} onClick={() => onPick(key)} style={{
+            background: "none", border: "none", cursor: "pointer", padding: "2px", flex: "0 0 auto",
+            display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
+            fontFamily: "Nunito, sans-serif",
+          }}>
+            <span style={{
+              display: "block", borderRadius: "50%", padding: "2px", lineHeight: 0,
+              border: `1.5px solid ${on ? t.gold : "transparent"}`, transition: "border-color 0.25s ease",
+            }}>
+              <FaceThumb face={key} lightMode={lightMode}/>
+            </span>
+            <span style={{ fontSize: "9px", letterSpacing: "0.6px", color: on ? t.gold : t.textDim, fontWeight: on ? 800 : 500 }}>
+              {FACE_LABELS[key]}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Compass SVG — rotating ring design ──────────────────────────────────────
 //
 // HOW IT WORKS:
@@ -65,12 +220,13 @@ function useUnwrappedAngle(targetDeg) {
   return unwrapped.current;
 }
 
-const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
+const CompassSVG = ({ bearing, qibla, size, aligned, lightMode, face = "classic" }) => {
   const r = size / 2;
   const cx = r;
   const cy = r;
-  const GOLD = "#c9a84c";
-  const NORTH_RED = "#e07575";
+  const FC = getFaceStyle(face, lightMode);   // paint only — "classic" == original colours
+  const GOLD = FC.accent;
+  const NORTH_RED = FC.north;
 
   // Ring rotates opposite to bearing → N tracks true north on screen.
   // Needle points toward Qibla in world space → screen angle = qibla - bearing.
@@ -139,9 +295,9 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
       <defs>
         <radialGradient id="qFace" cx="50%" cy="50%" r="50%">
           <stop offset="0%"
-            stopColor={lightMode ? "#fef9ee" : "#112218"} stopOpacity="0.92"/>
+            stopColor={FC.faceIn} stopOpacity="0.92"/>
           <stop offset="100%"
-            stopColor={lightMode ? "#ede4cc" : "#08130f"} stopOpacity="1"/>
+            stopColor={FC.faceOut} stopOpacity="1"/>
         </radialGradient>
         <filter id="qNeedleGlow" x="-60%" y="-30%" width="220%" height="160%">
           <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
@@ -182,16 +338,21 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
         transform: `rotate(${ringAngle}deg)`,
         transition: "transform 0.35s cubic-bezier(0.23, 1, 0.32, 1)",
       }}>
+        {/* Face decoration (paint only) */}
+        {FC.deco !== "none" && (
+          <FaceDeco kind={FC.deco} cx={cx} cy={cy} R={r - 62} accent={GOLD}/>
+        )}
+
         {/* Tick ring border */}
         <circle cx={cx} cy={cy} r={r - 11}
           fill="none" stroke={GOLD} strokeWidth="1.2" opacity="0.5"/>
 
         {/* Tick marks */}
-        {ticks.map((t, i) => (
+        {ticks.map((t, i) => ((i * 5) % FC.tickEvery !== 0 ? null : (
           <line key={i}
             x1={t.x1} y1={t.y1} x2={t.x2} y2={t.y2}
             stroke={GOLD} strokeWidth={t.sw} opacity={t.op}/>
-        ))}
+        )))}
 
         {/* Cardinal labels */}
         {cardinals.map(({ d, l, fill, fs, fw }) => {
@@ -207,7 +368,7 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
         })}
 
         {/* Degree labels at 30° intervals */}
-        {degLabels.map(d => {
+        {FC.degLabels && degLabels.map(d => {
           const { x, y } = pos(d, DEG_R - 2);
           return (
             <text key={d} x={x} y={y}
@@ -290,11 +451,11 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode }) => {
 
       {/* ── Center cap (always on top) ── */}
       <circle cx={cx} cy={cy} r="13"
-        fill={lightMode ? "#fdf8ed" : "#091610"}
+        fill={FC.cap}
         stroke={GOLD} strokeWidth="2.5"/>
       <circle cx={cx} cy={cy} r="5.5" fill={GOLD}/>
       <circle cx={cx} cy={cy} r="2"
-        fill={lightMode ? "#fdf8ed" : "#091610"}/>
+        fill={FC.cap}/>
     </svg>
   );
 };
@@ -444,12 +605,12 @@ function useCompassHealth() {
 }
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
-function LevelBubble({ beta, gamma, color, t }) {
+function LevelBubble({ beta, gamma, color, t, size = 30 }) {
   // Ball rolls toward the lower side of the phone, like a marble in a dish.
   const dx = clamp(gamma / TILT_CLAMP_DEG, -1, 1) * 9;
   const dy = clamp(beta / TILT_CLAMP_DEG, -1, 1) * 9;
   return (
-    <svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true" style={{ flexShrink: 0 }}>
+    <svg width={size} height={size} viewBox="0 0 30 30" aria-hidden="true" style={{ flexShrink: 0 }}>
       <circle cx="15" cy="15" r="13.5" fill="none" stroke={t.goldBdr} strokeWidth="1"/>
       <line x1="15" y1="3" x2="15" y2="27" stroke={t.gold} strokeWidth="0.4" opacity="0.25"/>
       <line x1="3" y1="15" x2="27" y2="15" stroke={t.gold} strokeWidth="0.4" opacity="0.25"/>
@@ -461,22 +622,22 @@ function LevelBubble({ beta, gamma, color, t }) {
   );
 }
 
-function StatCol({ t, textSize, label, value, sub, color, lead, first }) {
+function StatCol({ t, textSize, label, value, sub, color, lead, first, big, stack }) {
   return (
     <div style={{
-      flex: 1, minWidth: 0, padding: "11px 6px", textAlign: "center",
+      flex: 1, minWidth: 0, padding: big ? "16px 8px" : "11px 6px", textAlign: "center",
       borderLeft: first ? "none" : `1px solid ${t.goldBdr}`,
     }}>
-      <div style={{ color: t.goldDim, fontSize: "9px", letterSpacing: "1.8px", textTransform: "uppercase", marginBottom: "5px" }}>
+      <div style={{ color: t.goldDim, fontSize: big ? "10.5px" : "9px", letterSpacing: "1.8px", textTransform: "uppercase", marginBottom: big ? "8px" : "5px" }}>
         {label}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", minHeight: "30px" }}>
+      <div style={{ display: "flex", flexDirection: stack ? "column" : "row", alignItems: "center", justifyContent: "center", gap: stack ? "8px" : "6px", minHeight: big ? "44px" : "30px" }}>
         {lead}
-        <span style={{ color, fontSize: `${12.5 * textSize}px`, fontWeight: 800, lineHeight: 1.25, transition: "color 0.5s ease" }}>
+        <span style={{ color, fontSize: `${(big ? 15 : 12.5) * textSize}px`, fontWeight: 800, lineHeight: 1.25, transition: "color 0.5s ease" }}>
           {value}
         </span>
       </div>
-      {sub && <div style={{ color: t.textDim, fontSize: "9px", marginTop: "3px" }}>{sub}</div>}
+      {sub && <div style={{ color: t.textDim, fontSize: big ? "10.5px" : "9px", marginTop: big ? "6px" : "3px" }}>{sub}</div>}
     </div>
   );
 }
@@ -540,7 +701,7 @@ function QiblaRoute({ t, textSize, userName, distanceKm, qiblaAngle }) {
 // ── Extras section, rendered below the existing metric row ───────────────────
 function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName, calDismissed, onDismissCal }) {
   const glass = {
-    width: "100%", maxWidth: "340px",
+    width: "100%", maxWidth: "360px",
     background: t.goldFaint, border: `1px solid ${t.goldBdr}`, borderRadius: "16px",
     backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
     animation: "qStatusIn 0.4s ease",
@@ -571,23 +732,23 @@ function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName
   const showCal = health.needsCal && !calDismissed;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%", marginTop: "16px" }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px", width: "100%", marginTop: "0px" }}>
 
       {/* ── Sensor status: compass · magnetic field · level ── */}
       <div style={{ ...glass, display: "flex", overflow: "hidden" }}>
-        <StatCol first t={t} textSize={textSize} label="Compass" value={cValue} sub={cSub} color={cColor}
+        <StatCol first big t={t} textSize={textSize} label="Compass" value={cValue} sub={cSub} color={cColor}
           lead={<Dot color={cColor}/>}/>
         {hasField && (
-          <StatCol t={t} textSize={textSize} label="Magnetic field"
+          <StatCol big t={t} textSize={textSize} label="Magnetic field"
             value={health.fieldStable ? "Stable" : `${health.fieldUT} µT`}
             sub={health.fieldStable ? `${health.fieldUT} µT` : null}
             color={health.fieldStable ? GOOD : t.textClr}
             lead={health.fieldStable ? <Dot color={GOOD}/> : null}/>
         )}
-        <StatCol t={t} textSize={textSize} label="Level"
+        <StatCol big stack t={t} textSize={textSize} label="Level"
           value={!hasTilt ? "—" : isLevel ? "Phone level ✓" : "Hold your phone level"}
           sub={!hasTilt ? "no tilt data" : null} color={lvlColor}
-          lead={hasTilt ? <LevelBubble beta={health.beta} gamma={health.gamma} color={lvlColor} t={t}/> : null}/>
+          lead={hasTilt ? <LevelBubble beta={health.beta} gamma={health.gamma} color={lvlColor} t={t} size={44}/> : null}/>
       </div>
 
       {/* ── Calibration hint (only when sensor data warrants it) ── */}
@@ -608,16 +769,6 @@ function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName
             style={{ background: "none", border: "none", color: t.goldDim, fontSize: "18px", cursor: "pointer", padding: "4px", lineHeight: 1 }}>
             ×
           </button>
-        </div>
-      )}
-
-      {/* ── Kaaba distance / bearing ── */}
-      {distanceKm !== null && (
-        <div style={{ ...glass, display: "flex", overflow: "hidden" }}>
-          <StatCol first t={t} textSize={textSize * 1.35} label="Kaaba"
-            value={fmtKm(distanceKm)} color={t.textClr}/>
-          <StatCol t={t} textSize={textSize * 1.35} label="Qibla bearing"
-            value={`${Math.round(qiblaAngle)}°`} sub={cardinal16(qiblaAngle)} color={t.textClr}/>
         </div>
       )}
 
@@ -650,6 +801,16 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   // ── Extras state (additive — does not affect compass logic) ────────────────
   const [userPos, setUserPos] = useState(null);       // { lat, lon }
   const [calDismissed, setCalDismissed] = useState(false);
+  const [face, setFace] = useState(() => {
+    try { const v = localStorage.getItem(FACE_STORAGE_KEY); return FACE_ORDER.includes(v) ? v : "classic"; }
+    catch { return "classic"; }
+  });
+  const [showFaces, setShowFaces] = useState(false);
+  const pickFace = (k) => {
+    setFace(k);
+    try { localStorage.setItem(FACE_STORAGE_KEY, k); } catch {}
+    setShowFaces(false);
+  };
   const health = useCompassHealth();
 
   // Re-arm the calibration tip once the sensor problem clears.
@@ -857,7 +1018,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           }
     : null;
 
-  const compassSize = Math.min(300, (typeof window !== "undefined" ? window.innerWidth : 390) - 48);
+  const compassSize = Math.min(380, (typeof window !== "undefined" ? window.innerWidth : 390) - 40);
 
   // Great-circle distance to the Kaaba, from the same coordinates used for the Qibla bearing.
   const distanceKm = userPos ? haversineKm(userPos.lat, userPos.lon, KAABA.lat, KAABA.lon) : null;
@@ -1052,15 +1213,42 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               transition:"box-shadow 0.8s ease",
               marginBottom:"22px",
               flexShrink:0,
+              position:"relative",
             }}>
               <CompassSVG
+                face={face}
                 bearing={bearing}
                 qibla={qiblaAngle}
                 size={compassSize}
                 aligned={aligned}
                 lightMode={lightMode}
               />
+              <button
+                onClick={() => setShowFaces(v => !v)}
+                aria-label="Compass style" aria-expanded={showFaces}
+                style={{
+                  position:"absolute", right:"2px", bottom:"2px",
+                  width:"38px", height:"38px", borderRadius:"50%", cursor:"pointer",
+                  background: showFaces ? goldFaint : headerBg,
+                  border:`1px solid ${showFaces ? gold : goldBdr}`,
+                  backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)",
+                  display:"flex", alignItems:"center", justifyContent:"center", padding:0,
+                  transition:"all 0.25s ease",
+                }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+                  <circle cx="10" cy="10" r="8.2" fill="none" stroke={gold} strokeWidth="1.2"/>
+                  <circle cx="10" cy="10" r="4.6" fill="none" stroke={gold} strokeWidth="0.9" opacity="0.7"/>
+                  <path d="M10,3.2 L11.6,10 L10,8.8 L8.4,10 Z" fill={gold}/>
+                </svg>
+              </button>
             </div>
+
+            {showFaces && (
+              <FaceTray
+                t={{ gold, goldDim, goldBdr, goldFaint, textClr, textDim }}
+                face={face} lightMode={lightMode} onPick={pickFace}
+              />
+            )}
 
             {/* ── Metric row ───────────────────────────────── */}
             <div style={{
@@ -1098,15 +1286,6 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   </div>
                 </div>
               ))}
-            </div>
-
-            {/* ── Polished instruction text ─────────────────── */}
-            <div style={{
-              color:textDim, fontSize:`${11 * textSize}px`,
-              textAlign:"center", lineHeight:1.9,
-              letterSpacing:"0.3px",
-            }}>
-              Hold your phone level and follow the 🕋 marker
             </div>
 
             <QiblaExtras
