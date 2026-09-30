@@ -511,83 +511,105 @@ const cardinal16 = (deg) => CARD16[Math.round((((deg % 360) + 360) % 360) / 22.5
 const fmtKm = (km) => `${Math.round(km).toLocaleString("en-US")} km`;
 const trunc = (s, n) => (s.length > n ? `${s.slice(0, n - 1)}…` : s);
 
-// ── Read-only sensor health ──────────────────────────────────────────────────
-// Only reports what the browser genuinely exposes:
-//   • tilt            — beta/gamma from DeviceOrientation (all platforms)
+// ── Read-only sensor health + live "upright" heading ─────────────────────────
+// Reports only what the browser genuinely exposes:
+//   • tilt / bz       — beta/gamma from DeviceOrientation; bz is the vertical
+//                       component of the direction the phone's BACK faces
+//                       (-1 = pointing at the floor, 0 = horizontal)
 //   • source          — whether north-referenced (absolute) events are arriving
 //   • iOS accuracy    — webkitCompassAccuracy (iOS Safari only)
-//   • magnetic field  — Generic Sensor Magnetometer magnitude (Chrome/Android,
-//                       where available). Shown as a plain value; never used
-//                       for heading and never labelled as "interference".
+//   • live heading    — heading of the phone's back (for the upright view),
+//                       computed from the full alpha/beta/gamma rotation; kept
+//                       in a ref so the upright view can animate without
+//                       re-rendering the whole page
 // Android's DeviceOrientation API has no accuracy value, so none is invented.
 function useCompassHealth() {
   const [h, setH] = useState({
-    beta: null, gamma: null, source: null, iosAcc: null,
-    fieldUT: null, fieldStable: false, needsCal: false,
+    beta: null, gamma: null, bz: null, source: null, iosAcc: null, needsCal: false,
   });
+  const liveRef = useRef({ heading: null, roll: 0, bz: null });
 
   useEffect(() => {
-    const s = { beta: null, gamma: null, absMs: 0, anyMs: 0, iosAcc: null, field: [], badSince: 0 };
+    const D2R = Math.PI / 180;
+    const s = {
+      beta: null, gamma: null, bz: null, roll: null,
+      upX: 0, upY: 0, upInit: false,
+      absMs: 0, anyMs: 0, iosAcc: null, badSince: 0,
+    };
 
     const takeTilt = (e) => {
       if (e.beta == null || e.gamma == null) return;
       s.beta = s.beta === null ? e.beta : s.beta + (e.beta - s.beta) * 0.3;
       s.gamma = s.gamma === null ? e.gamma : s.gamma + (e.gamma - s.gamma) * 0.3;
     };
-    const onAbs = (e) => { const n = Date.now(); s.absMs = n; s.anyMs = n; takeTilt(e); };
+
+    // Heading of the direction the phone's BACK faces, from the W3C rotation
+    // matrix (device z-axis in earth coordinates, negated). For an upright,
+    // un-rolled phone this equals the flat-compass value (360 - alpha).
+    const feedUp = (e) => {
+      if (e.beta == null || e.gamma == null) return;
+      const b = e.beta * D2R, g = e.gamma * D2R;
+      const bz = -Math.cos(b) * Math.cos(g);
+      // World "up" in screen coordinates → roll of the screen against the horizon.
+      const roll = Math.atan2(-Math.cos(b) * Math.sin(g), Math.sin(b)) / D2R;
+      s.bz = s.bz === null ? bz : s.bz + (bz - s.bz) * 0.3;
+      s.roll = s.roll === null ? roll : s.roll + (((roll - s.roll + 540) % 360) - 180) * 0.25;
+
+      let hx = null, hy = null;
+      if (typeof e.webkitCompassHeading === "number") {
+        hx = Math.sin(e.webkitCompassHeading * D2R);   // iOS: already north-referenced
+        hy = Math.cos(e.webkitCompassHeading * D2R);
+      } else if (e.alpha != null) {
+        const a = e.alpha * D2R;
+        const bx = -(Math.cos(g) * Math.sin(a) * Math.sin(b) + Math.cos(a) * Math.sin(g));
+        const by = Math.cos(a) * Math.cos(g) * Math.sin(b) - Math.sin(a) * Math.sin(g);
+        const m = Math.hypot(bx, by);
+        if (m >= 0.25) { hx = bx / m; hy = by / m; }   // ignore when pointing at floor/sky
+      }
+      if (hx !== null) {
+        if (!s.upInit) { s.upX = hx; s.upY = hy; s.upInit = true; }
+        else { s.upX += (hx - s.upX) * 0.2; s.upY += (hy - s.upY) * 0.2; }   // circular low-pass
+      }
+      liveRef.current = {
+        heading: s.upInit ? (Math.atan2(s.upX, s.upY) / D2R + 360) % 360 : null,
+        roll: s.roll,
+        bz: s.bz,
+      };
+    };
+
+    const onAbs = (e) => {
+      const n = Date.now();
+      s.absMs = n; s.anyMs = n;
+      takeTilt(e);
+      feedUp(e);
+    };
     const onRel = (e) => {
-      s.anyMs = Date.now();
+      const n = Date.now();
+      const absFresh = n - s.absMs < 1000;   // same stale rule as the flat compass
+      s.anyMs = n;
       takeTilt(e);
       if (typeof e.webkitCompassAccuracy === "number") s.iosAcc = Math.round(e.webkitCompassAccuracy);
+      if (!absFresh) feedUp(e);
     };
     window.addEventListener("deviceorientationabsolute", onAbs, true);
     window.addEventListener("deviceorientation", onRel);
-
-    let mag = null;
-    try {
-      if (typeof window.Magnetometer === "function") {
-        mag = new window.Magnetometer({ frequency: 5 });
-        mag.addEventListener("reading", () => {
-          const m = Math.hypot(mag.x, mag.y, mag.z);
-          if (Number.isFinite(m) && m > 0) {
-            s.field.push(m);
-            if (s.field.length > 10) s.field.shift();
-          }
-        });
-        mag.addEventListener("error", () => {});
-        mag.start();
-      }
-    } catch { mag = null; }
 
     const tick = () => {
       const now = Date.now();
       const iosLike = s.iosAcc !== null;
       const source = iosLike ? "ios" : now - s.absMs < 1500 ? "absolute" : now - s.anyMs < 1500 ? "relative" : null;
 
-      // Field magnitude is shown as measured. "Stable" is claimed only when the
-      // last ~2s of readings barely vary (evidence), never inferred from the value.
-      const n = s.field.length;
-      const fieldUT = n >= 3 ? s.field.reduce((x, y) => x + y, 0) / n : null;
-      let fieldStable = false;
-      if (n >= 10) {
-        const sd = Math.sqrt(s.field.reduce((x, y) => x + (y - fieldUT) ** 2, 0) / n);
-        fieldStable = sd <= 2;
-      }
-
       // Calibration is only *recommended* (soft hint), after ~2s of iOS
-      // reporting poor accuracy. Magnetic field strength is display-only and
-      // never triggers this.
-      const iosBad = iosLike && (s.iosAcc < 0 || s.iosAcc > 30);
-      const bad = iosBad;
+      // reporting poor accuracy. Nothing else triggers it.
+      const bad = iosLike && (s.iosAcc < 0 || s.iosAcc > 30);
       if (bad) { if (!s.badSince) s.badSince = now; } else s.badSince = 0;
       const needsCal = bad && now - s.badSince > 2000;
 
       const next = {
         beta: s.beta === null ? null : Math.round(s.beta),
         gamma: s.gamma === null ? null : Math.round(s.gamma),
-        source, iosAcc: s.iosAcc,
-        fieldUT: fieldUT === null ? null : Math.round(fieldUT),
-        fieldStable, needsCal,
+        bz: s.bz === null ? null : Math.round(s.bz * 100) / 100,
+        source, iosAcc: s.iosAcc, needsCal,
       };
       setH((prev) => (Object.keys(next).every((k) => prev[k] === next[k]) ? prev : next));
     };
@@ -597,11 +619,10 @@ function useCompassHealth() {
       clearInterval(id);
       window.removeEventListener("deviceorientationabsolute", onAbs, true);
       window.removeEventListener("deviceorientation", onRel);
-      try { if (mag) mag.stop(); } catch {}
     };
   }, []);
 
-  return h;
+  return { ...h, live: liveRef };
 }
 
 // ── Small pieces ─────────────────────────────────────────────────────────────
@@ -698,6 +719,183 @@ function QiblaRoute({ t, textSize, userName, distanceKm, qiblaAngle }) {
   );
 }
 
+// ── Upright heading view ("AR without the camera") ───────────────────────────
+// Replaces the compass while the phone is held upright: a scrolling scale of
+// vertical marks that slides as you turn, the 🕋 pinned at the Qibla bearing,
+// and glowing chevrons showing which way to turn. Reads the live heading ref
+// on a rAF loop capped like the flat compass; the flat compass logic is not
+// involved.
+const TAPE_SPAN_DEG = 90;   // visible width of the scale, in degrees
+const VIEW_STORAGE_KEY = "nur-qibla-view";
+const VIEW_MODES = ["auto", "compass", "tape"];
+const VIEW_LABELS = { auto: "Auto", compass: "Compass", tape: "Upright" };
+
+function HeadingTape({ t, live, qiblaAngle, size }) {
+  const [v, setV] = useState({ h: null, roll: 0, flat: false });
+  const [aligned, setAligned] = useState(false);
+  const qRef = useRef(qiblaAngle);
+  qRef.current = qiblaAngle;
+
+  useEffect(() => {
+    let raf = null, last = 0, shown = null, shownRoll = 0, shownFlat = false, al = false;
+    const loop = (ts) => {
+      if (ts - last >= 1000 / RENDER_FPS_CAP) {
+        last = ts;
+        const L = live.current;
+        if (L && L.heading !== null) {
+          const roll = clamp(L.roll ?? 0, -45, 45);
+          const flat = L.bz !== null && Math.abs(L.bz) > 0.85;
+          const moved =
+            shown === null ||
+            Math.abs(((L.heading - shown + 540) % 360) - 180) >= DISPLAY_DEADZONE_DEG ||
+            Math.abs(roll - shownRoll) >= 1.5 || flat !== shownFlat;
+          if (moved) { shown = L.heading; shownRoll = roll; shownFlat = flat; setV({ h: L.heading, roll, flat }); }
+          // Same enter/exit hysteresis as the flat compass's "Facing Qibla".
+          const d = Math.abs(((qRef.current - L.heading + 540) % 360) - 180);
+          if (!al && d <= ALIGN_ENTER_DEG) { al = true; setAligned(true); }
+          else if (al && d > ALIGN_EXIT_DEG) { al = false; setAligned(false); }
+        }
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
+  }, [live]);
+
+  const { h, roll, flat } = v;
+  const cx = size / 2, cy = size / 2;
+  const ppd = size / TAPE_SPAN_DEG;
+  const gold = t.gold;
+  const glow = "drop-shadow(0 0 6px rgba(201,168,76,0.9))";
+  const svgProps = { width: size, height: size, viewBox: `0 0 ${size} ${size}`, style: { display: "block" }, role: "img", "aria-label": "Upright Qibla heading view" };
+
+  if (h === null) {
+    return (
+      <svg {...svgProps}>
+        <text x={cx} y={cy} textAnchor="middle" fill={t.textDim} fontSize="13">Hold your phone upright…</text>
+      </svg>
+    );
+  }
+
+  const marks = [];
+  for (let d = Math.ceil((h - TAPE_SPAN_DEG / 2 - 6) / 5) * 5; d <= h + TAPE_SPAN_DEG / 2 + 6; d += 5) {
+    const deg = ((d % 360) + 360) % 360;
+    const x = cx + (d - h) * ppd;
+    const card = deg % 90 === 0, med = !card && deg % 30 === 0, ten = !card && !med && deg % 10 === 0;
+    const half = card ? 54 : med ? 36 : ten ? 22 : 11;
+    marks.push(
+      <g key={d}>
+        <line x1={x} y1={cy - half} x2={x} y2={cy + half} stroke={gold}
+          strokeWidth={card ? 2.4 : med ? 1.6 : ten ? 1.1 : 0.8}
+          opacity={card ? 1 : med ? 0.8 : ten ? 0.5 : 0.3}/>
+        {card && (
+          <text x={x} y={cy - half - 14} textAnchor="middle" dominantBaseline="central"
+            fill={deg === 0 ? "#e07575" : gold} fontSize="20" fontWeight="800" fontFamily="Georgia, serif">
+            {["N", "E", "S", "W"][deg / 90]}
+          </text>
+        )}
+        {med && (
+          <text x={x} y={cy - half - 10} textAnchor="middle" dominantBaseline="central"
+            fill={gold} fontSize="11" fontFamily="Georgia, serif" opacity="0.7">{deg}</text>
+        )}
+      </g>
+    );
+  }
+
+  const dq = ((qiblaAngle - h + 540) % 360) - 180;       // −180..180, + = Qibla is to the right
+  const inView = Math.abs(dq) <= TAPE_SPAN_DEG / 2 - 2;
+  const xq = cx + dq * ppd;
+  const dir = dq > 0 ? 1 : -1;
+  const dur = clamp(0.55 + Math.abs(dq) / 70, 0.6, 1.5);   // pulses faster as you close in
+  const kaabaGlow = aligned
+    ? "drop-shadow(0 0 10px rgba(201,168,76,0.95)) drop-shadow(0 0 22px rgba(201,168,76,0.55))"
+    : "drop-shadow(0 2px 6px rgba(201,168,76,0.5))";
+
+  return (
+    <svg {...svgProps}>
+      <defs>
+        <linearGradient id="qTapeFade" x1="0" x2="1" y1="0" y2="0">
+          <stop offset="0" stopColor="#fff" stopOpacity="0"/>
+          <stop offset="0.14" stopColor="#fff" stopOpacity="1"/>
+          <stop offset="0.86" stopColor="#fff" stopOpacity="1"/>
+          <stop offset="1" stopColor="#fff" stopOpacity="0"/>
+        </linearGradient>
+        <mask id="qTapeMask"><rect width={size} height={size} fill="url(#qTapeFade)"/></mask>
+      </defs>
+
+      {/* horizon — tilts with the phone's roll */}
+      <line x1={-size} x2={size * 2} y1={cy} y2={cy} stroke={gold} strokeWidth="0.8"
+        strokeDasharray="2 7" opacity="0.22" transform={`rotate(${roll} ${cx} ${cy})`}/>
+
+      <g mask="url(#qTapeMask)">{marks}</g>
+
+      {/* fixed heading marker */}
+      <path d={`M${cx},34 L${cx - 7},18 L${cx + 7},18 Z`} fill={gold} opacity="0.9"/>
+      <line x1={cx} y1="38" x2={cx} y2={size - 38} stroke={gold} strokeWidth="0.6" opacity={aligned ? 0.5 : 0.2}
+        style={{ transition: "opacity 0.4s ease" }}/>
+
+      {/* Qibla */}
+      {inView ? (
+        <g>
+          <line x1={xq} y1={cy - 92} x2={xq} y2={cy + 92} stroke={gold} strokeWidth="2.6" strokeLinecap="round"
+            opacity={aligned ? 1 : 0.85} style={{ filter: aligned ? glow : "none", transition: "filter 0.4s ease" }}/>
+          <text x={xq} y={cy - 112} textAnchor="middle" dominantBaseline="central" fontSize={aligned ? 32 : 30}
+            style={{ filter: kaabaGlow, transition: "font-size 0.3s ease" }}>🕋</text>
+          <text x={xq} y={cy + 112} textAnchor="middle" fill={gold} fontSize="11" opacity="0.85">
+            {Math.round(qiblaAngle)}°
+          </text>
+        </g>
+      ) : (
+        <g transform={`translate(${dq > 0 ? size - 30 : 30} ${cy})`}>
+          <text textAnchor="middle" dominantBaseline="central" fontSize="24" style={{ filter: kaabaGlow }}>🕋</text>
+          <path d={dq > 0 ? "M20,-8 L28,0 L20,8" : "M-20,-8 L-28,0 L-20,8"} fill="none" stroke={gold}
+            strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ filter: glow }}/>
+        </g>
+      )}
+
+      {/* glowing turn chevrons — only while off target */}
+      {!aligned && (
+        <g transform={`translate(${cx} ${size - 52})`} style={{ filter: glow }}>
+          {[0, 1, 2].map((i) => (
+            <path key={i}
+              d={dir > 0 ? "M-6,-12 L6,0 L-6,12" : "M6,-12 L-6,0 L6,12"}
+              transform={`translate(${(i - 1) * 26} 0)`}
+              fill="none" stroke={gold} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"
+              className="q-chev"
+              style={{ animationDuration: `${dur}s`, animationDelay: `${((dir > 0 ? i : 2 - i) * dur) / 6}s` }}/>
+          ))}
+          <text y="32" textAnchor="middle" fill={gold} fontSize="12" fontWeight="700" style={{ filter: "none" }}>
+            {Math.round(Math.abs(dq))}°
+          </text>
+        </g>
+      )}
+
+      {flat && (
+        <text x={cx} y={size - 14} textAnchor="middle" fill={t.textDim} fontSize="11">Tilt your phone upright</text>
+      )}
+    </svg>
+  );
+}
+
+function ViewModeButton({ t, bg, mode, onCycle, inset = 2 }) {
+  return (
+    <button onClick={onCycle} aria-label={`View: ${VIEW_LABELS[mode]}. Tap to change`} style={{
+      position: "absolute", left: `${inset}px`, bottom: `${inset}px`, height: "32px", padding: "0 12px",
+      borderRadius: "16px", cursor: "pointer", background: bg, border: `1px solid ${t.goldBdr}`,
+      backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: t.gold,
+      fontSize: "9.5px", fontWeight: 700, letterSpacing: "1.4px", textTransform: "uppercase",
+      fontFamily: "Nunito, sans-serif", display: "flex", alignItems: "center", gap: "6px",
+    }}>
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+        {mode === "tape"
+          ? <g stroke={t.gold} strokeWidth="1.3" strokeLinecap="round"><line x1="2" y1="2" x2="2" y2="10"/><line x1="6" y1="4" x2="6" y2="8"/><line x1="10" y1="2" x2="10" y2="10"/></g>
+          : <g fill="none" stroke={t.gold} strokeWidth="1.2"><circle cx="6" cy="6" r="4.6"/><path d="M6,2.4 L7.2,6 L6,5.2 L4.8,6 Z" fill={t.gold} stroke="none"/></g>}
+      </svg>
+      {VIEW_LABELS[mode]}
+    </button>
+  );
+}
+
 // ── Extras section, rendered below the existing metric row ───────────────────
 function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName, calDismissed, onDismissCal }) {
   const glass = {
@@ -727,8 +925,6 @@ function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName
     cValue = "Relative"; cColor = WARN; cSub = "not north-locked";
   }
 
-  // Magnetic field column — the measured value; "Stable" only with evidence
-  const hasField = health.fieldUT !== null;
   const showCal = health.needsCal && !calDismissed;
 
   return (
@@ -738,13 +934,6 @@ function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName
       <div style={{ ...glass, display: "flex", overflow: "hidden" }}>
         <StatCol first big t={t} textSize={textSize} label="Compass" value={cValue} sub={cSub} color={cColor}
           lead={<Dot color={cColor}/>}/>
-        {hasField && (
-          <StatCol big t={t} textSize={textSize} label="Magnetic field"
-            value={health.fieldStable ? "Stable" : `${health.fieldUT} µT`}
-            sub={health.fieldStable ? `${health.fieldUT} µT` : null}
-            color={health.fieldStable ? GOOD : t.textClr}
-            lead={health.fieldStable ? <Dot color={GOOD}/> : null}/>
-        )}
         <StatCol big stack t={t} textSize={textSize} label="Level"
           value={!hasTilt ? "—" : isLevel ? "Phone level ✓" : "Hold your phone level"}
           sub={!hasTilt ? "no tilt data" : null} color={lvlColor}
@@ -816,6 +1005,25 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   // Re-arm the calibration tip once the sensor problem clears.
   useEffect(() => { if (!health.needsCal) setCalDismissed(false); }, [health.needsCal]);
 
+  // Compass ⇄ upright view. "auto" switches on how high the phone's back is
+  // pointing, with hysteresis so it can't flicker at the boundary.
+  const [viewMode, setViewMode] = useState(() => {
+    try { const v = localStorage.getItem(VIEW_STORAGE_KEY); return VIEW_MODES.includes(v) ? v : "auto"; }
+    catch { return "auto"; }
+  });
+  const [autoTape, setAutoTape] = useState(false);
+  useEffect(() => {
+    if (health.bz === null) return;
+    const a = Math.abs(health.bz);
+    setAutoTape((prev) => (prev ? a < 0.68 : a < 0.5));
+  }, [health.bz]);
+  const showTape = viewMode === "tape" || (viewMode === "auto" && autoTape);
+  const cycleView = () => {
+    const nx = VIEW_MODES[(VIEW_MODES.indexOf(viewMode) + 1) % VIEW_MODES.length];
+    setViewMode(nx);
+    try { localStorage.setItem(VIEW_STORAGE_KEY, nx); } catch {}
+  };
+
   // ── Theme tokens ────────────────────────────────────────────────────────────
   const gold = lightMode ? "#7a5810" : "#c9a84c";
   const goldDim = lightMode ? "rgba(122,88,16,0.55)" : "rgba(201,168,76,0.5)";
@@ -825,6 +1033,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   const textDim = lightMode ? "rgba(26,15,0,0.4)" : "rgba(255,255,255,0.38)";
   const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
   const inputBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
+  const tk = { gold, goldDim, goldBdr, goldFaint, textClr, textDim };
 
   // ── Compass bearing — absolute priority with timestamp fallback ─────────────
   // Reverted back to the original deviceorientationabsolute / deviceorientation
@@ -1058,6 +1267,8 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         @keyframes qFig8 { to { stroke-dashoffset: -100; } }
         .q-route-flow { stroke-dasharray: 5 6; animation: qRouteFlow 2.2s linear infinite; }
         .q-fig8 { stroke-dasharray: 22 78; animation: qFig8 2.6s linear infinite; }
+        @keyframes qChev { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+        .q-chev { animation: qChev 1s ease-in-out infinite; }
       `}</style>
 
       {/* ── Background pattern ── */}
@@ -1204,7 +1415,20 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               </div>
             )}
 
-            {/* ── Compass hero ─────────────────────────────── */}
+            {/* ── Compass hero (or the upright heading view) ─── */}
+            {showTape ? (
+              <div style={{
+                position:"relative", width:`${compassSize}px`, height:`${compassSize}px`,
+                borderRadius:"28px", overflow:"hidden", flexShrink:0, marginBottom:"22px",
+                background: lightMode ? "rgba(253,248,237,0.6)" : "rgba(8,19,15,0.55)",
+                border:`1px solid ${goldBdr}`,
+                backdropFilter:"blur(10px)", WebkitBackdropFilter:"blur(10px)",
+                animation:"qStatusIn 0.4s ease",
+              }}>
+                <HeadingTape t={tk} live={health.live} qiblaAngle={qiblaAngle} size={compassSize}/>
+                <ViewModeButton t={tk} bg={headerBg} mode={viewMode} onCycle={cycleView} inset={8}/>
+              </div>
+            ) : (
             <div style={{
               borderRadius:"50%",
               boxShadow: aligned
@@ -1241,9 +1465,11 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   <path d="M10,3.2 L11.6,10 L10,8.8 L8.4,10 Z" fill={gold}/>
                 </svg>
               </button>
+              <ViewModeButton t={tk} bg={headerBg} mode={viewMode} onCycle={cycleView}/>
             </div>
+            )}
 
-            {showFaces && (
+            {showFaces && !showTape && (
               <FaceTray
                 t={{ gold, goldDim, goldBdr, goldFaint, textClr, textDim }}
                 face={face} lightMode={lightMode} onPick={pickFace}
