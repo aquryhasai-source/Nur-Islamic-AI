@@ -1,3 +1,4 @@
+import { SADAQAH_ENABLED } from "./sadaqah.js";
 // ─── Nav icons ────────────────────────────────────────────────────────────
 // Hand-drawn inline SVGs, matching the fill="currentColor" style already
 // used for SearchIcon/BackIcon in HadithTab.jsx — no icon-font/library
@@ -53,6 +54,11 @@ const IconCrown = () => (
     <path d="M5 16l-2-9 5 3 4-6 4 6 5-3-2 9H5zm0 2h14v2H5z"/>
   </svg>
 );
+const IconHeart = () => (
+  <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+  </svg>
+);
 const IconHeadset = () => (
   <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor">
     <path d="M12 3a8 8 0 0 0-8 8v6a3 3 0 0 0 3 3h1v-8H6v-1a6 6 0 1 1 12 0v1h-2v8h1a3 3 0 0 0 3-3v-6a8 8 0 0 0-8-8z"/>
@@ -105,6 +111,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
     { key:"prayers",   icon:<IconPrayer/>,   label:"Prayer Times",       sub:"Daily salah times & alarms" },
     { key:"recent",    icon:<IconHistory/>,  label:"Chat History",       sub:"Your recent questions" },
     { key:"getpro",    icon:<IconCrown/>,    label:"Get Pro",            sub:"Remove ads · Unlimited chat" },
+    { key:"support",   icon:<IconHeart/>,    label:"Support NŪR",        sub:"Sadaqah jariyah · any amount" },
     { key:"feedback",  icon:<IconHeadset/>,  label:"Feedback & Support", sub:"Report issue · Suggestions" },
     { key:"privacy",   icon:<IconShield/>,   label:"Privacy Policy",     sub:"How we handle your data" },
     { key:"terms",     icon:<IconTerms/>,    label:"Terms of Use",       sub:"Disclaimer · Terms" },
@@ -142,7 +149,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
         {/* Utility items (Feedback, Privacy, Terms, About) render smaller and
             non-bold, so the main app features stand out at a glance. */}
         <div style={{ flex:1, overflowY:"auto", padding:"10px 12px 20px" }}>
-          {NAV_ITEMS.map(({ key, icon, label, sub }) => {
+          {NAV_ITEMS.filter(i => i.key !== "support" || SADAQAH_ENABLED).map(({ key, icon, label, sub }) => {
             const isUtility = UTILITY_KEYS.includes(key);
             return (
             <button key={key}

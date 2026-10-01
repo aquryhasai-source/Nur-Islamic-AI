@@ -8,6 +8,9 @@ import HadithTab          from "./HadithTab.jsx";
 import Sidebar            from "./Sidebar.jsx";
 import WelcomeScreen, { WELCOME_KEY } from "./WelcomeScreen.jsx";
 import GetProPage         from "./GetProPage.jsx";
+import SupportPage        from "./SupportPage.jsx";
+import FridayCard         from "./FridayCard.jsx";
+import { shouldShowFridayCard } from "./sadaqah.js";
 import ProfilePage        from "./ProfilePage.jsx";
 import BookmarksPage      from "./BookmarksPage.jsx";
 import QiblaPage          from "./QiblaPage.jsx";
@@ -87,7 +90,7 @@ export default function NurApp() {
   const [tab,          setTab]          = useState("chat");
   const [activePage,   setActivePage]   = useState(() => {
     const hash = window.location.hash.replace("#", "");
-    const validPages = ["profile","bookmarks","qibla","calendar","recent","getpro","about","prayers","feedback","privacy","terms"];
+    const validPages = ["profile","bookmarks","qibla","calendar","recent","getpro","support","about","prayers","feedback","privacy","terms"];
     return validPages.includes(hash) ? hash : null;
   });
   const [sidebarOpen,  setSidebarOpen]  = useState(false);
@@ -106,6 +109,7 @@ export default function NurApp() {
     if (skipWelcomeFor.includes(hash)) return false;
     return !localStorage.getItem(WELCOME_KEY);
   });
+  const [showFriday,   setShowFriday]   = useState(false);
   const [bookmarks,    setBookmarks]    = useState(() => getBookmarks());
   const [lightMode,    setLightMode]    = useState(() => localStorage.getItem(KEYS.THEME) === "light");
   const [textSize,     setTextSize]     = useState(() => parseFloat(localStorage.getItem(KEYS.TEXT_SIZE) || "1"));
@@ -212,6 +216,20 @@ export default function NurApp() {
   };
   const goBack = () => setActivePage(null);
 
+  // ── Friday (Jumu'ah) card — once per device per Friday ────────────────────
+  useEffect(() => {
+    if (showWelcome) return;
+    const hash = window.location.hash.replace("#", "");
+    if (["privacy", "terms"].includes(hash)) return;
+    const t = setTimeout(() => {
+      if (shouldShowFridayCard()) {
+        setShowFriday(true);
+        trackEvent("friday_card_shown");
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [showWelcome]);
+
   // ── Swipe to change tabs (main view) ──────────────────────────────────────
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
@@ -296,6 +314,16 @@ export default function NurApp() {
   return (
     <div style={{ height:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:appBg, fontFamily:"'Nunito',sans-serif", position:"relative", color:lightMode?"rgba(26,15,0,0.88)":"rgba(255,255,240,0.88)" }}>
       <FloatingPatterns/>
+
+      {showFriday && (
+        <FridayCard
+          lightMode={lightMode}
+          textSize={textSize}
+          name={profile.name}
+          onClose={() => setShowFriday(false)}
+          onReadKahf={() => { setShowFriday(false); setActivePage(null); setTab("quran"); handleQuranSurah(18, 1); }}
+        />
+      )}
 
       {showIOSModal && <InstallModal isIOS={isIOS} onClose={() => { setShowIOSModal(false); localStorage.setItem(KEYS.INSTALLED,"true"); setShowInstall(false); }}/>}
 
@@ -397,6 +425,7 @@ export default function NurApp() {
           {activePage === "calendar" && <IslamicCalendarPage {...pageProps}/>}
           {activePage === "recent"   && <RecentPage    {...pageProps} onContinue={handleContinueSession}/>}
           {activePage === "getpro"   && <GetProPage    {...pageProps} setUnlocked={setUnlocked} setRemaining={setRemaining} deviceId={deviceId.current}/>}
+          {activePage === "support"  && <SupportPage   {...pageProps}/>}
           {activePage === "about"    && <AboutPage     {...pageProps}/>}
           {activePage === "prayers"  && <PrayerTimesPage {...pageProps}/>}
           {activePage === "feedback" && <FeedbackPage  {...pageProps}/>}

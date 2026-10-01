@@ -4,6 +4,7 @@ import {
   setCachedRemaining, checkIfRamadan, getPrayerTimes,
   getPrayerTimesByCity, getCountdownTo,
 } from "./utils.js";
+import { SADAQAH_ENABLED } from "./sadaqah.js";
 
 const StarIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>;
 const SendIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>;
@@ -94,6 +95,12 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
         🌙 Get Pro
       </button>
       <div style={{ color:lightMode?"rgba(26,15,0,0.3)":"rgba(255,255,255,0.25)", fontSize:"12px", marginTop:"12px" }}>or wait — resets at midnight</div>
+      {SADAQAH_ENABLED && (
+        <button onClick={() => navigateTo("support")}
+          style={{ marginTop:"22px", background:"none", border:"none", cursor:"pointer", color:gold, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", textDecoration:"underline", opacity:0.85 }}>
+          💛 Or give sadaqah to keep NŪR free for everyone
+        </button>
+      )}
     </div>
   );
 }
