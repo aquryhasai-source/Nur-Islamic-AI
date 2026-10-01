@@ -12,7 +12,7 @@ import { useState, useEffect } from "react";
 //
 // If only one is filled in, it is used for everybody.
 // ─────────────────────────────────────────────────────────────────────────────
-export const SADAQAH_LINK_IN     = "";
+export const SADAQAH_LINK_IN     = "https://rzp.io/rzp/nur-support";
 export const SADAQAH_LINK_GLOBAL = "";
 
 export const SADAQAH_ENABLED = Boolean(SADAQAH_LINK_IN || SADAQAH_LINK_GLOBAL);
