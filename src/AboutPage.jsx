@@ -70,6 +70,11 @@ export default function AboutPage({ onBack, onOpenSidebar, lightMode, textSize =
           <div style={{ color:textDim, fontSize:`${11*textSize}px` }}>"My success is only through Allah" — Surah Hud 11:88</div>
         </div>
 
+        {/* Adsterra ownership verification */}
+        <div style={{ textAlign:"center", marginTop:"24px", color:textDim, fontSize:`${10*textSize}px`, opacity:0.6 }}>
+          Site verification: A7B2C9D
+        </div>
+
       </div>
     </div>
   );
