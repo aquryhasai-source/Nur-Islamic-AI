@@ -37,14 +37,14 @@ export function useSadaqahLink() {
 
   useEffect(() => {
     if (!SADAQAH_ENABLED || readCachedIndia() !== null) return;
-    fetch("https://ipapi.co/json/")
-      .then(r => r.json())
-      .then(d => {
-        const v = d.country_code === "IN";
-        try { sessionStorage.setItem(COUNTRY_CACHE, v ? "1" : "0"); } catch {}
-        setIsIndia(v);
-      })
-      .catch(() => {});
+    // Region from the browser's own timezone — no third-party IP lookup.
+    let v = false;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      v = tz === "Asia/Calcutta" || tz === "Asia/Kolkata";
+    } catch {}
+    try { sessionStorage.setItem(COUNTRY_CACHE, v ? "1" : "0"); } catch {}
+    setIsIndia(v);
   }, []);
 
   return pickSadaqahLink(isIndia);

@@ -1,4 +1,20 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), payment=(), geolocation=(self)" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "Content-Security-Policy-Report-Only", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://www.highrevenueformat.com https://*.highrevenueformat.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https:; media-src 'self' https:; connect-src 'self' https://dvcuisgpptxhjgiasqlp.supabase.co https://api.aladhan.com https://api.alquran.cloud https://cdn.jsdelivr.net https://geocoding-api.open-meteo.com https://nominatim.openstreetmap.org https://*.highrevenueformat.com; frame-src https://*.highrevenueformat.com https://*.adsterra.com; object-src 'none'; base-uri 'self'; form-action 'self' https://rzp.io https://*.lemonsqueezy.com" }
+      ]
+    },
+    {
+      "source": "/sw.js",
+      "headers": [{ "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }]
+    }
+  ],
   "rewrites": [
     { "source": "/.well-known/(.*)", "destination": "/.well-known/$1" },
     { "source": "/api/(.*)", "destination": "/api/$1" },

@@ -19,7 +19,7 @@ import { put } from "@vercel/blob";
 import ffmpegPath from "ffmpeg-static";
 import { spawn } from "node:child_process";
 import { writeFile, readFile, unlink } from "node:fs/promises";
-import { randomUUID } from "node:crypto";
+import { randomUUID, timingSafeEqual } from "node:crypto";
 
 export const config = { maxDuration: 60 };
 
@@ -59,8 +59,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  // Only our own Supabase function may call this (shared secret in env NUR_INTERNAL_SECRET;
+  // the same value lives in Supabase Vault). Fail closed if the secret isn't configured.
+  const expected = process.env.NUR_INTERNAL_SECRET || "";
+  const got = String(req.headers["x-nur-secret"] || "");
+  const a = Buffer.from(expected), b = Buffer.from(got);
+  if (!expected || a.length !== b.length || !timingSafeEqual(a, b)) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
   const { hadith_text, reference, hadith_id } = req.body || {};
-  if (!hadith_text || !reference) {
+  if (typeof hadith_text !== "string" || typeof reference !== "string" || !hadith_text || !reference
+      || hadith_text.length > 700 || reference.length > 120) {
     res.status(400).json({ error: "hadith_text and reference are required" });
     return;
   }
@@ -111,7 +122,7 @@ export default async function handler(req, res) {
 
     // 4. Upload to Blob -- public, so Meta's servers can fetch it by URL
     const videoBuffer = await readFile(outputPath);
-    const blob = await put(`reels/hadith-${hadith_id || tmpId}.mp4`, videoBuffer, {
+    const blob = await put(`reels/hadith-${String(hadith_id ?? tmpId).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40) || tmpId}.mp4`, videoBuffer, {
       access: "public",
       contentType: "video/mp4",
       addRandomSuffix: true,
@@ -119,7 +130,8 @@ export default async function handler(req, res) {
 
     res.status(200).json({ video_url: blob.url, duration: DURATION });
   } catch (err) {
-    res.status(500).json({ error: String(err) });
+    console.error("hadith-reel error:", String(err));
+    res.status(500).json({ error: "Reel generation failed" });
   } finally {
     await Promise.allSettled([unlink(imagePath), unlink(mainPath), unlink(thunderPath), unlink(oceanPath), unlink(outputPath)]);
   }

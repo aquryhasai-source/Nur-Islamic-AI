@@ -18,6 +18,25 @@ export const KEYS = {
   NOTIF_PROMPT_DISMISSED: "nur_notif_prompt_dismissed",
 };
 
+// Secret that proves requests come from this browser's own device_id (stored only locally; the
+// server keeps just a hash). Stops someone who learns a device_id from using or resetting it.
+export function getDeviceKey() {
+  try {
+    let k = localStorage.getItem("nur_device_key");
+    if (!k) {
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      k = btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+      localStorage.setItem("nur_device_key", k);
+    }
+    return k;
+  } catch { return ""; }
+}
+
+export function deviceHeaders(extra = {}) {
+  const k = getDeviceKey();
+  return k ? { ...extra, "X-Device-Key": k } : { ...extra };
+}
+
 export function getAnonymousId() {
   let id = localStorage.getItem(KEYS.ID);
   if (!id) { id = crypto.randomUUID(); localStorage.setItem(KEYS.ID, id); }

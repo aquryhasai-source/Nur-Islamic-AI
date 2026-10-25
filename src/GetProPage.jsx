@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { PROXY_URL, KEYS } from "./utils.js";
+import { PROXY_URL, KEYS, deviceHeaders } from "./utils.js";
 
 const LS_URL = "https://yasirhaquecreativelabs.lemonsqueezy.com/checkout/buy/c19a2e49-4416-4cf7-b9b5-2f8140da3962";
 const RZ_URL = "https://rzp.io/rzp/RxurFTj";
@@ -27,10 +27,11 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
   const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
 
   useEffect(() => {
-    fetch("https://ipapi.co/json/")
-      .then(r => r.json())
-      .then(d => { if (d.country_code === "IN") setIsIndia(true); })
-      .catch(() => {});
+    // Choose the Indian (Razorpay) checkout from the browser's own timezone — no third-party IP lookup.
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz === "Asia/Calcutta" || tz === "Asia/Kolkata") setIsIndia(true);
+    } catch {}
   }, []);
 
   const redeem = async () => {
@@ -38,7 +39,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
     setUnlockStatus("loading"); setUnlockError("");
     try {
       const res  = await fetch(PROXY_URL, {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: deviceHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({ device_id: deviceId, unlock_code: unlockCode.trim() }),
       });
       const data = await res.json();

@@ -2,7 +2,7 @@
 // Combines: PWA offline caching (restored from the pre-OneSignal version)
 // + self-hosted push notifications (VAPID/web-push, no vendor SDK).
 
-const CACHE_NAME = "nur-v1";
+const CACHE_NAME = "nur-v2"; // bumped: old caches (incl. any cached non-OK/cross-origin entries) are purged on activate
 const STATIC_ASSETS = [
   "/",
   "/index.html",
@@ -31,19 +31,24 @@ self.addEventListener("activate", (event) => {
 
 // Fetch — network first, fallback to cache
 self.addEventListener("fetch", (event) => {
-  // Don't cache API calls
-  if (event.request.url.includes("supabase.co") || event.request.url.includes("groq.com")) {
-    return;
-  }
+  const req = event.request;
+  // Only handle same-origin GETs. Never touch (or cache) API calls, other sites, or non-GET requests.
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.startsWith("/api/")) return;
 
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        // Cache only successful, same-origin ("basic") responses so errors are never served offline.
+        if (res.ok && res.type === "basic") {
+          const clone = res.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+        }
         return res;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req))
   );
 });
 
@@ -69,12 +74,18 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
+  // Only ever open pages inside this app, whatever the push payload says.
+  let url = "/";
+  try {
+    const raw = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
+    const u = new URL(raw, self.location.origin);
+    if (u.origin === self.location.origin) url = u.pathname + u.search + u.hash;
+  } catch (e) { /* keep "/" */ }
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === url && "focus" in client) return client.focus();
+        if (new URL(client.url).pathname + new URL(client.url).search + new URL(client.url).hash === url && "focus" in client) return client.focus();
       }
       if (clients.openWindow) return clients.openWindow(url);
     })

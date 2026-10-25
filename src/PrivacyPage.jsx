@@ -56,7 +56,7 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
 
         <Section title="What We Collect">
           <Row label="Anonymous Device ID" desc="A randomly generated identifier created the first time you open NŪR. Stored only in your browser. Not linked to your name, email, or any personal information. Used only to track your daily AI message count."/>
-          <Row label="Daily Message Count" desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone."/>
+          <Row label="Daily Message Count" desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone. To prevent abuse, your network address is used only briefly for rate limiting, in a scrambled (keyed-hash) form — it is not stored in readable form."/>
           <Row label="License Key (Pro users only)" desc="If you purchase Pro, your license key is saved in your browser to activate Pro features. We do not store your payment details." last/>
         </Section>
 
@@ -64,24 +64,23 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
           <P>The following data never leaves your device and is never sent to our servers:</P>
           <P>· Your name and year of birth (optional)</P>
           <P>· Your bookmarks (Quran ayahs and Hadith)</P>
-          <P>· Your city name for prayer times</P>
-          <P>· Your prayer alarm settings</P>
-          <P last>· Your chat history · Clearing your browser or app data removes all of it permanently.</P>
+          <P>· Your prayer alarm preferences</P>
+                    <P last>· Your chat history · Clearing your browser or app data removes all of it permanently.</P>
         </Section>
 
         <Section title="What We Never Collect">
           <P>✗ &nbsp;Your name or email address</P>
-          <P>✗ &nbsp;Your precise GPS location (used only temporarily to fetch prayer times — never stored)</P>
-          <P>✗ &nbsp;Your chat messages (processed in real-time, not logged on our servers)</P>
+          <P>✗ &nbsp;Your precise GPS location unless you turn on prayer-time notifications — in that case the city or coordinates you chose are kept with your notification subscription so alerts arrive at the right time (turn notifications off to remove it)</P>
+          <P>✗ &nbsp;Your name, or anything that identifies you, in chat. Most questions are processed in real time and not kept. General, non-personal questions and the answers may be saved anonymously (tied only to the random device ID) to improve answer quality; questions that look personal or time-sensitive are not saved</P>
           <P>✗ &nbsp;Payment details (handled entirely by our payment providers)</P>
-          <P last>✗ &nbsp;Cookies, advertising identifiers, or cross-site trackers</P>
+          <P last>✗ &nbsp;Cookies or trackers of our own. The free version shows an ad banner from Adsterra, which may use its own cookies or identifiers; Pro removes the ads</P>
         </Section>
 
         <Section title="Third-Party Services">
           <P>NŪR uses trusted third-party services to deliver its features. Only the minimum information necessary for each feature is shared with these providers.</P>
           <P>· <strong style={{ color:textClr }}>Quran, Hadith & Islamic content</strong> — sourced from reputable Islamic content providers. No personal data is included in these requests.</P>
           <P>· <strong style={{ color:textClr }}>Prayer times & location</strong> — your city name or coordinates are shared only to compute your local prayer schedule, then discarded.</P>
-          <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are processed through our secure server. They are not stored or used for model training.</P>
+          <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are sent through our server to the Groq AI service to generate an answer. We do not use them to train models.</P>
           <P>· <strong style={{ color:textClr }}>Push notifications</strong> — if you opt in, your device's push subscription (endpoint and encryption keys, no personal data) is stored on our own Supabase backend and used only to send you app notifications like the daily Hadith.</P>
           <P last>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive only confirmation of payment. Your card and payment details are never seen or stored by us.</P>
         </Section>

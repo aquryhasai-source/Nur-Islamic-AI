@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import {
-  PROXY_URL, DAILY_LIMIT, KEYS, getAgePrefix, getCachedRemaining, getLocalDate,
+  PROXY_URL, deviceHeaders, DAILY_LIMIT, KEYS, getAgePrefix, getCachedRemaining, getLocalDate,
   setCachedRemaining, checkIfRamadan, getPrayerTimes,
   getPrayerTimesByCity, getCountdownTo,
 } from "./utils.js";
@@ -213,7 +213,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
     try {
       const res  = await fetch(PROXY_URL, { 
         method:"POST", 
-        headers:{"Content-Type":"application/json"}, 
+        headers:deviceHeaders({"Content-Type":"application/json"}), 
         body:JSON.stringify({ device_id:deviceId, local_date:getLocalDate(), messages:newMessages.map(m => ({ role:m.role, content:m.content })) }) 
       });
       const data = await res.json();

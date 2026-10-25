@@ -1,14 +1,18 @@
 // NUR Islamic AI — push notification subscribe/unsubscribe
-// Matches the app's existing pattern (see analytics.js): plain fetch() to
-// the Supabase REST API with the anon key, no Supabase SDK needed.
-//
-// Uses getAnonymousId() from utils.js so the push subscription is tied to
-// the SAME device_id already used for events/feedback/error_log.
+// All writes go through the `push-subscribe` Edge Function, which checks the per-device secret
+// (X-Device-Key) and validates the subscription. The browser no longer has direct table access.
 
-import { getAnonymousId } from "../utils";
+import { getAnonymousId, deviceHeaders } from "../utils";
 
-const SUPABASE_URL  = "https://dvcuisgpptxhjgiasqlp.supabase.co";
-const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR2Y3Vpc2dwcHR4aGpnaWFzcWxwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc2MzEzMTMsImV4cCI6MjA5MzIwNzMxM30.18-UGma8qHkfxcllgvnWY4QwXojL_ewvc983o_mciQg";
+const PUSH_FN_URL = "https://dvcuisgpptxhjgiasqlp.supabase.co/functions/v1/push-subscribe";
+
+async function callPushFn(body) {
+  return fetch(PUSH_FN_URL, {
+    method: "POST",
+    headers: deviceHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ device_id: getAnonymousId(), ...body }),
+  });
+}
 
 // Public VAPID key — safe to ship in client code (the private key lives only
 // as a secret on the send-push Edge Function).
@@ -46,27 +50,16 @@ export async function subscribeToPush() {
   const subJson = subscription.toJSON();
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone; // e.g. "Asia/Kolkata"
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?on_conflict=device_id`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: SUPABASE_ANON,
-      Authorization: `Bearer ${SUPABASE_ANON}`,
-      Prefer: "resolution=merge-duplicates,return=minimal",
-    },
-    body: JSON.stringify({
-      device_id: getAnonymousId(),
-      endpoint: subJson.endpoint,
-      p256dh: subJson.keys.p256dh,
-      auth: subJson.keys.auth,
-      timezone,
-      last_seen_at: new Date().toISOString(),
-    }),
+  const res = await callPushFn({
+    action: "subscribe",
+    endpoint: subJson.endpoint,
+    p256dh: subJson.keys.p256dh,
+    auth: subJson.keys.auth,
+    timezone,
   });
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Could not save subscription (${res.status}): ${text}`);
+    throw new Error(`Could not save subscription (${res.status})`);
   }
 
   return subscription;
@@ -80,16 +73,9 @@ export async function unsubscribeFromPush() {
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return;
 
-  const endpoint = subscription.endpoint;
   await subscription.unsubscribe();
 
-  await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?endpoint=eq.${encodeURIComponent(endpoint)}`, {
-    method: "DELETE",
-    headers: {
-      apikey: SUPABASE_ANON,
-      Authorization: `Bearer ${SUPABASE_ANON}`,
-    },
-  });
+  try { await callPushFn({ action: "unsubscribe" }); } catch { /* best-effort */ }
 }
 
 export function getPushPermissionState() {
@@ -107,16 +93,7 @@ export async function syncPrayerLocation({ city, lat, lon }) {
   if (Object.keys(payload).length === 0) return;
 
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/push_subscriptions?device_id=eq.${getAnonymousId()}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_ANON,
-        Authorization: `Bearer ${SUPABASE_ANON}`,
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify(payload),
-    });
+    await callPushFn({ action: "location", ...payload });
   } catch {
     // best-effort — never break the Prayer Times page over this
   }

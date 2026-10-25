@@ -16,8 +16,9 @@ export const config = { runtime: "edge" };
 
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
-  const text = searchParams.get("text") || "";
-  const ref = searchParams.get("ref") || "";
+  // Public endpoint: cap the input so it can't be used as a free arbitrary-image generator.
+  const text = (searchParams.get("text") || "").slice(0, 700);
+  const ref = (searchParams.get("ref") || "").slice(0, 120);
   const isReel = searchParams.get("format") === "reel";
   const dimensions = isReel ? { width: 1080, height: 1920 } : { width: 1080, height: 1080 };
 
