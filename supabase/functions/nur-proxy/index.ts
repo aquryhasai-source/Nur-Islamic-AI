@@ -549,7 +549,8 @@ const MAX_HISTORY = 12;                    // most recent messages forwarded to 
 const MAX_MSG_CHARS = 4000;
 
 const ALLOWED_ORIGINS = new Set([
-  "https://nur-islamic-ai.vercel.app",
+  "https://nurislamicai.app",
+  "https://nur-islamic-ai.vercel.app", // old address: remove once it redirects to nurislamicai.app
   "http://localhost:5173",
   "http://localhost:4173",
 ]);
@@ -557,7 +558,7 @@ const ALLOWED_ORIGINS = new Set([
 function corsFor(req: Request) {
   const o = req.headers.get("origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(o) ? o : "https://nur-islamic-ai.vercel.app",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(o) ? o : "https://nurislamicai.app",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey, X-Device-Key",
     "Access-Control-Max-Age": "600",
