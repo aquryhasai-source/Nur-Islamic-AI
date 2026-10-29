@@ -8,14 +8,15 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const ALLOWED_ORIGINS = new Set([
-  "https://nur-islamic-ai.vercel.app",
+  "https://nurislamicai.app",
+  "https://nur-islamic-ai.vercel.app", // old address: remove once it redirects to nurislamicai.app
   "http://localhost:5173",
   "http://localhost:4173",
 ]);
 function cors(req: Request) {
   const o = req.headers.get("origin") ?? "";
   return {
-    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(o) ? o : "https://nur-islamic-ai.vercel.app",
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.has(o) ? o : "https://nurislamicai.app",
     "Access-Control-Allow-Headers": "Content-Type, Authorization, apikey, x-client-info",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Vary": "Origin",
