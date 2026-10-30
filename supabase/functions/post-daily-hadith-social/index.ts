@@ -4,7 +4,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const PAGE_ACCESS_TOKEN = Deno.env.get("META_PAGE_ACCESS_TOKEN")!;
 const PAGE_ID = Deno.env.get("META_PAGE_ID")!;
 const IG_USER_ID = Deno.env.get("META_IG_USER_ID")!;
-const REEL_URL = "https://nur-islamic-ai.vercel.app/api/hadith-reel";
+const REEL_URL = "https://nurislamicai.app/api/hadith-reel";
 const GRAPH = "https://graph.facebook.com/v21.0";
 
 const supabase = createClient(

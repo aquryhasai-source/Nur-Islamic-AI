@@ -1,5 +1,5 @@
 // Renders a shareable "Hadith of the Day" card as a PNG image.
-// Public URL: https://nur-islamic-ai.vercel.app/api/hadith-card?text=...&ref=...
+// Public URL: https://nurislamicai.app/api/hadith-card?text=...&ref=...
 // Add &format=reel to get a vertical (1080x1920) render for the video Reel;
 // omit it (or use any other value) for the original square (1080x1080) post image.
 // Meta's Graph API fetches this URL directly when posting to Facebook/Instagram,

@@ -23,10 +23,10 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 
 export const config = { maxDuration: 60 };
 
-const CARD_BASE_URL = "https://nur-islamic-ai.vercel.app/api/hadith-card";
-const MAIN_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/bg-melody.mp3";
-const THUNDER_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/thunder.mp3";
-const OCEAN_TRACK_URL = "https://nur-islamic-ai.vercel.app/audio/ocean-waves.mp3";
+const CARD_BASE_URL = "https://nurislamicai.app/api/hadith-card";
+const MAIN_TRACK_URL = "https://nurislamicai.app/audio/bg-melody.mp3";
+const THUNDER_TRACK_URL = "https://nurislamicai.app/audio/thunder.mp3";
+const OCEAN_TRACK_URL = "https://nurislamicai.app/audio/ocean-waves.mp3";
 
 const DURATION = 10; // seconds, fixed
 const FADE = 0.5; // seconds -- fade in/out on each track so there's no audible hard edge

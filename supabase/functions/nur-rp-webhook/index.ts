@@ -7,6 +7,10 @@ const OWNER_EMAIL = Deno.env.get("FEEDBACK_RECIPIENT_EMAIL") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
+// Sender must be on the domain verified in Resend (nurislamicai.app). Replies go to support@.
+const FROM_ADDRESS = Deno.env.get("RESEND_FROM_EMAIL") ?? "noreply@nurislamicai.app";
+const REPLY_TO = Deno.env.get("SUPPORT_REPLY_TO") ?? "support@nurislamicai.app";
+
 // Only THIS payment link (the ₹299 Pro link) may mint a licence. Other links
 // (e.g. the sadaqah/donation page) are ignored. Matching by id OR short URL
 // so a transcription slip in one does not silently stop licences.
@@ -54,8 +58,7 @@ async function sendEmail(to: string, subject: string, html: string): Promise<voi
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
-    // Resend's shared sender only delivers to the account owner until a domain is verified.
-    body: JSON.stringify({ from: "onboarding@resend.dev", to: [to], subject, html }),
+    body: JSON.stringify({ from: `NUR <${FROM_ADDRESS}>`, to: [to], reply_to: [REPLY_TO], subject, html }),
   });
   if (!res.ok) throw new Error(`Resend ${res.status}`);
 }
@@ -171,7 +174,7 @@ Deno.serve(async (req: Request) => {
     } catch (e) {
       // Licence exists; the email did not go. Tell the owner so it can be sent manually. Don't 500 (would retry-spam).
       console.error("email failed:", String(e));
-      await alertOwner("Unlock-code email failed", `Payment ${paymentId} for ${email}: licence created but the email could not be delivered (Resend onboarding sender only reaches the account owner until a domain is verified). Code: ${row.unlock_code}`);
+      await alertOwner("Unlock-code email failed", `Payment ${paymentId} for ${email}: licence created but the email could not be delivered. Send it manually. Code: ${row.unlock_code}`);
     }
     return reply({ success: true });
   } catch (err) {

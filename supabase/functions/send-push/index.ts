@@ -13,7 +13,7 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const SITE_ORIGIN = "https://nur-islamic-ai.vercel.app";
+const SITE_ORIGIN = "https://nurislamicai.app";
 const json = (obj: unknown, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 

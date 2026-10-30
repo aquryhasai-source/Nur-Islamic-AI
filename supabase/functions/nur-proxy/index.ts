@@ -550,7 +550,6 @@ const MAX_MSG_CHARS = 4000;
 
 const ALLOWED_ORIGINS = new Set([
   "https://nurislamicai.app",
-  "https://nur-islamic-ai.vercel.app", // old address: remove once it redirects to nurislamicai.app
   "http://localhost:5173",
   "http://localhost:4173",
 ]);
