@@ -193,18 +193,18 @@ export default function PrayerTimesPage({
   const firedAlarms = useRef(new Set());
 
   // ── Palette ──────────────────────────────────────────────────────────────────
-  const gold      = lightMode ? "#7a5810"                : "#c9a84c";
-  const goldDim   = lightMode ? "rgba(122,88,16,0.52)"  : "rgba(201,168,76,0.5)";
-  const goldBdr   = lightMode ? "rgba(122,88,16,0.2)"   : "rgba(201,168,76,0.22)";
-  const goldFaint = lightMode ? "rgba(122,88,16,0.07)"  : "rgba(201,168,76,0.07)";
-  const textClr   = lightMode ? "rgba(26,15,0,0.85)"    : "rgba(255,255,240,0.88)";
-  const textDim   = lightMode ? "rgba(26,15,0,0.38)"    : "rgba(255,255,255,0.38)";
-  const headerBg  = lightMode ? "rgba(253,248,237,0.97)": "rgba(8,21,16,0.97)";
-  const cardBg    = lightMode ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.04)";
-  const inputBg   = lightMode ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.06)";
-  const green     = lightMode ? "#2d7a40"                : "#4caf74";
-  const modalBg   = lightMode ? "#fdf8ed"                : "#0a1a12";
-  const pageBg    = lightMode ? "#fdf8ed"                : "#060f0b";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const cardBg = "var(--panel)";
+  const inputBg = "var(--panel2)";
+  const green = "var(--green)";
+  const modalBg   = "var(--pop)";
+  const pageBg    = "var(--bgSolid)";
 
   // ── Load prayer times ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -368,9 +368,9 @@ export default function PrayerTimesPage({
     const isUpcoming = status === "upcoming";
     const isLastRow  = rowIndex === totalGroups - 1;
 
-    const dotBg  = isPast ? `${green}22`  : isCurrent ? gold : "transparent";
+    const dotBg  = isPast ? `color-mix(in srgb,${green} 13%,transparent)`  : isCurrent ? gold : "transparent";
     const dotBrd = isPast ? green         : isCurrent ? gold : goldDim;
-    const dotClr = isPast ? green         : isCurrent ? (lightMode ? "#fff8e0" : "#0d1f14") : "transparent";
+    const dotClr = isPast ? green         : isCurrent ? "var(--onGold)" : "transparent";
 
     return (
       <div key={prayer.key} style={{ display:"flex", gap:"8px" }}
@@ -380,7 +380,7 @@ export default function PrayerTimesPage({
         <div style={{ display:"flex", flexDirection:"column", alignItems:"center", width:"22px", flexShrink:0 }}>
           <div style={{
             width:"1.5px", height:"14px", flexShrink:0,
-            background: isPast ? `${green}55` : goldBdr,
+            background: isPast ? `color-mix(in srgb,${green} 33%,transparent)` : goldBdr,
           }} />
           <div style={{
             width:"20px", height:"20px", borderRadius:"50%", flexShrink:0,
@@ -393,7 +393,7 @@ export default function PrayerTimesPage({
           {!isLastRow && (
             <div style={{
               width:"1.5px", flex:1, minHeight:"14px",
-              background: isPast ? `${green}40` : isCurrent ? `${gold}40` : goldBdr,
+              background: isPast ? `color-mix(in srgb,${green} 25%,transparent)` : isCurrent ? `color-mix(in srgb,${gold} 25%,transparent)` : goldBdr,
             }} />
           )}
         </div>
@@ -403,19 +403,19 @@ export default function PrayerTimesPage({
           flex:1, display:"flex", alignItems:"center", gap:"10px",
           padding:"11px 13px", marginBottom:"7px",
           background: isCurrent
-            ? `linear-gradient(135deg,${gold}1a,${gold}07)`
+            ? `linear-gradient(135deg,color-mix(in srgb,${gold} 10%,transparent),color-mix(in srgb,${gold} 3%,transparent))`
             : isPast ? "transparent" : cardBg,
           border:`1px solid ${isCurrent ? gold+"55" : isPast ? goldBdr+"88" : goldBdr}`,
           borderRadius:"14px", cursor:"pointer",
           transition:"opacity 0.2s",
-          boxShadow: isCurrent ? `0 2px 22px ${gold}20` : "none",
+          boxShadow: isCurrent ? `0 2px 22px color-mix(in srgb,${gold} 13%,transparent)` : "none",
           opacity: isPast ? 0.6 : 1,
         }}>
 
           {/* Icon */}
           <div style={{
             width:"36px", height:"36px", borderRadius:"10px", flexShrink:0,
-            background: isCurrent ? `${gold}28` : goldFaint,
+            background: isCurrent ? `color-mix(in srgb,${gold} 16%,transparent)` : goldFaint,
             border:`1px solid ${goldBdr}`,
             display:"flex", alignItems:"center", justifyContent:"center", fontSize:"17px",
           }}>
@@ -434,7 +434,7 @@ export default function PrayerTimesPage({
               {isCurrent && (
                 <span style={{
                   fontSize:`${8.5*textSize}px`,
-                  color: lightMode ? "#fff8e0" : "#0d1f14",
+                  color: "var(--onGold)",
                   background: gold, padding:"2px 7px", borderRadius:"5px",
                   fontWeight:800, letterSpacing:"0.5px",
                 }}>
@@ -442,7 +442,7 @@ export default function PrayerTimesPage({
                 </span>
               )}
             </div>
-            <div style={{ color:goldDim, fontSize:`${11*textSize}px`, fontFamily:"Georgia,serif", marginTop:"1px" }}>
+            <div style={{ color:goldDim, fontSize:`${11*textSize}px`, fontFamily:"var(--font-ar)", marginTop:"1px" }}>
               {prayer.arabic}
             </div>
             {isUpcoming && time && (
@@ -508,17 +508,17 @@ export default function PrayerTimesPage({
       `}</style>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div style={{
+      <div className="nur-ph" style={{
         display:"flex", alignItems:"center", padding:"12px 16px",
         borderBottom:`1px solid ${goldBdr}`, background:headerBg,
         backdropFilter:"blur(14px)", flexShrink:0, gap:"10px",
       }}>
-        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
-        <div style={{ flex:1, textAlign:"center" }}>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center" }}>
           <div style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"0.5px" }}>Prayer Times</div>
           {locationName && (
             <div style={{ color:goldDim, fontSize:`${11*textSize}px` }}>📍 {locationName}</div>
@@ -529,7 +529,7 @@ export default function PrayerTimesPage({
             style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"8px", padding:"5px 10px", color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer" }}>
             📍
           </button>
-          <button onClick={onBack}
+          <button className="nur-ph-back" onClick={onBack}
             style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", padding:"4px", flexShrink:0 }}>
             ←
           </button>
@@ -547,12 +547,12 @@ export default function PrayerTimesPage({
               placeholder="e.g. Hyderabad, India · London, UK"
               style={{ flex:1, background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"Nunito,sans-serif" }}
             />
-            <button onClick={lookupCity} style={{ padding:"9px 18px", borderRadius:"10px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, border:"none", color:lightMode?"#fff":"#0d1f14", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            <button onClick={lookupCity} style={{ padding:"9px 18px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
               Go
             </button>
           </div>
           {locError && (
-            <div style={{ color:"#e07b54", fontSize:`${12*textSize}px`, marginTop:"8px" }}>{locError}</div>
+            <div style={{ color:"var(--warn)", fontSize:`${12*textSize}px`, marginTop:"8px" }}>{locError}</div>
           )}
         </div>
       )}
@@ -582,13 +582,11 @@ export default function PrayerTimesPage({
 
             {/* ── Hero card ──────────────────────────────────────────────── */}
             <div style={{
-              background: lightMode
-                ? "linear-gradient(160deg,rgba(201,168,76,0.15),rgba(201,168,76,0.04))"
-                : "linear-gradient(160deg,rgba(201,168,76,0.13),rgba(6,15,11,0.7))",
-              border:`1px solid ${gold}44`,
+              background:"var(--panel2)",
+              border:`1px solid color-mix(in srgb,${gold} 27%,transparent)`,
               borderRadius:"20px", padding:"20px",
               marginBottom:"12px",
-              boxShadow:`0 4px 32px ${gold}18`,
+              boxShadow:`0 4px 32px color-mix(in srgb,${gold} 9%,transparent)`,
             }}>
 
               {/* Current prayer name row */}
@@ -601,13 +599,13 @@ export default function PrayerTimesPage({
                     </span>
                     <span style={{
                       fontSize:`${8.5*textSize}px`, fontWeight:800, letterSpacing:"0.6px",
-                      color: lightMode ? "#fff8e0" : "#0d1f14",
+                      color: "var(--onGold)",
                       background:gold, padding:"3px 8px", borderRadius:"6px",
                     }}>
                       CURRENT PRAYER
                     </span>
                   </div>
-                  <div style={{ color:goldDim, fontSize:`${13*textSize}px`, fontFamily:"Georgia,serif", marginTop:"2px" }}>
+                  <div style={{ color:goldDim, fontSize:`${13*textSize}px`, fontFamily:"var(--font-ar)", marginTop:"2px" }}>
                     {currentPrayer?.arabic}
                   </div>
                 </div>
@@ -623,11 +621,11 @@ export default function PrayerTimesPage({
               </div>
 
               {/* Progress bar */}
-              <div style={{ height:"5px", borderRadius:"3px", background: lightMode ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.08)", marginBottom:"6px", overflow:"hidden" }}>
+              <div style={{ height:"5px", borderRadius:"3px", background: "var(--panel2)", marginBottom:"6px", overflow:"hidden" }}>
                 <div style={{
                   height:"100%", borderRadius:"3px",
                   width:`${progress.toFixed(1)}%`,
-                  background:`linear-gradient(90deg,${gold}88,${gold})`,
+                  background:`linear-gradient(90deg,color-mix(in srgb,${gold} 53%,transparent),${gold})`,
                   transition:"width 1s linear",
                 }}/>
               </div>
@@ -640,7 +638,7 @@ export default function PrayerTimesPage({
                 <div style={{
                   display:"flex", alignItems:"center", justifyContent:"space-between",
                   padding:"12px 14px",
-                  background: lightMode ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
+                  background: "var(--panel)",
                   border:`1px solid ${goldBdr}`, borderRadius:"12px",
                   marginBottom:"14px",
                 }}>
@@ -648,7 +646,7 @@ export default function PrayerTimesPage({
                     <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"3px" }}>Next Prayer</div>
                     <div style={{ color:textClr, fontSize:`${14*textSize}px`, fontWeight:700 }}>
                       {nextPrayer.label}{" "}
-                      <span style={{ color:goldDim, fontFamily:"Georgia,serif", fontWeight:400, fontSize:`${12*textSize}px` }}>
+                      <span style={{ color:goldDim, fontFamily:"var(--font-ar)", fontWeight:400, fontSize:`${12*textSize}px` }}>
                         {nextPrayer.arabic}
                       </span>
                     </div>
@@ -701,7 +699,7 @@ export default function PrayerTimesPage({
 
             {/* ── Daily insight card ──────────────────────────────────────── */}
             <div style={{
-              background: lightMode ? "rgba(122,88,16,0.06)" : "rgba(201,168,76,0.06)",
+              background: "var(--chip)",
               border:`1px solid ${goldBdr}`, borderRadius:"14px",
               padding:"14px 16px", marginBottom:"16px",
             }}>
@@ -718,12 +716,12 @@ export default function PrayerTimesPage({
 
             {/* ── Permission errors ───────────────────────────────────────── */}
             {permError && (
-              <div style={{ background:"rgba(224,123,84,0.08)", border:"1px solid rgba(224,123,84,0.25)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", fontSize:`${12*textSize}px`, color:"#e07b54" }}>
+              <div style={{ background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", fontSize:`${12*textSize}px`, color:"var(--warn)" }}>
                 {permError}
               </div>
             )}
             {notifPerm === "denied" && !permError && (
-              <div style={{ background:"rgba(224,123,84,0.06)", border:"1px solid rgba(224,123,84,0.18)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", fontSize:`${11*textSize}px`, color:"rgba(224,123,84,0.7)", textAlign:"center" }}>
+              <div style={{ background:"color-mix(in srgb,var(--warn) 6%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 18%,transparent)", borderRadius:"12px", padding:"10px 14px", marginBottom:"12px", fontSize:`${11*textSize}px`, color:"color-mix(in srgb,var(--warn) 70%,transparent)", textAlign:"center" }}>
                 Notifications blocked — alarms won't fire in the background.
               </div>
             )}
@@ -777,7 +775,7 @@ export default function PrayerTimesPage({
             <div style={{
               display:"flex", gap:"8px", alignItems:"flex-start",
               padding:"10px 14px",
-              background: lightMode ? "rgba(0,0,0,0.03)" : "rgba(255,255,255,0.03)",
+              background: "var(--panel)",
               border:`1px solid ${goldBdr}`, borderRadius:"12px",
             }}>
               <span style={{ fontSize:"14px", flexShrink:0, marginTop:"1px" }}>ℹ️</span>
@@ -817,12 +815,12 @@ export default function PrayerTimesPage({
             {/* Prayer header */}
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"18px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`${gold}20`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", flexShrink:0 }}>
+                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`color-mix(in srgb,${gold} 13%,transparent)`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", flexShrink:0 }}>
                   {selectedPrayer.icon}
                 </div>
                 <div>
                   <div style={{ color:textClr, fontSize:`${21*textSize}px`, fontWeight:800 }}>{selectedPrayer.label}</div>
-                  <div style={{ color:goldDim, fontSize:`${15*textSize}px`, fontFamily:"Georgia,serif" }}>{selectedPrayer.arabic}</div>
+                  <div style={{ color:goldDim, fontSize:`${15*textSize}px`, fontFamily:"var(--font-ar)" }}>{selectedPrayer.arabic}</div>
                 </div>
               </div>
               <div style={{ textAlign:"right" }}>
@@ -849,7 +847,7 @@ export default function PrayerTimesPage({
 
             {/* Recommended Adhkar */}
             {selInfo?.adhkar && (
-              <div style={{ background: lightMode ? "rgba(122,88,16,0.07)" : "rgba(201,168,76,0.07)", border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"14px 16px", marginBottom:"8px" }}>
+              <div style={{ background: "var(--chip)", border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"14px 16px", marginBottom:"8px" }}>
                 <div style={{ color:textDim, fontSize:`${10*textSize}px`, letterSpacing:"1.2px", textTransform:"uppercase", marginBottom:"10px" }}>Recommended Adhkar</div>
                 {selInfo.adhkar.split("\n").map((line, i) => (
                   <div key={i} style={{
@@ -868,7 +866,7 @@ export default function PrayerTimesPage({
             {/* Close */}
             <button
               onClick={() => setSelectedPrayer(null)}
-              style={{ width:"100%", marginTop:"16px", padding:"13px", background:`${gold}18`, border:`1px solid ${goldBdr}`, borderRadius:"12px", color:gold, fontSize:`${14*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+              style={{ width:"100%", marginTop:"16px", padding:"13px", background:`color-mix(in srgb,${gold} 9%,transparent)`, border:`1px solid ${goldBdr}`, borderRadius:"12px", color:gold, fontSize:`${14*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
               Close
             </button>
           </div>

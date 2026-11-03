@@ -251,3 +251,18 @@ npm run build
 ---
 
 *Allahu A'lam — Allah knows best. This application is an educational tool; it does not replace the guidance of a qualified Islamic scholar.*
+
+---
+
+## November 2026 — Visual Redesign
+
+Visual-only overhaul (theme, layout, landing page). Application logic, API calls, engine and Supabase code are unchanged.
+
+- `/` is the public landing page (`src/Landing.jsx`, ad-free); the app lives at `/app` (old hash links such as `/#prayers` still open the app).
+- Theme tokens live in `src/theme.css` (dark default, `html.nur-light` for light).
+- Website view (≥1024px) uses a persistent grouped sidebar; phones keep the drawer and top ad strip.
+- Chat / Quran / Hadith are browser-style tabs inside Home. Chat has a Citations panel; Quran and Hadith have a Reading options panel (display preferences only, stored in `localStorage` key `nur_reading_prefs`).
+- Qibla on the website shows an offline map and a city bearings table (`src/QiblaWeb.jsx`); the compass is phone-only.
+- New dependencies: `d3-geo`, `topojson-client`, `world-atlas` (offline Qibla map).
+- Sidebar ad: create a 300×250 unit in Adsterra and fill `ADSTERRA_RECT_KEY` / `ADSTERRA_RECT_INVOKE_URL` in `src/AdBanner.jsx`; until then it uses the existing 320×50 unit.
+- `WelcomeScreen.jsx` was removed.

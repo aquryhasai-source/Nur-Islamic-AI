@@ -3,12 +3,12 @@
   "name": "NŪR — Islamic Knowledge Assistant",
   "short_name": "NŪR",
   "description": "Full Quran with 6 translations, authentic Hadith search across Bukhari, Muslim & more, and AI-powered Islamic guidance grounded in scripture.",
-  "start_url": "/",
+  "start_url": "/app",
   "scope": "/",
   "display": "standalone",
   "display_override": ["window-controls-overlay", "standalone"],
-  "background_color": "#081510",
-  "theme_color": "#0d1f14",
+  "background_color": "#0B1A45",
+  "theme_color": "#0A0F33",
   "orientation": "portrait-primary",
   "lang": "en",
   "dir": "ltr",
@@ -45,21 +45,21 @@
       "name": "AI Chat",
       "short_name": "Chat",
       "description": "Ask Islamic questions",
-      "url": "/",
+      "url": "/app",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Quran",
       "short_name": "Quran",
       "description": "Browse all 114 Surahs",
-      "url": "/",
+      "url": "/app",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
       "name": "Hadith",
       "short_name": "Hadith",
       "description": "Search authentic Hadith",
-      "url": "/",
+      "url": "/app",
       "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ]

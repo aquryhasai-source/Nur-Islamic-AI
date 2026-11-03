@@ -1,12 +1,12 @@
 export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
-  const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
-  const goldFaint= lightMode ? "rgba(122,88,16,0.08)"   : "rgba(201,168,76,0.07)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.82)"     : "rgba(255,255,240,0.82)";
-  const textDim  = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.38)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const cardBg = "var(--panel)";
 
   const Section = ({ title, children }) => (
     <div style={{ marginBottom:"22px" }}>
@@ -30,19 +30,19 @@ export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize =
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+      <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
-        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Terms of Use</div>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Terms of Use</div>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
 
-        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: June 2026 · Beta Release</div>
+        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: November 2026 · Beta Release</div>
 
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
           <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:800, marginBottom:"8px" }}>
@@ -100,7 +100,7 @@ export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize =
         </Section>
 
         <div style={{ textAlign:"center", marginTop:"32px" }}>
-          <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"Georgia,serif", marginBottom:"5px" }}>
+          <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"var(--font-ar)", marginBottom:"5px" }}>
             وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ
           </div>
           <div style={{ color:textDim, fontSize:`${11*textSize}px` }}>"My success is only through Allah" — Hud 11:88</div>

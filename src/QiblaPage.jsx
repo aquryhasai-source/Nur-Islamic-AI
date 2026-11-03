@@ -1,3 +1,5 @@
+import QiblaWeb from "./QiblaWeb.jsx";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import { useState, useEffect, useRef } from "react";
 import { calculateQibla } from "./utils.js";
 
@@ -15,16 +17,16 @@ const GeoBg = ({ lightMode }) => (
     <defs>
       <pattern id="q-geo" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
         <polygon points="40,3 77,22 77,58 40,77 3,58 3,22"
-          fill="none" stroke="#c9a84c" strokeWidth="0.8"/>
+          fill="none" stroke="var(--gold)" strokeWidth="0.8"/>
         <polygon points="40,17 63,30 63,50 40,63 17,50 17,30"
-          fill="none" stroke="#c9a84c" strokeWidth="0.45" opacity="0.7"/>
-        <circle cx="40" cy="40" r="5" fill="none" stroke="#c9a84c" strokeWidth="0.5" opacity="0.55"/>
-        <circle cx="40" cy="3" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="77" cy="22" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="77" cy="58" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="40" cy="77" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="3" cy="58" r="1.5" fill="#c9a84c" opacity="0.4"/>
-        <circle cx="3" cy="22" r="1.5" fill="#c9a84c" opacity="0.4"/>
+          fill="none" stroke="var(--gold)" strokeWidth="0.45" opacity="0.7"/>
+        <circle cx="40" cy="40" r="5" fill="none" stroke="var(--gold)" strokeWidth="0.5" opacity="0.55"/>
+        <circle cx="40" cy="3" r="1.5" fill="var(--gold)" opacity="0.4"/>
+        <circle cx="77" cy="22" r="1.5" fill="var(--gold)" opacity="0.4"/>
+        <circle cx="77" cy="58" r="1.5" fill="var(--gold)" opacity="0.4"/>
+        <circle cx="40" cy="77" r="1.5" fill="var(--gold)" opacity="0.4"/>
+        <circle cx="3" cy="58" r="1.5" fill="var(--gold)" opacity="0.4"/>
+        <circle cx="3" cy="22" r="1.5" fill="var(--gold)" opacity="0.4"/>
       </pattern>
     </defs>
     <rect width="100%" height="100%" fill="url(#q-geo)"/>
@@ -44,7 +46,7 @@ const FACE_STORAGE_KEY = "nur-qibla-face";
 
 function getFaceStyle(face, lightMode) {
   const base = {
-    accent: "#c9a84c", north: "#e07575",
+    accent: "var(--gold)", north: "#e07575",
     faceIn: lightMode ? "#fef9ee" : "#112218",
     faceOut: lightMode ? "#ede4cc" : "#08130f",
     cap: lightMode ? "#fdf8ed" : "#091610",
@@ -491,7 +493,7 @@ const KAABA = { lat: 21.422487, lon: 39.826206 };
 const EARTH_R_KM = 6371.0088;
 const LEVEL_OK_DEG = 15;      // max tilt (either axis) still treated as "level"
 const TILT_CLAMP_DEG = 30;    // bubble reaches the ring edge at this tilt
-const GOOD = "#4caf84";
+const GOOD = "var(--green)";
 const WARN = "#d9a35b";
 
 // Great-circle (haversine) distance in km.
@@ -1001,6 +1003,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     setShowFaces(false);
   };
   const health = useCompassHealth();
+  const docked = useMedia(DOCK_QUERY);   // website view: map instead of the live compass
 
   // Re-arm the calibration tip once the sensor problem clears.
   useEffect(() => { if (!health.needsCal) setCalDismissed(false); }, [health.needsCal]);
@@ -1025,14 +1028,14 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   };
 
   // ── Theme tokens ────────────────────────────────────────────────────────────
-  const gold = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim = lightMode ? "rgba(122,88,16,0.55)" : "rgba(201,168,76,0.5)";
-  const goldBdr = lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.2)";
-  const goldFaint = lightMode ? "rgba(122,88,16,0.08)" : "rgba(201,168,76,0.07)";
-  const textClr = lightMode ? "rgba(26,15,0,0.82)" : "rgba(255,255,240,0.85)";
-  const textDim = lightMode ? "rgba(26,15,0,0.4)" : "rgba(255,255,255,0.38)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const inputBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.06)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const inputBg = "var(--panel2)";
   const tk = { gold, goldDim, goldBdr, goldFaint, textClr, textDim };
 
   // ── Compass bearing — absolute priority with timestamp fallback ─────────────
@@ -1207,10 +1210,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           icon: "✓",
           text: "Facing Qibla",
           sub: "Allahu Akbar · You are aligned with the Qibla",
-          color: "#4caf84",
-          bg: "rgba(76,175,132,0.11)",
-          bdr: "rgba(76,175,132,0.42)",
-          shadow:"rgba(76,175,132,0.13)",
+          color: "var(--green)",
+          bg: "color-mix(in srgb,var(--green) 11%,transparent)",
+          bdr: "color-mix(in srgb,var(--green) 42%,transparent)",
+          shadow:"color-mix(in srgb,var(--green) 13%,transparent)",
         }
       : diff > 0
         ? {
@@ -1279,7 +1282,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       {/* ══════════════════════════════════════════════════════
           HEADER
           ══════════════════════════════════════════════════════ */}
-      <div style={{
+      <div className="nur-ph" style={{
         display:"flex", alignItems:"center",
         padding:"12px 16px",
         borderBottom:`1px solid ${goldBdr}`,
@@ -1287,7 +1290,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         flexShrink:0, position:"relative", zIndex:2,
       }}>
         {/* Hamburger — opens sidebar */}
-        <button onClick={onOpenSidebar}
+        <button className="nur-ph-menu" onClick={onOpenSidebar}
           style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
@@ -1295,7 +1298,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         </button>
 
         {/* Centered title + location */}
-        <div style={{ flex:1, textAlign:"center", minWidth:0 }}>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center", minWidth:0 }}>
           <div style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>
             Qibla Direction
           </div>
@@ -1324,7 +1327,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           >
             📍
           </button>
-          <button onClick={onBack}
+          <button className="nur-ph-back" onClick={onBack}
             style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 4px" }}>
             ←
           </button>
@@ -1353,8 +1356,8 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
             <button onClick={lookupCity}
               style={{
                 padding:"9px 18px", borderRadius:"10px",
-                background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`,
-                border:"none", color:lightMode?"#fff":"#0d1f14",
+                background:"var(--goldFill)",
+                border:"none", color:"var(--onGold)",
                 fontSize:"13px", fontWeight:700, cursor:"pointer",
                 fontFamily:"Nunito, sans-serif",
               }}>
@@ -1377,6 +1380,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       }}>
         {qiblaAngle !== null ? (
           <>
+            {docked && userPos ? (
+              <QiblaWeb userPos={userPos} locationName={locationName} textSize={textSize}/>
+            ) : (
+            <>
             {/* ── Alignment status pill ─────────────────────── */}
             {status && (
               <div style={{
@@ -1394,7 +1401,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   <span style={{
                     fontSize:"20px", color:status.color,
                     fontWeight:800, lineHeight:1,
-                    fontFamily:"Georgia, serif",
+                    fontFamily:"var(--font-ar)",
                   }}>
                     {status.icon}
                   </span>
@@ -1499,7 +1506,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                       {label}
                     </div>
                     <div style={{
-                      color: highlight ? "#4caf84" : textClr,
+                      color: highlight ? "var(--green)" : textClr,
                       fontSize:`${17 * textSize}px`,
                       fontWeight:800, fontVariantNumeric:"tabular-nums",
                       transition:"color 0.5s ease",
@@ -1514,6 +1521,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               ))}
             </div>
 
+            </>
+            )}
+
+            {!docked && (
             <QiblaExtras
               t={{ gold, goldDim, goldBdr, goldFaint, textClr, textDim }}
               textSize={textSize}
@@ -1524,6 +1535,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               calDismissed={calDismissed}
               onDismissCal={() => setCalDismissed(true)}
             />
+            )}
           </>
         ) : (
           /* ── No location state ──────────────────────────── */
@@ -1546,11 +1558,11 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 <button onClick={() => setShowCity(true)}
                   style={{
                     padding:"14px 36px", borderRadius:"50px",
-                    background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`,
-                    border:"none", color:lightMode?"#fff":"#0d1f14",
+                    background:"var(--goldFill)",
+                    border:"none", color:"var(--onGold)",
                     fontSize:`${14 * textSize}px`, fontWeight:800,
                     cursor:"pointer", fontFamily:"Nunito, sans-serif",
-                    boxShadow:`0 6px 24px ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.22)"}`,
+                    boxShadow:`0 6px 24px ${"var(--line)"}`,
                   }}>
                   Enter Your City
                 </button>

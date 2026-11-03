@@ -16,7 +16,20 @@ import { useEffect, useRef } from "react";
 const ADSTERRA_KEY        = "893a395d1f6207394533f25b9ef5e695";   // ← Paste your Adsterra key here
 const ADSTERRA_INVOKE_URL = "https://www.highrevenueformat.com/893a395d1f6207394533f25b9ef5e695/invoke.js";   // ← Paste your Adsterra invoke.js URL here
 
-export default function AdBanner({ unlocked, lightMode }) {
+// Website view shows the ad in the sidebar as a 300×250 rectangle. Create a
+// 300×250 "Banner" unit in Adsterra for nurislamicai.app and paste its key and
+// invoke.js URL below. Until then the slot falls back to the 320×50 unit above,
+// so nothing is lost while the new unit is being set up.
+const ADSTERRA_RECT_KEY        = "";
+const ADSTERRA_RECT_INVOKE_URL = "";
+
+export default function AdBanner({ unlocked, lightMode, variant = "strip" }) {
+  const isSlot  = variant === "slot";
+  const useRect = isSlot && ADSTERRA_RECT_KEY && ADSTERRA_RECT_INVOKE_URL;
+  const adKey   = useRect ? ADSTERRA_RECT_KEY : ADSTERRA_KEY;
+  const adUrl   = useRect ? ADSTERRA_RECT_INVOKE_URL : ADSTERRA_INVOKE_URL;
+  const adW     = useRect ? 300 : 320;
+  const adH     = useRect ? 250 : 50;
   const containerRef = useRef(null);
   const injected     = useRef(false);
 
@@ -32,16 +45,16 @@ export default function AdBanner({ unlocked, lightMode }) {
 
     const s1 = document.createElement("script");
     s1.innerHTML = `atOptions = {
-      'key': '${ADSTERRA_KEY}',
+      'key': '${adKey}',
       'format': 'iframe',
-      'height': 50,
-      'width': 320,
+      'height': ${adH},
+      'width': ${adW},
       'params': {}
     };`;
 
     const s2 = document.createElement("script");
     s2.type  = "text/javascript";
-    s2.src   = ADSTERRA_INVOKE_URL;
+    s2.src   = adUrl;
 
     containerRef.current.appendChild(s1);
     containerRef.current.appendChild(s2);
@@ -50,9 +63,18 @@ export default function AdBanner({ unlocked, lightMode }) {
   // Hidden for Pro users or until key is configured
   if (unlocked || !ADSTERRA_KEY || !ADSTERRA_INVOKE_URL) return null;
 
-  const gold    = lightMode ? "#7a5810" : "#c9a84c";
-  const borderC = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.08)";
-  const bg      = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.92)";
+  const gold = "var(--gold)";
+  const borderC = "var(--chip)";
+  const bg = "var(--head)";
+
+  if (isSlot) {
+    return (
+      <div style={{ flex:"none", padding:"12px 16px 14px", borderTop:"1px solid var(--lineSoft)" }}>
+        <div style={{ textAlign:"center", fontSize:"9.5px", fontWeight:700, letterSpacing:"1.8px", color:"var(--faint)" }}>ADVERTISEMENT</div>
+        <div ref={containerRef} style={{ width:`${adW}px`, maxWidth:"100%", height:`${adH}px`, margin:"6px auto 0", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"12px" }}/>
+      </div>
+    );
+  }
 
   return (
     <div style={{
@@ -65,7 +87,7 @@ export default function AdBanner({ unlocked, lightMode }) {
       {/* Transparent "Ad" label — keeps user trust */}
       <div style={{
         position:"absolute", top:"4px", right:"8px",
-        color: lightMode ? "rgba(122,88,16,0.25)" : "rgba(201,168,76,0.2)",
+        color: "var(--line)",
         fontSize:"9px", letterSpacing:"1px", fontFamily:"Nunito,sans-serif",
       }}>AD</div>
 

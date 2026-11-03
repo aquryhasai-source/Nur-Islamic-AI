@@ -42,15 +42,15 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
     }
   };
 
-  const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
-  const goldFaint= lightMode ? "rgba(122,88,16,0.08)"   : "rgba(201,168,76,0.07)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.85)"     : "rgba(255,255,240,0.88)";
-  const textDim  = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.4)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const inputBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.05)";
-  const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const inputBg = "var(--panel2)";
+  const cardBg = "var(--panel)";
 
   const persist = () => {
     const p = { name: name.trim(), yearOfBirth: yearOfBirth.trim() };
@@ -60,7 +60,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
 
   const usedToday = unlocked ? 0 : DAILY_LIMIT - remaining;
   const pct       = Math.min((usedToday / DAILY_LIMIT) * 100, 100);
-  const barColor  = remaining <= 3 ? "#e07b54" : remaining <= 7 ? "#d4a942" : "#4caf84";
+  const barColor  = remaining <= 3 ? "var(--warn)" : remaining <= 7 ? "var(--gold)" : "var(--green)";
 
   const age = yearOfBirth ? new Date().getFullYear() - parseInt(yearOfBirth, 10) : null;
   const ageLabel = age && age > 0 && age < 120
@@ -81,14 +81,14 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+      <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
-        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Profile</div>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Profile</div>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 40px" }}>
@@ -97,14 +97,14 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         <span style={labelStyle}>Today's Usage</span>
         <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"8px" }}>
           {unlocked ? (
-            <div style={{ color:"#4caf84", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Lifetime Access — Unlimited</div>
+            <div style={{ color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Lifetime Access — Unlimited</div>
           ) : (
             <>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
                 <span style={{ color:textDim, fontSize:`${13 * textSize}px` }}>{usedToday} of {DAILY_LIMIT} used</span>
-                <span style={{ color: remaining <= 3 ? "#e07b54" : goldDim, fontSize:`${13 * textSize}px`, fontWeight:700 }}>{remaining} left today</span>
+                <span style={{ color: remaining <= 3 ? "var(--warn)" : goldDim, fontSize:`${13 * textSize}px`, fontWeight:700 }}>{remaining} left today</span>
               </div>
-              <div style={{ height:"5px", background:lightMode?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.07)", borderRadius:"4px", overflow:"hidden" }}>
+              <div style={{ height:"5px", background:"var(--panel2)", borderRadius:"4px", overflow:"hidden" }}>
                 <div style={{ height:"100%", width:`${pct}%`, background:barColor, borderRadius:"4px", transition:"width 0.4s" }}/>
               </div>
               <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"8px" }}>Resets at midnight</div>
@@ -144,9 +144,9 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                   localStorage.setItem(KEYS.TEXT_SIZE, String(value));
                 }}
                 style={{ flex:1, padding:"10px 4px", borderRadius:"12px",
-                  background: active ? `linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})` : goldFaint,
+                  background: active ? "var(--goldFill)" : goldFaint,
                   border:`1px solid ${active ? gold : goldBdr}`,
-                  color: active ? (lightMode?"#fff":"#0d1f14") : goldDim,
+                  color: active ? "var(--onGold)" : goldDim,
                   cursor:"pointer", fontFamily:"Nunito,sans-serif", transition:"all 0.2s" }}>
                 <div style={{ fontSize:`${active ? 16*value : 14}px`, fontWeight:800, marginBottom:"3px" }}>{label}</div>
                 <div style={{ fontSize:"9px", opacity:0.75 }}>{sizeName}</div>
@@ -164,7 +164,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         <span style={labelStyle}>Daily Reminders</span>
         <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px" }}>
           {pushStatus === "granted" ? (
-            <div style={{ color:"#4caf84", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Notifications enabled</div>
+            <div style={{ color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Notifications enabled</div>
           ) : pushStatus === "denied" ? (
             <div style={{ color:textDim, fontSize:`${13 * textSize}px` }}>
               Blocked in your browser settings. Enable them there to get the daily Hadith and prayer reminders.
@@ -180,14 +180,14 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
               </div>
               <button onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
                 style={{ width:"100%", padding:"12px", borderRadius:"12px",
-                  background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`,
-                  border:"none", color: lightMode?"#fff":"#0d1f14", fontWeight:700,
+                  background:"var(--goldFill)",
+                  border:"none", color: "var(--onGold)", fontWeight:700,
                   cursor: pushStatus === "loading" ? "default" : "pointer",
                   fontFamily:"Nunito,sans-serif", fontSize:`${14*textSize}px` }}>
                 {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
               </button>
               {pushError && (
-                <div style={{ color:"#e07b54", fontSize:`${11*textSize}px`, marginTop:"8px" }}>{pushError}</div>
+                <div style={{ color:"var(--warn)", fontSize:`${11*textSize}px`, marginTop:"8px" }}>{pushError}</div>
               )}
             </>
           )}

@@ -5,8 +5,9 @@ import {
   getPrayerTimesByCity, getCountdownTo,
 } from "./utils.js";
 import { SADAQAH_ENABLED } from "./sadaqah.js";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
-const StarIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="#c9a84c"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>;
+const StarIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--gold)"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/></svg>;
 const SendIcon = () => <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>;
 const UserIcon = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>;
 
@@ -36,17 +37,17 @@ function RamadanBanner({ prayerTimes, hijriDay, onRequestCity }) {
   }, [prayerTimes]);
 
   return (
-    <div style={{ background:"linear-gradient(135deg,rgba(201,168,76,0.12),rgba(201,168,76,0.04))", borderBottom:"1px solid rgba(201,168,76,0.2)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
+    <div style={{ background:"linear-gradient(135deg,color-mix(in srgb,var(--gold) 12%,transparent),color-mix(in srgb,var(--gold) 4%,transparent))", borderBottom:"1px solid color-mix(in srgb,var(--gold) 20%,transparent)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
         <span style={{ fontSize:"18px" }}>☽</span>
         <div>
-          <div style={{ color:"#c9a84c", fontSize:"12px", fontWeight:700 }}>Ramadan Mubarak · Day {hijriDay}</div>
+          <div style={{ color:"var(--gold)", fontSize:"12px", fontWeight:700 }}>Ramadan Mubarak · Day {hijriDay}</div>
           {prayerTimes
-            ? <div style={{ color:"rgba(201,168,76,0.65)", fontSize:"12px", marginTop:"2px" }}>{info.label} <strong style={{ color:"#c9a84c", fontVariantNumeric:"tabular-nums" }}>{info.time}</strong></div>
-            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"rgba(201,168,76,0.55)", fontSize:"11px", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"Nunito,sans-serif" }}>Add city for Iftar times</button>}
+            ? <div style={{ color:"color-mix(in srgb,var(--gold) 65%,transparent)", fontSize:"12px", marginTop:"2px" }}>{info.label} <strong style={{ color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{info.time}</strong></div>
+            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 55%,transparent)", fontSize:"11px", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"Nunito,sans-serif" }}>Add city for Iftar times</button>}
         </div>
       </div>
-      {prayerTimes && <div style={{ color:"rgba(201,168,76,0.35)", fontSize:"10px", textAlign:"right", lineHeight:1.8 }}>Suhoor: {prayerTimes.Fajr}<br/>Iftar: {prayerTimes.Maghrib}</div>}
+      {prayerTimes && <div style={{ color:"color-mix(in srgb,var(--gold) 35%,transparent)", fontSize:"10px", textAlign:"right", lineHeight:1.8 }}>Suhoor: {prayerTimes.Fajr}<br/>Iftar: {prayerTimes.Maghrib}</div>}
     </div>
   );
 }
@@ -64,16 +65,16 @@ function CityModal({ onSubmit, onClose }) {
   };
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
-      <div style={{ background:"linear-gradient(160deg,#0d1f14,#081510)", border:"1px solid rgba(201,168,76,0.25)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"340px" }}>
+      <div style={{ background:"var(--pop)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"340px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
-          <span style={{ color:"#c9a84c", fontSize:"16px", fontWeight:700 }}>Your City</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(201,168,76,0.4)", fontSize:"20px", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontSize:"16px", fontWeight:700 }}>Your City</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"20px", cursor:"pointer" }}>✕</button>
         </div>
         <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key==="Enter" && submit()} placeholder="e.g. Istanbul, Karachi, London"
-          style={{ width:"100%", background:"rgba(255,255,255,0.05)", border:"1px solid rgba(201,168,76,0.25)", borderRadius:"10px", padding:"12px 14px", color:"#fff", fontSize:"15px", outline:"none", fontFamily:"Nunito,sans-serif", marginBottom:"12px", boxSizing:"border-box" }}/>
-        {err && <div style={{ color:"#e07b54", fontSize:"13px", marginBottom:"10px" }}>{err}</div>}
+          style={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"15px", outline:"none", fontFamily:"Nunito,sans-serif", marginBottom:"12px", boxSizing:"border-box" }}/>
+        {err && <div style={{ color:"var(--warn)", fontSize:"13px", marginBottom:"10px" }}>{err}</div>}
         <button onClick={submit} disabled={!city.trim() || busy}
-          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"linear-gradient(135deg,#c9a84c,#a8862e)":"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.3)", color:city.trim()?"#0d1f14":"rgba(201,168,76,0.3)", fontSize:"14px", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
+          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"14px", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
           {busy ? "Finding times…" : "Get Prayer Times"}
         </button>
       </div>
@@ -82,19 +83,19 @@ function CityModal({ onSubmit, onClose }) {
 }
 
 function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
-  const gold = lightMode ? "#7a5810" : "#c9a84c";
+  const gold = "var(--gold)";
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 28px", textAlign:"center", flex:1 }}>
-      <div style={{ fontSize:"28px", color:gold, fontFamily:"Georgia,serif", marginBottom:"8px" }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
-      <div style={{ color:lightMode?"rgba(122,88,16,0.45)":"rgba(201,168,76,0.4)", fontSize:"11px", letterSpacing:"1.5px", marginBottom:"24px" }}>"Seeking knowledge is an obligation" — Ibn Mājah</div>
-      <div style={{ color:lightMode?"rgba(26,15,0,0.5)":"rgba(255,255,255,0.45)", fontSize:`${14 * textSize}px`, lineHeight:1.8, marginBottom:"28px" }}>
+      <div style={{ fontSize:"28px", color:gold, fontFamily:"var(--font-ar)", marginBottom:"8px" }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
+      <div style={{ color:"var(--line)", fontSize:"11px", letterSpacing:"1.5px", marginBottom:"24px" }}>"Seeking knowledge is an obligation" — Ibn Mājah</div>
+      <div style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, lineHeight:1.8, marginBottom:"28px" }}>
         You've used all your free reflections today.
       </div>
       <button onClick={() => navigateTo("getpro")}
-        style={{ padding:"15px 40px", borderRadius:"50px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, border:"none", color:lightMode?"#fff":"#0d1f14", fontSize:`${16 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif", boxShadow:`0 6px 28px ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.28)"}` }}>
+        style={{ padding:"15px 40px", borderRadius:"50px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${16 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif", boxShadow:`0 6px 28px ${"var(--line)"}` }}>
         🌙 Get Pro
       </button>
-      <div style={{ color:lightMode?"rgba(26,15,0,0.3)":"rgba(255,255,255,0.25)", fontSize:"12px", marginTop:"12px" }}>or wait — resets at midnight</div>
+      <div style={{ color:"var(--dim)", fontSize:"12px", marginTop:"12px" }}>or wait — resets at midnight</div>
       {SADAQAH_ENABLED && (
         <button onClick={() => navigateTo("support")}
           style={{ marginTop:"22px", background:"none", border:"none", cursor:"pointer", color:gold, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", textDecoration:"underline", opacity:0.85 }}>
@@ -104,6 +105,9 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
     </div>
   );
 }
+
+// Citation chips inside an answer (look only — click handlers are unchanged)
+const CITE_STYLE = { display:"inline-block", margin:"1px 2px", padding:"1px 9px", borderRadius:"8px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontWeight:700, fontSize:"0.88em", cursor:"pointer", lineHeight:1.5 };
 
 const QURAN_CITATION  = /\[[^\]]*?(\d{1,3}):(\d{1,3})[^\]]*\]/g;
 const HADITH_CITATION = /\[((?:Sahih\s+)?(?:Bukhari|Muslim|Abu\s+Dawud|Tirmidhi|An-Nasai|Nasai|Ibn\s+Majah|Jami'[^\]]*?))[^\]]*?(\d+)\]/gi;
@@ -121,7 +125,29 @@ function resolveCollection(name) {
   return null;
 }
 
+// Lists every citation mentioned in the conversation (for the side panel).
+function collectCitations(messages) {
+  const out = []; const seen = new Set();
+  messages.filter(m => m.role === "assistant").forEach(m => {
+    const t = m.content || "";
+    let x;
+    QURAN_CITATION.lastIndex = 0;
+    while ((x = QURAN_CITATION.exec(t)) !== null) {
+      const k = `q${x[1]}:${x[2]}`;
+      if (!seen.has(k)) { seen.add(k); out.push({ key:k, type:"quran", raw:x[0].replace(/[\[\]]/g,""), surah:parseInt(x[1]), ayah:parseInt(x[2]) }); }
+    }
+    HADITH_CITATION.lastIndex = 0;
+    while ((x = HADITH_CITATION.exec(t)) !== null) {
+      const coll = resolveCollection(x[1]); const num = parseInt(x[2], 10);
+      const k = `h${coll}:${num}`;
+      if (!seen.has(k)) { seen.add(k); out.push({ key:k, type:"hadith", raw:x[0].replace(/[\[\]]/g,""), collection:coll, number:num }); }
+    }
+  });
+  return out;
+}
+
 export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining, setRemaining, unlocked, setUnlocked, profile, deviceId, lightMode, textSize = 1, navigateTo, onSwitchTab, onQuranSurah, onHadithNav }) {
+  const docked = useMedia(DOCK_QUERY);
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState("");
   const [loading,       setLoading]       = useState(false);
@@ -129,16 +155,17 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
   const [ramadan,       setRamadan]       = useState(null);
   const [prayerTimes,   setPrayerTimes]   = useState(null);
   const [showCityModal, setShowCityModal] = useState(false);
+  const [citeKind,      setCiteKind]      = useState("quran");   // side-panel filter (display only)
   const bottomRef   = useRef(null);
   const textareaRef = useRef(null);
 
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.45)" : "rgba(201,168,76,0.45)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.82)" : "rgba(255,255,255,0.82)";
-  const inputBg  = lightMode ? "rgba(253,248,237,0.98)" : "rgba(8,21,16,0.96)";
-  const inputBdr = lightMode ? "rgba(122,88,16,0.15)" : "rgba(201,168,76,0.1)";
-  const inpFldBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
-  const inpFldBdr= lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.2)";
+  const gold = "var(--gold)";
+  const goldDim  = "var(--goldDim)";
+  const textClr = "var(--text)";
+  const inputBg = "var(--panel2)";
+  const inputBdr = "var(--active)";
+  const inpFldBg = "var(--panel2)";
+  const inpFldBdr= "var(--line)";
 
   // Restore messages from session, or reset when session changes
   useEffect(() => {
@@ -285,7 +312,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
         lines.push(
           <span key={`q-${match.index}`}
             onClick={() => { onSwitchTab("quran"); onQuranSurah(match.surah, match.ayah); }}
-            style={{ color:gold, fontWeight:700, fontStyle:"italic", cursor:"pointer", textDecoration:"underline dotted", textUnderlineOffset:"3px" }}
+            style={CITE_STYLE}
             title={`Open Surah ${match.surah} in Quran tab`}>
             {match.raw}
           </span>
@@ -297,7 +324,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
               onSwitchTab("hadith");
               if (match.collection) onHadithNav({ collectionId: match.collection, number: match.number });
             }}
-            style={{ color:gold, fontWeight:700, fontStyle:"italic", cursor:"pointer", textDecoration:"underline dotted", textUnderlineOffset:"3px" }}
+            style={CITE_STYLE}
             title={`Open in Hadith tab — ${match.raw.replace(/[\[\]]/g,"")}`}>
             {match.raw}
           </span>
@@ -312,14 +339,28 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
       });
     }
 
-    return <div style={{ lineHeight:1.75, fontSize:`${14 * textSize}px` }}>{lines}</div>;
+    return <div style={{ lineHeight:1.75, fontSize:`${14.5 * textSize}px` }}>{lines}</div>;
   };
 
   const isEmpty  = messages.length === 0;
   const isLocked = !unlocked && remaining <= 0;
+  const citations = collectCitations(messages);
+  const shown     = citations.filter(c => c.type === citeKind);
+  const firstQ    = (messages.find(m => m.role === "user")?.display) || "";
+  const canSend   = input.trim() && !loading;
+
+  const openCitation = (c) => {
+    if (c.type === "quran") { onSwitchTab("quran"); onQuranSurah(c.surah, c.ayah); }
+    else { onSwitchTab("hadith"); if (c.collection) onHadithNav({ collectionId:c.collection, number:c.number }); }
+  };
+
+  const assistantAvatar = (
+    <div style={{ width:"30px", height:"30px", borderRadius:"50%", flexShrink:0, background:"var(--chip)", border:"1px solid var(--line)", display:"flex", alignItems:"center", justifyContent:"center" }}><StarIcon/></div>
+  );
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
+    <div style={{ display:"flex", flex:1, minHeight:0 }}>
+    <div style={{ display:"flex", flexDirection:"column", flex:1, minWidth:0, minHeight:0 }}>
       {showCityModal && <CityModal onSubmit={t => { setPrayerTimes(t); setShowCityModal(false); }} onClose={() => setShowCityModal(false)}/>}
       {ramadan?.isRamadan && <RamadanBanner prayerTimes={prayerTimes} hijriDay={ramadan.hijriDay} onRequestCity={() => setShowCityModal(true)}/>}
 
@@ -327,20 +368,30 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
 
       {!isLocked && (
         <>
-          <div style={{ flex:1, overflowY:"auto", padding:"20px 16px", maxWidth:"760px", width:"100%", margin:"0 auto", boxSizing:"border-box" }}>
+          {/* Conversation bar */}
+          <div style={{ flex:"none", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px", padding:"0 24px", minHeight:"56px", borderBottom:"1px solid var(--lineSoft)" }}>
+            <div style={{ minWidth:0, fontSize:`${14*textSize}px`, fontWeight:700, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", color: firstQ ? "var(--text)" : "var(--faint)" }}>{firstQ || "New conversation"}</div>
+            <button className="cb" onClick={onNewChat} title="New conversation"
+              style={{ flex:"none", display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"12px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer" }}>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>New chat
+            </button>
+          </div>
+
+          <div style={{ flex:1, overflowY:"auto", padding:"26px 20px" }}>
+            <div style={{ maxWidth:"700px", width:"100%", margin:"0 auto" }}>
             {isEmpty && (
-              <div style={{ textAlign:"center", paddingTop:"28px" }}>
-                <div style={{ fontSize:`${26 * textSize}px`, color:gold, marginBottom:"8px" }}>بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
-                <div style={{ color:goldDim, fontSize:"11px", letterSpacing:"2px", marginBottom:"28px" }}>In the Name of Allah, the Most Gracious, the Most Merciful</div>
-                {profile.name && <div style={{ color:lightMode?"rgba(26,15,0,0.4)":"rgba(255,255,255,0.4)", fontSize:`${14 * textSize}px`, marginBottom:"16px" }}>As-salamu alaykum, <strong style={{ color:gold }}>{profile.name}</strong> 🌙</div>}
-                <div style={{ width:"40px", height:"1px", background:`linear-gradient(90deg,transparent,${gold},transparent)`, margin:"0 auto 24px" }}/>
-                <p style={{ color:lightMode?"rgba(26,15,0,0.38)":"rgba(255,255,255,0.38)", fontSize:`${14 * textSize}px`, marginBottom:"28px", lineHeight:1.8 }}>
+              <div style={{ textAlign:"center", paddingTop:"24px" }}>
+                <div className="ar" style={{ fontSize:`${34 * textSize}px`, color:"var(--gold)", marginBottom:"6px", lineHeight:1.6 }}>بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
+                <div style={{ color:"var(--faint)", fontSize:"11px", fontWeight:600, letterSpacing:"1.6px", marginBottom:"26px" }}>IN THE NAME OF ALLAH, THE MOST GRACIOUS, THE MOST MERCIFUL</div>
+                {profile.name && <div style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, marginBottom:"14px" }}>As-salamu alaykum, <strong style={{ color:gold }}>{profile.name}</strong></div>}
+                <h2 className="hd" style={{ color:"var(--text)", fontSize:`${30 * textSize}px`, lineHeight:1.2, marginBottom:"10px" }}>What would you like to understand today?</h2>
+                <p style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, marginBottom:"26px", lineHeight:1.7 }}>
                   Ask anything about Islam — grounded in the Quran and authentic Hadith.
                 </p>
                 <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", justifyContent:"center" }}>
                   {SUGGESTIONS.map((s, i) => (
-                    <button key={i} onClick={() => sendMessage(s)}
-                      style={{ background:lightMode?"rgba(122,88,16,0.07)":"rgba(201,168,76,0.07)", border:`1px solid ${lightMode?"rgba(122,88,16,0.2)":"rgba(201,168,76,0.2)"}`, borderRadius:"24px", color:gold, padding:"9px 18px", fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    <button key={i} className="cb" onClick={() => sendMessage(s)}
+                      style={{ background:"var(--panel)", border:"1px solid var(--lineSoft)", borderRadius:"20px", color:"var(--dim)", padding:"8px 16px", fontSize:`${13 * textSize}px`, fontWeight:600, cursor:"pointer" }}>
                       {s}
                     </button>
                   ))}
@@ -349,31 +400,24 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
             )}
 
             {!isEmpty && (
-              <div style={{ display:"flex", flexDirection:"column", gap:"18px" }}>
-                {error && <div style={{ background:"rgba(224,123,84,0.1)", border:"1px solid rgba(224,123,84,0.3)", borderRadius:"12px", padding:"12px 16px", color:"#e07b54", fontSize:`${13 * textSize}px`, textAlign:"center" }}>{error}</div>}
+              <div style={{ display:"flex", flexDirection:"column", gap:"22px" }}>
+                {error && <div style={{ background:"color-mix(in srgb,var(--warn) 10%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 30%,transparent)", borderRadius:"12px", padding:"12px 16px", color:"var(--warn)", fontSize:`${13 * textSize}px`, textAlign:"center" }}>{error}</div>}
                 {messages.map((msg, i) => (
-                  <div key={i} style={{ display:"flex", gap:"10px", alignItems:"flex-start", justifyContent:msg.role==="user"?"flex-end":"flex-start" }}>
-                    {msg.role==="assistant" && (
-                      <div style={{ width:"32px", height:"32px", borderRadius:"50%", flexShrink:0, background:lightMode?"linear-gradient(135deg,#f0e4c0,#e6d4a0)":"linear-gradient(135deg,#1a3a22,#0d2018)", border:`1px solid ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.3)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}><StarIcon/></div>
-                    )}
-                    <div style={{ maxWidth:"82%",
-                      background:msg.role==="user"?lightMode?"linear-gradient(135deg,rgba(122,88,16,0.14),rgba(122,88,16,0.07))":"linear-gradient(135deg,rgba(201,168,76,0.18),rgba(201,168,76,0.09))":lightMode?"rgba(255,255,255,0.65)":"rgba(255,255,255,0.04)",
-                      border:msg.role==="user"?`1px solid ${lightMode?"rgba(122,88,16,0.25)":"rgba(201,168,76,0.28)"}`:`1px solid ${lightMode?"rgba(122,88,16,0.12)":"rgba(255,255,255,0.08)"}`,
-                      borderRadius:msg.role==="user"?"18px 4px 18px 18px":"4px 18px 18px 18px",
-                      padding:"13px 16px", color:textClr }}>
-                      {msg.role==="assistant"
-                        ? renderMessage(msg.content)
-                        : <p style={{ margin:0, fontSize:`${14 * textSize}px` }}>{msg.display || msg.content}</p>}
+                  msg.role === "user" ? (
+                    <div key={i} style={{ alignSelf:"flex-end", maxWidth:"82%", background:"var(--user)", border:"1px solid var(--userLine)", borderRadius:"18px 18px 4px 18px", padding:"11px 17px", color:textClr }}>
+                      <p style={{ margin:0, fontSize:`${14.5 * textSize}px`, fontWeight:600, lineHeight:1.5 }}>{msg.display || msg.content}</p>
                     </div>
-                    {msg.role==="user" && (
-                      <div style={{ width:"32px", height:"32px", borderRadius:"50%", flexShrink:0, background:lightMode?"rgba(122,88,16,0.12)":"rgba(201,168,76,0.12)", border:`1px solid ${lightMode?"rgba(122,88,16,0.25)":"rgba(201,168,76,0.25)"}`, display:"flex", alignItems:"center", justifyContent:"center", color:gold }}><UserIcon/></div>
-                    )}
-                  </div>
+                  ) : (
+                    <div key={i} style={{ display:"flex", gap:"12px", alignItems:"flex-start", color:textClr }}>
+                      {assistantAvatar}
+                      <div style={{ flex:1, minWidth:0 }}>{renderMessage(msg.content)}</div>
+                    </div>
+                  )
                 ))}
                 {loading && (
-                  <div style={{ display:"flex", gap:"10px", alignItems:"flex-start" }}>
-                    <div style={{ width:"32px", height:"32px", borderRadius:"50%", background:lightMode?"linear-gradient(135deg,#f0e4c0,#e6d4a0)":"linear-gradient(135deg,#1a3a22,#0d2018)", border:`1px solid ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.3)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}><StarIcon/></div>
-                    <div style={{ background:lightMode?"rgba(255,255,255,0.65)":"rgba(255,255,255,0.04)", border:`1px solid ${lightMode?"rgba(122,88,16,0.12)":"rgba(255,255,255,0.08)"}`, borderRadius:"4px 18px 18px 18px", padding:"14px 18px", display:"flex", gap:"6px", alignItems:"center" }}>
+                  <div style={{ display:"flex", gap:"12px", alignItems:"center" }}>
+                    {assistantAvatar}
+                    <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
                       {[0,1,2].map(d => <div key={d} style={{ width:"7px", height:"7px", borderRadius:"50%", background:gold, animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
                     </div>
                   </div>
@@ -381,32 +425,62 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
                 <div ref={bottomRef}/>
               </div>
             )}
+            </div>
           </div>
 
-          <div style={{ background:inputBg, backdropFilter:"blur(16px)", borderTop:`1px solid ${inputBdr}`, padding:"12px 16px 14px", flexShrink:0 }}>
-            <div style={{ maxWidth:"760px", margin:"0 auto" }}>
-            <div style={{ display:"flex", gap:"8px", alignItems:"flex-end" }}>
-                <button onClick={onNewChat} title="New conversation"
-                  style={{ width:"44px", height:"44px", borderRadius:"12px", flexShrink:0, background:lightMode?"rgba(122,88,16,0.07)":"rgba(201,168,76,0.07)", border:`1px solid ${inpFldBdr}`, color:gold, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", lineHeight:1 }}>
-                  ✏️
-                </button>
-                <div style={{ flex:1, background:inpFldBg, border:`1px solid ${inpFldBdr}`, borderRadius:"14px", padding:"11px 14px" }}>
-                  <textarea ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); autoResize(); }} onKeyDown={handleKeyDown}
-                    placeholder="Ask about Quran, Hadith, Islamic practice…" rows={1} disabled={loading}
-                    style={{ width:"100%", background:"transparent", border:"none", outline:"none", color:textClr, fontSize:`${14 * textSize}px`, resize:"none", fontFamily:"Nunito,sans-serif", lineHeight:1.6 }}/>
-                </div>
-                <button onClick={() => sendMessage()} disabled={!input.trim() || loading}
-                  style={{ width:"44px", height:"44px", borderRadius:"12px", flexShrink:0, background:input.trim()&&!loading?`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`:`${lightMode?"rgba(122,88,16,0.08)":"rgba(201,168,76,0.08)"}`, border:`1px solid ${inpFldBdr}`, color:input.trim()&&!loading?(lightMode?"#fff":"#0d1f14"):gold, cursor:input.trim()&&!loading?"pointer":"not-allowed", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", opacity:input.trim()&&!loading?1:0.4 }}>
-                  <SendIcon/>
+          <div style={{ flexShrink:0, padding:"10px 20px 16px" }}>
+            <div style={{ maxWidth:"700px", margin:"0 auto" }}>
+              <div style={{ display:"flex", alignItems:"flex-end", gap:"10px", background:inpFldBg, border:`1px solid ${inpFldBdr}`, borderRadius:"18px", padding:"8px 8px 8px 18px" }}>
+                <textarea ref={textareaRef} value={input} onChange={e => { setInput(e.target.value); autoResize(); }} onKeyDown={handleKeyDown}
+                  placeholder={docked ? "Ask about Quran, Hadith, Islamic practice…" : "Ask a question…"} rows={1} disabled={loading} aria-label="Ask a question"
+                  style={{ flex:1, minWidth:0, background:"transparent", border:"none", outline:"none", color:textClr, fontSize:`${14.5 * textSize}px`, fontWeight:600, resize:"none", lineHeight:1.6, padding:"9px 0" }}/>
+                <button onClick={() => sendMessage()} disabled={!canSend} aria-label="Send question"
+                  style={{ width:"44px", height:"44px", borderRadius:"13px", flexShrink:0, background: canSend ? "var(--goldFill)" : "var(--chip)", border:"none", color: canSend ? "var(--onGold)" : "var(--gold)", cursor: canSend ? "pointer" : "not-allowed", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", opacity: canSend ? 1 : 0.5 }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
               </div>
-              <div style={{ textAlign:"center", marginTop:"8px", color:goldDim, fontSize:"10px", letterSpacing:"0.8px", opacity:0.6 }}>
-                Tap any citation to open it in Quran or Hadith tab · Allahu A'lam
+              <div style={{ textAlign:"center", marginTop:"9px", color:"var(--faint)", fontSize:"12px", fontWeight:600 }}>
+                Tap any citation to open it in the Quran or Hadith tab · Allahu A'lam
               </div>
             </div>
           </div>
         </>
       )}
+    </div>
+
+    {/* Citations panel — website view only (hidden by CSS on phones) */}
+    {!isLocked && (
+      <aside className="nur-rightpane" aria-label="Citations" style={{ width:"340px" }}>
+        <div style={{ flex:"none", padding:"20px 20px 0" }}>
+          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:"12px" }}>
+            <span className="hd" style={{ fontSize:"22px", color:"var(--gold)" }}>Citations</span>
+            <span style={{ fontSize:"11px", fontWeight:700, letterSpacing:"1.6px", color:"var(--faint)" }}>{citations.length} IN THIS CHAT</span>
+          </div>
+          <div role="tablist" style={{ display:"flex", gap:"4px", padding:"4px", borderRadius:"14px", background:"var(--panel2)", border:"1px solid var(--lineSoft)" }}>
+            {[["quran","Quran"],["hadith","Hadith"]].map(([k,l]) => (
+              <button key={k} role="tab" aria-selected={citeKind===k} className="cb" onClick={() => setCiteKind(k)}
+                style={{ flex:1, height:"36px", borderRadius:"10px", border:0, background: citeKind===k ? "var(--active)" : "transparent", color: citeKind===k ? "var(--gold)" : "var(--dim)", fontFamily:"var(--font-head)", fontSize:"16px", fontWeight:700, letterSpacing:"1.5px", cursor:"pointer" }}>{l}</button>
+            ))}
+          </div>
+        </div>
+        <div style={{ flex:1, minHeight:0, overflowY:"auto", padding:"16px 20px 20px", display:"flex", flexDirection:"column", gap:"10px" }}>
+          {shown.length === 0 && (
+            <div style={{ color:"var(--faint)", fontSize:"13.5px", lineHeight:1.7, padding:"8px 2px" }}>
+              {citations.length === 0
+                ? "Sources mentioned in the answers will be collected here, so you can open any of them in one tap."
+                : `No ${citeKind === "quran" ? "Quran" : "Hadith"} citations in this chat yet.`}
+            </div>
+          )}
+          {shown.map(c => (
+            <button key={c.key} className="pc" onClick={() => openCitation(c)}
+              style={{ display:"flex", alignItems:"center", gap:"12px", padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)", textAlign:"left", cursor:"pointer" }}>
+              <span style={{ flex:1, fontSize:"13.5px", fontWeight:700 }}>{c.raw}</span>
+              <span style={{ fontSize:"12px", fontWeight:700, color:"var(--gold)" }}>Open →</span>
+            </button>
+          ))}
+        </div>
+      </aside>
+    )}
     </div>
   );
 }

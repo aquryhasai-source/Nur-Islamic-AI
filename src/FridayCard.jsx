@@ -5,15 +5,15 @@ import { trackEvent } from "./analytics.js";
 export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 1, name }) {
   const sadaqahUrl = useSadaqahLink();
 
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.6)" : "rgba(201,168,76,0.6)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.25)" : "rgba(201,168,76,0.25)";
-  const goldFaint= lightMode ? "rgba(122,88,16,0.08)" : "rgba(201,168,76,0.08)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.85)" : "rgba(255,255,240,0.85)";
-  const textDim  = lightMode ? "rgba(26,15,0,0.55)" : "rgba(255,255,255,0.5)";
-  const cardBg   = lightMode ? "#fdf8ed" : "#0d1f14";
-  const btnText  = lightMode ? "#fff" : "#0d1f14";
-  const btnBg    = `linear-gradient(135deg,${gold},${lightMode ? "#a07020" : "#a8862e"})`;
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const cardBg = "var(--panel)";
+  const btnText = "var(--onGold)";
+  const btnBg    = "var(--goldFill)";
 
   const label = { color:gold, fontSize:`${11*textSize}px`, fontWeight:800, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:"8px" };
   const body  = { color:textDim, fontSize:`${12.5*textSize}px`, lineHeight:1.7 };
@@ -27,7 +27,7 @@ export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 
 
         {/* Greeting */}
         <div style={{ textAlign:"center", marginBottom:"18px" }}>
-          <div style={{ color:gold, fontSize:`${28*textSize}px`, fontFamily:"Georgia,serif", marginBottom:"4px" }}>جُمُعَة مُبَارَكَة</div>
+          <div style={{ color:gold, fontSize:`${28*textSize}px`, fontFamily:"var(--font-ar)", marginBottom:"4px" }}>جُمُعَة مُبَارَكَة</div>
           <div style={{ color:textClr, fontSize:`${18*textSize}px`, fontWeight:800 }}>Jumu'ah Mubarak 🌙</div>
           {name && <div style={{ color:textDim, fontSize:`${12.5*textSize}px`, marginTop:"4px" }}>As-salamu alaykum, {name}</div>}
         </div>
@@ -50,13 +50,13 @@ export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 
           <div style={label}>Adhkar for today</div>
 
           <div style={{ color:textClr, fontSize:`${13.5*textSize}px`, fontWeight:700, marginBottom:"2px" }}>Send abundant salawat upon the Prophet ﷺ</div>
-          <div style={{ color:gold, fontSize:`${19*textSize}px`, fontFamily:"Georgia,serif", textAlign:"center", margin:"8px 0 4px", lineHeight:1.9 }}>
+          <div style={{ color:gold, fontSize:`${19*textSize}px`, fontFamily:"var(--font-ar)", textAlign:"center", margin:"8px 0 4px", lineHeight:1.9 }}>
             اللَّهُمَّ صَلِّ وَسَلِّمْ عَلَى نَبِيِّنَا مُحَمَّدٍ
           </div>
           <div style={{ ...body, marginBottom:"12px" }}>The Prophet ﷺ encouraged increasing salawat upon him on Fridays. (Abū Dāwūd, Ibn Mājah)</div>
 
           <div style={{ color:textClr, fontSize:`${13.5*textSize}px`, fontWeight:700, marginBottom:"2px" }}>Make dua and istighfar</div>
-          <div style={{ color:gold, fontSize:`${18*textSize}px`, fontFamily:"Georgia,serif", textAlign:"center", margin:"8px 0 4px", lineHeight:1.9 }}>
+          <div style={{ color:gold, fontSize:`${18*textSize}px`, fontFamily:"var(--font-ar)", textAlign:"center", margin:"8px 0 4px", lineHeight:1.9 }}>
             أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ
           </div>
           <div style={body}>Friday has an hour in which dua is accepted. Many scholars place it between Asr and Maghrib. Allahu A'lam.</div>

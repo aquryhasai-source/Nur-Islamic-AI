@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { QURAN_TRANSLATIONS, isBookmarked } from "./utils.js";
+import ReadingOptions from "./ReadingOptions.jsx";
 
 const BASE = "https://api.alquran.cloud/v1";
 const surahCache  = {};
@@ -11,7 +12,7 @@ const SearchIcon = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="c
 function Loader() {
   return (
     <div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"60px 20px", gap:"6px" }}>
-      {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#c9a84c", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
+      {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"var(--gold)", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
     </div>
   );
 }
@@ -22,13 +23,13 @@ function SurahList({ onSelect, lightMode, textSize }) {
   const [loading, setLoading] = useState(true);
   const [filter,  setFilter]  = useState("");
 
-  const gold    = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim = lightMode ? "rgba(122,88,16,0.5)"  : "rgba(201,168,76,0.5)";
-  const goldBdr = lightMode ? "rgba(122,88,16,0.2)"  : "rgba(201,168,76,0.2)";
-  const cardBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
-  const cardBdr = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
-  const textClr = lightMode ? "rgba(26,15,0,0.88)"   : "rgba(255,255,240,0.88)";
-  const inputBg = lightMode ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.04)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const cardBg = "var(--panel)";
+  const cardBdr = "var(--lineSoft)";
+  const textClr = "var(--text)";
+  const inputBg = "var(--panel2)";
 
   useEffect(() => {
     if (surahCache.list) { setSurahs(surahCache.list); setLoading(false); return; }
@@ -59,16 +60,16 @@ function SurahList({ onSelect, lightMode, textSize }) {
         {loading ? <Loader/> : filtered.map(s => (
           <button key={s.number} onClick={() => onSelect(s.number)}
             style={{ display:"flex", alignItems:"center", gap:"14px", width:"100%", padding:"11px 14px", marginBottom:"6px", background:cardBg, border:`1px solid ${cardBdr}`, borderRadius:"12px", cursor:"pointer", textAlign:"left", transition:"all 0.15s" }}
-            onMouseEnter={e => e.currentTarget.style.background = lightMode?"rgba(122,88,16,0.08)":"rgba(201,168,76,0.08)"}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--chip)"}
             onMouseLeave={e => e.currentTarget.style.background = cardBg}>
-            <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:lightMode?"rgba(122,88,16,0.1)":"rgba(201,168,76,0.1)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
               <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{s.number}</span>
             </div>
             <div style={{ flex:1 }}>
               <div style={{ color:textClr, fontSize:`${14 * textSize}px`, fontWeight:600 }}>{s.englishName}</div>
               <div style={{ color:goldDim, fontSize:`${11 * textSize}px`, marginTop:"2px" }}>{s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType}</div>
             </div>
-            <div style={{ color:gold, fontSize:"17px", fontFamily:"Georgia,serif", opacity:0.8 }}>{s.name}</div>
+            <div style={{ color:gold, fontSize:"17px", fontFamily:"var(--font-ar)", opacity:0.8 }}>{s.name}</div>
           </button>
         ))}
       </div>
@@ -83,12 +84,12 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
   const [error,   setError]   = useState(null);
   const targetAyahRef         = useRef(null);
 
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.5)"  : "rgba(201,168,76,0.5)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"  : "rgba(201,168,76,0.1)";
-  const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.65)"   : "rgba(255,255,255,0.65)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.9)" : "rgba(8,21,16,0.8)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const cardBg = "var(--panel)";
+  const textClr = "var(--text)";
+  const headerBg = "var(--head)";
 
   const cacheKey = `${surahNumber}-${translation}`;
 
@@ -109,7 +110,7 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
   }, [loading, data, initialAyah]);
 
   if (loading) return <Loader/>;
-  if (error)   return <div style={{ color:"#e07b54", textAlign:"center", padding:"40px 20px", fontSize:`${14 * textSize}px` }}>{error}</div>;
+  if (error)   return <div style={{ color:"var(--warn)", textAlign:"center", padding:"40px 20px", fontSize:`${14 * textSize}px` }}>{error}</div>;
   if (!data)   return null;
 
   const arabic = data[0];
@@ -127,13 +128,14 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
           </div>
         </div>
         {surahNumber !== 9 && (
-          <div style={{ textAlign:"center", color:gold, fontSize:`${17 * textSize}px`, fontFamily:"Georgia,serif", marginTop:"6px", letterSpacing:"1px" }}>
+          <div style={{ textAlign:"center", color:gold, fontSize:`${17 * textSize}px`, fontFamily:"var(--font-ar)", marginTop:"6px", letterSpacing:"1px" }}>
             بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
           </div>
         )}
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"14px 16px" }}>
+        <div className="rd-wrap">
         {arabic.ayahs.map((ayah, i) => {
           const bmId   = `quran-${meta.number}-${ayah.numberInSurah}`;
           const bmItem = {
@@ -149,13 +151,14 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
           return (
             <div key={ayah.number}
               ref={isTarget ? targetAyahRef : null}
-              style={{ marginBottom:"18px", padding:"14px", background: isTarget ? `${gold}18` : cardBg, border:`1px solid ${isTarget ? gold : goldBdr}`, borderRadius:"14px", transition:"all 0.3s" }}>
+              className="rd-card"
+              style={{ marginBottom:"18px", padding:"14px", background: isTarget ? `color-mix(in srgb,${gold} 9%,transparent)` : cardBg, border:`1px solid ${isTarget ? gold : goldBdr}`, borderRadius:"14px", transition:"all 0.3s" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                  <div style={{ width:"26px", height:"26px", borderRadius:"50%", background:lightMode?"rgba(122,88,16,0.1)":"rgba(201,168,76,0.1)", border:`1px solid ${lightMode?"rgba(122,88,16,0.25)":"rgba(201,168,76,0.25)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <div className="rd-num" style={{ width:"26px", height:"26px", borderRadius:"50%", background:"var(--chip)", border:`1px solid ${"var(--line)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
                     <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{ayah.numberInSurah}</span>
                   </div>
-                  <span style={{ color:goldDim, fontSize:`${11 * textSize}px` }}>{meta.number}:{ayah.numberInSurah}</span>
+                  <span className="rd-num" style={{ color:goldDim, fontSize:`${11 * textSize}px` }}>{meta.number}:{ayah.numberInSurah}</span>
                 </div>
                 <button
                   onClick={() => onToggleBookmark(bmItem)}
@@ -166,15 +169,16 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
                   🔖
                 </button>
               </div>
-              <div style={{ color:gold, fontSize:`${20 * textSize}px`, fontFamily:"Georgia,serif", textAlign:"right", lineHeight:2.2, marginBottom:"10px", direction:"rtl" }}>
+              <div className="rd-ar" lang="ar" style={{ textAlign:"right", marginBottom:"10px", direction:"rtl" }}>
                 {ayah.text}
               </div>
-              <div style={{ color:textClr, fontSize:`${13 * textSize}px`, lineHeight:1.8, borderTop:`1px solid ${goldBdr}`, paddingTop:"8px" }}>
+              <div className="rd-tr" style={{ color:textClr, borderTop:`1px solid ${goldBdr}`, paddingTop:"8px" }}>
                 {trans.ayahs[i]?.text}
               </div>
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
@@ -186,10 +190,10 @@ function SearchResults({ query, translation, onSurahSelect, onBack, lightMode, t
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
 
-  const gold    = lightMode ? "#7a5810" : "#c9a84c";
-  const cardBg  = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
-  const cardBdr = lightMode ? "rgba(122,88,16,0.12)"   : "rgba(201,168,76,0.1)";
-  const textClr = lightMode ? "rgba(26,15,0,0.7)"      : "rgba(255,255,255,0.7)";
+  const gold = "var(--gold)";
+  const cardBg = "var(--panel)";
+  const cardBdr = "var(--lineSoft)";
+  const textClr = "var(--text)";
 
   const lang     = QURAN_TRANSLATIONS.find(t => t.code === translation)?.lang || "en";
   const cacheKey = `${query}-${lang}`;
@@ -215,7 +219,7 @@ function SearchResults({ query, translation, onSurahSelect, onBack, lightMode, t
       </div>
       <div style={{ flex:1, overflowY:"auto", padding:"12px 16px" }}>
         {loading && <Loader/>}
-        {error && <div style={{ color:"#e07b54", textAlign:"center", padding:"40px", fontSize:`${14 * textSize}px` }}>{error}</div>}
+        {error && <div style={{ color:"var(--warn)", textAlign:"center", padding:"40px", fontSize:`${14 * textSize}px` }}>{error}</div>}
         {!loading && results.length === 0 && !error && (
           <div style={{ textAlign:"center", color:textClr, padding:"40px", fontSize:`${14 * textSize}px`, opacity:0.5 }}>No results for "{query}"</div>
         )}
@@ -234,7 +238,7 @@ function SearchResults({ query, translation, onSurahSelect, onBack, lightMode, t
 }
 
 // ─── Main QuranTab ────────────────────────────────────────────────────────────
-export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark, unlocked, navigateTo, lightMode, textSize = 1 }) {
+function QuranTabBody({ initialNav, bookmarks = [], onToggleBookmark, unlocked, navigateTo, lightMode, textSize = 1 }) {
   const [view,          setView]          = useState("list");
   const [selectedSurah, setSelectedSurah] = useState(null);
   const [initialAyah,   setInitialAyah]   = useState(null);
@@ -242,12 +246,12 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
   const [activeQuery,   setActiveQuery]   = useState("");
   const [translation,   setTranslation]   = useState("en.sahih");
 
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.18)" : "rgba(201,168,76,0.18)";
-  const inputBg  = lightMode ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.04)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.88)"   : "rgba(255,255,240,0.88)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.9)";
-  const barBdr   = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
+  const gold = "var(--gold)";
+  const goldBdr = "var(--line)";
+  const inputBg = "var(--panel2)";
+  const textClr = "var(--text)";
+  const headerBg = "var(--head)";
+  const barBdr   = "var(--chip)";
 
   useEffect(() => {
     if (initialNav?.surah) {
@@ -290,7 +294,7 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
             placeholder="Search by keyword…"
             style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif" }}/>
           {searchQuery && (
-            <button onClick={doSearch} style={{ background:lightMode?"rgba(122,88,16,0.15)":"rgba(201,168,76,0.15)", border:"none", borderRadius:"6px", padding:"3px 10px", color:gold, fontSize:"12px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:600 }}>Go</button>
+            <button onClick={doSearch} style={{ background:"var(--active)", border:"none", borderRadius:"6px", padding:"3px 10px", color:gold, fontSize:"12px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:600 }}>Go</button>
           )}
         </div>
         <select value={translation} onChange={e => setTranslation(e.target.value)}
@@ -322,6 +326,15 @@ export default function QuranTab({ initialNav, bookmarks = [], onToggleBookmark,
           />
         )}
       </div>
+    </div>
+  );
+}
+
+export default function QuranTab(props) {
+  return (
+    <div style={{ display:"flex", flex:1, minHeight:0 }}>
+      <div style={{ display:"flex", flexDirection:"column", flex:1, minWidth:0, minHeight:0 }}><QuranTabBody {...props}/></div>
+      <ReadingOptions/>
     </div>
   );
 }

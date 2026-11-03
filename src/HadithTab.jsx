@@ -1,3 +1,4 @@
+import ReadingOptions from "./ReadingOptions.jsx";
 import { useState, useEffect, useRef } from "react";
 import { HADITH_COLLECTIONS, hadithUrl, isBookmarked } from "./utils.js";
 
@@ -10,7 +11,7 @@ function Loader({ label }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"50px 20px", gap:"14px" }}>
       <div style={{ display:"flex", gap:"6px" }}>
-        {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#c9a84c", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
+        {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"var(--gold)", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
       </div>
       {label && <div style={{ color:"rgba(201,168,76,0.45)", fontSize:"12px", letterSpacing:"1px" }}>{label}</div>}
     </div>
@@ -33,9 +34,10 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
 
   return (
     <div ref={isTarget ? targetRef : null}
-      style={{ marginBottom:"10px", background:isTarget ? `${gold}15` : cardBg, border:`1px solid ${isTarget ? gold : goldBdr}`, borderRadius:"12px", overflow:"hidden", transition:"all 0.3s" }}>
+      className="rd-card"
+      style={{ marginBottom:"10px", background:isTarget ? `color-mix(in srgb,${gold} 8%,transparent)` : cardBg, border:`1px solid ${isTarget ? gold : goldBdr}`, borderRadius:"12px", overflow:"hidden", transition:"all 0.3s" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 14px", borderBottom:`1px solid ${goldBdr}`, background:cardHdr }}>
-        <span style={{ color:gold, fontSize:"12px", fontWeight:700 }}>{h.collectionLabel} · #{h.hadithnumber}</span>
+        <span className="rd-num" style={{ color:gold, fontSize:"12px", fontWeight:700 }}>{h.collectionLabel} · #{h.hadithnumber}</span>
         <div style={{ display:"flex", alignItems:"center", gap:"4px" }}>
           <button
             onClick={() => onToggleBookmark(bmItem)}
@@ -50,7 +52,7 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
           </button>
         </div>
       </div>
-      <div style={{ padding:"12px 14px", color:textClr, fontSize:"13px", lineHeight:1.85 }}>
+      <div className="rd-tr" style={{ padding:"12px 14px", color:textClr }}>
         {expanded === i || h.text.length <= 200 ? h.text : `${h.text.slice(0, 200)}…`}
         {h.text.length > 200 && expanded !== i && (
           <button onClick={() => setExpanded(i)} style={{ background:"none", border:"none", color:gold, fontSize:"12px", cursor:"pointer", padding:"0 0 0 6px", fontFamily:"Nunito,sans-serif" }}>Read more</button>
@@ -85,9 +87,9 @@ function SearchBar({
         </div>
         <button onClick={() => doSearch()} disabled={!searchQuery.trim() || loading}
           style={{ padding:"8px 14px", borderRadius:"10px",
-            background: searchQuery.trim() && !loading ? `linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})` : "transparent",
+            background: searchQuery.trim() && !loading ? "var(--goldFill)" : "transparent",
             border:`1px solid ${goldBdr}`,
-            color: searchQuery.trim() && !loading ? (lightMode?"#fff":"#0d1f14") : goldDim,
+            color: searchQuery.trim() && !loading ? "var(--onGold)" : goldDim,
             fontSize:`${13 * textSize}px`, fontWeight:700, cursor: searchQuery.trim() && !loading ? "pointer" : "not-allowed", fontFamily:"Nunito,sans-serif", flexShrink:0 }}>
           Search
         </button>
@@ -96,7 +98,7 @@ function SearchBar({
   );
 }
 
-export default function HadithTab({ initialTopic, initialNav, bookmarks = [], onToggleBookmark, unlocked, navigateTo, lightMode, textSize = 1 }) {
+function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookmark, unlocked, navigateTo, lightMode, textSize = 1 }) {
   const [view, setView] = useState("books");
   const [activeBook, setActiveBook] = useState(null);
   const [bookHadiths, setBookHadiths] = useState([]);
@@ -139,17 +141,17 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
     }
   }, [bookHadiths, targetHadith]);
 
-  const gold = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim = lightMode ? "rgba(122,88,16,0.5)" : "rgba(201,168,76,0.45)";
-  const goldBdr = lightMode ? "rgba(122,88,16,0.2)" : "rgba(201,168,76,0.2)";
-  const goldFnt = lightMode ? "rgba(122,88,16,0.18)" : "rgba(201,168,76,0.18)";
-  const cardBg = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.03)";
-  const cardBdr = lightMode ? "rgba(122,88,16,0.12)" : "rgba(201,168,76,0.1)";
-  const cardHdr = lightMode ? "rgba(122,88,16,0.05)" : "rgba(201,168,76,0.04)";
-  const textClr = lightMode ? "rgba(26,15,0,0.72)" : "rgba(255,255,255,0.72)";
-  const textDim = lightMode ? "rgba(26,15,0,0.35)" : "rgba(255,255,255,0.35)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)": "rgba(8,21,16,0.9)";
-  const inputBg = lightMode ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.04)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFnt = "var(--active)";
+  const cardBg = "var(--panel)";
+  const cardBdr = "var(--lineSoft)";
+  const cardHdr = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const inputBg = "var(--panel2)";
 
   const openBook = async (coll, targetNumber = null) => {
     setActiveBook(coll);
@@ -216,14 +218,14 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
           {HADITH_COLLECTIONS.map(coll => (
             <button key={coll.id} onClick={() => openBook(coll)}
               style={{ display:"flex", alignItems:"center", gap:"14px", width:"100%", padding:"14px 16px", marginBottom:"8px", background:cardBg, border:`1px solid ${cardBdr}`, borderRadius:"14px", cursor:"pointer", textAlign:"left", transition:"all 0.15s" }}
-              onMouseEnter={e => { e.currentTarget.style.background = lightMode?"rgba(122,88,16,0.08)":"rgba(201,168,76,0.07)"; }}
+              onMouseEnter={e => { e.currentTarget.style.background = "var(--chip)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = cardBg; }}>
-              <div style={{ width:"42px", height:"42px", borderRadius:"12px", background:lightMode?"rgba(122,88,16,0.1)":"rgba(201,168,76,0.1)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:"20px" }}>
+              <div style={{ width:"42px", height:"42px", borderRadius:"12px", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:"20px" }}>
                 📜
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ color:textClr, fontSize:`${14 * textSize}px`, fontWeight:700 }}>{coll.label}</div>
-                <div style={{ color:gold, fontSize:`${12 * textSize}px`, fontFamily:"Georgia,serif", marginTop:"2px" }}>{coll.arabic}</div>
+                <div style={{ color:gold, fontSize:`${12 * textSize}px`, fontFamily:"var(--font-ar)", marginTop:"2px" }}>{coll.arabic}</div>
                 <div style={{ color:textDim, fontSize:`${11 * textSize}px`, marginTop:"2px" }}>{coll.hadiths?.toLocaleString()} hadiths</div>
               </div>
               <div style={{ color:goldDim, fontSize:"20px" }}>›</div>
@@ -251,7 +253,7 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
               {paged.map((h, i) => <HadithCard key={i} h={h} i={i} expanded={expanded} setExpanded={setExpanded} isTarget={targetHadith && h.hadithnumber === targetHadith} {...cardProps}/>)}
               {hasMore && (
                 <button onClick={() => setPage(p => p + 1)}
-                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:lightMode?"rgba(122,88,16,0.07)":"rgba(201,168,76,0.07)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", marginTop:"6px" }}>
+                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", marginTop:"6px" }}>
                   Load more ({total - paged.length} remaining)
                 </button>
               )}
@@ -277,11 +279,20 @@ export default function HadithTab({ initialTopic, initialNav, bookmarks = [], on
         {paged.map((h, i) => <HadithCard key={i} h={h} i={i} expanded={expanded} setExpanded={setExpanded} isTarget={false} {...cardProps}/>)}
         {hasMore && !loading && (
           <button onClick={() => setPage(p => p + 1)}
-            style={{ width:"100%", padding:"12px", borderRadius:"10px", background:lightMode?"rgba(122,88,16,0.07)":"rgba(201,168,76,0.07)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
             Load more ({total - paged.length} remaining)
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+export default function HadithTab(props) {
+  return (
+    <div style={{ display:"flex", flex:1, minHeight:0 }}>
+      <div style={{ display:"flex", flexDirection:"column", flex:1, minWidth:0, minHeight:0 }}><HadithTabBody {...props}/></div>
+      <ReadingOptions/>
     </div>
   );
 }

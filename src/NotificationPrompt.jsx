@@ -37,7 +37,7 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
 
   if (!visible) return null;
 
-  const gold = "#c9a84c";
+  const gold = "var(--gold)";
 
   return (
     <div
@@ -47,14 +47,14 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
         justifyContent: "space-between",
         gap: "10px",
         padding: "10px 14px",
-        background: `${gold}14`,
-        borderBottom: `1px solid ${gold}33`,
+        background: `color-mix(in srgb,${gold} 8%,transparent)`,
+        borderBottom: `1px solid color-mix(in srgb,${gold} 20%,transparent)`,
         flexShrink: 0,
       }}
     >
       <span
         style={{
-          color: lightMode ? "rgba(26,15,0,0.8)" : "rgba(255,255,240,0.85)",
+          color: "var(--text)",
           fontSize: `${12 * textSize}px`,
         }}
       >
@@ -69,7 +69,7 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
             border: "none",
             borderRadius: "8px",
             padding: "6px 12px",
-            color: lightMode ? "#fff" : "#0d1f14",
+            color: "var(--onGold)",
             fontWeight: 700,
             fontSize: `${11 * textSize}px`,
             cursor: loading ? "default" : "pointer",

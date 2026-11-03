@@ -28,17 +28,17 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
   const [importMsg,   setImportMsg]   = useState("");
   const fileRef = useRef(null);
 
-  const gold      = lightMode ? "#7a5810"                 : "#c9a84c";
-  const goldDim   = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
-  const goldBdr   = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
-  const goldFaint = lightMode ? "rgba(122,88,16,0.08)"   : "rgba(201,168,76,0.07)";
-  const textClr   = lightMode ? "rgba(26,15,0,0.82)"     : "rgba(255,255,240,0.82)";
-  const textDim   = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.38)";
-  const headerBg  = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const cardBg    = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
-  const inputBg   = lightMode ? "rgba(255,255,255,0.6)"  : "rgba(255,255,255,0.05)";
-  const dangerClr = "#e07b54";
-  const greenClr  = "#4caf84";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const cardBg = "var(--panel)";
+  const inputBg = "var(--panel2)";
+  const dangerClr = "var(--warn)";
+  const greenClr  = "var(--green)";
 
   const handleDelete = (id) => {
     const updated = deleteSession(id);
@@ -105,17 +105,17 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
 
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+      <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
-        <div style={{ flex:1, textAlign:"center" }}>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center" }}>
           <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Chat History</span>
           {sessions.length > 0 && <span style={{ color:goldDim, fontSize:`${11*textSize}px`, marginLeft:"8px" }}>{sessions.length} saved</span>}
         </div>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       {/* Search bar */}
@@ -172,7 +172,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
 
           return (
             <div key={session.id}
-              style={{ marginBottom:"10px", background:cardBg, border:`1px solid ${isOpen ? `${gold}60` : goldBdr}`, borderRadius:"14px", overflow:"hidden", transition:"border-color 0.2s" }}>
+              style={{ marginBottom:"10px", background:cardBg, border:`1px solid ${isOpen ? `color-mix(in srgb,${gold} 38%,transparent)` : goldBdr}`, borderRadius:"14px", overflow:"hidden", transition:"border-color 0.2s" }}>
 
               <button
                 onClick={() => setExpanded(isOpen ? null : session.id)}
@@ -200,8 +200,8 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                         alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
                         maxWidth:"90%",
                         background: msg.role === "user"
-                          ? lightMode ? "rgba(122,88,16,0.1)" : "rgba(201,168,76,0.1)"
-                          : lightMode ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)",
+                          ? "var(--chip)"
+                          : "var(--panel)",
                         border:`1px solid ${goldBdr}`,
                         borderRadius: msg.role === "user" ? "14px 4px 14px 14px" : "4px 14px 14px 14px",
                         padding:"8px 12px",
@@ -224,12 +224,12 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                   <div style={{ padding:"0 14px 13px", display:"flex", gap:"8px" }}>
                     <button
                       onClick={() => onContinue(session)}
-                      style={{ flex:1, padding:"10px", borderRadius:"10px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, border:"none", color:lightMode?"#fff":"#0d1f14", fontSize:`${13 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                      style={{ flex:1, padding:"10px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
                       Continue →
                     </button>
                     <button
                       onClick={() => handleDelete(session.id)}
-                      style={{ padding:"10px 16px", borderRadius:"10px", background:"rgba(224,123,84,0.08)", border:"1px solid rgba(224,123,84,0.25)", color:dangerClr, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                      style={{ padding:"10px 16px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", color:dangerClr, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
                       Delete
                     </button>
                   </div>
@@ -251,7 +251,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
               onClick={handleBackup}
               disabled={backupState === "saving"}
               style={{ width:"100%", padding:"11px", borderRadius:"10px", marginBottom:"8px",
-                background: backupState === "done" ? "rgba(76,175,132,0.12)" : goldFaint,
+                background: backupState === "done" ? "color-mix(in srgb,var(--green) 12%,transparent)" : goldFaint,
                 border:`1px solid ${backupState === "done" ? greenClr : goldBdr}`,
                 color: backupState === "done" ? greenClr : gold,
                 fontSize:`${13 * textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
@@ -262,7 +262,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
               onClick={() => fileRef.current?.click()}
               disabled={importState === "importing"}
               style={{ width:"100%", padding:"11px", borderRadius:"10px",
-                background: importState === "done" ? "rgba(76,175,132,0.12)" : "transparent",
+                background: importState === "done" ? "color-mix(in srgb,var(--green) 12%,transparent)" : "transparent",
                 border:`1px solid ${importState === "done" ? greenClr : importState === "error" ? dangerClr : goldBdr}`,
                 color: importState === "done" ? greenClr : importState === "error" ? dangerClr : goldDim,
                 fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
@@ -274,7 +274,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
         {sessions.length > 0 && !search && (
           <div style={{ marginTop:"16px", textAlign:"center" }}>
             {confirmAll ? (
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"10px", padding:"16px", background:"rgba(224,123,84,0.07)", border:"1px solid rgba(224,123,84,0.2)", borderRadius:"14px" }}>
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"10px", padding:"16px", background:"color-mix(in srgb,var(--warn) 7%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 20%,transparent)", borderRadius:"14px" }}>
                 <div style={{ color:dangerClr, fontSize:`${13 * textSize}px`, fontWeight:600 }}>Delete all conversations?</div>
                 <div style={{ display:"flex", gap:"10px" }}>
                   <button onClick={() => setConfirmAll(false)}
@@ -282,7 +282,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                     Cancel
                   </button>
                   <button onClick={handleClearAll}
-                    style={{ padding:"8px 20px", borderRadius:"10px", background:"rgba(224,123,84,0.15)", border:"1px solid rgba(224,123,84,0.35)", color:dangerClr, fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    style={{ padding:"8px 20px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 15%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 35%,transparent)", color:dangerClr, fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
                     Delete All
                   </button>
                 </div>

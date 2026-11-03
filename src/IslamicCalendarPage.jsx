@@ -69,24 +69,24 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   const lm = lightMode;
 
   // ── Colour tokens ────────────────────────────────────────────────────────
-  const gold      = lm ? "#7a5810"                  : "#c9a84c";
-  const goldDim   = lm ? "rgba(122,88,16,0.58)"     : "rgba(201,168,76,0.55)";
-  const goldBdr   = lm ? "rgba(122,88,16,0.18)"     : "rgba(201,168,76,0.2)";
-  const goldFaint = lm ? "rgba(122,88,16,0.07)"     : "rgba(201,168,76,0.07)";
-  const goldHl    = lm ? "rgba(122,88,16,0.13)"     : "rgba(201,168,76,0.14)";
-  const text      = lm ? "rgba(20,12,0,0.9)"        : "rgba(255,251,235,0.9)";
-  const textMid   = lm ? "rgba(20,12,0,0.62)"       : "rgba(255,251,235,0.62)";
-  const textDim   = lm ? "rgba(20,12,0,0.38)"       : "rgba(255,255,255,0.35)";
-  const bg        = lm ? "#fdf8ed"                  : "#07100a";
-  const cardBg    = lm ? "#ffffff"                  : "#0c1a0f";
-  const headerBg  = lm ? "rgba(253,248,237,0.97)"   : "rgba(7,16,10,0.97)";
-  const heroBg    = lm ? "linear-gradient(145deg,#243f1c,#182d10)" : "linear-gradient(145deg,#0d1f0f,#060d07)";
-  const shadow    = lm ? "0 2px 12px rgba(0,0,0,0.07)" : "0 2px 16px rgba(0,0,0,0.32)";
-  const progBg    = lm ? "rgba(122,88,16,0.1)"      : "rgba(255,255,255,0.08)";
-  const divider   = lm ? "rgba(122,88,16,0.12)"     : "rgba(201,168,76,0.12)";
-  const sheetBg   = lm ? "#fdf8ed"                  : "#0c1a0f";
-  const cellBg    = lm ? "rgba(122,88,16,0.03)"     : "rgba(255,255,255,0.028)";
-  const cellBdr   = lm ? "rgba(122,88,16,0.1)"      : "rgba(201,168,76,0.1)";
+  const gold      = "var(--gold)";
+  const goldDim   = "var(--goldDim)";
+  const goldBdr   = "var(--line)";
+  const goldFaint = "var(--chip)";
+  const goldHl    = "var(--active)";
+  const text      = "var(--text)";
+  const textMid   = "var(--dim)";
+  const textDim   = "var(--faint)";
+  const bg        = "var(--bgSolid)";
+  const cardBg    = "var(--panel)";
+  const headerBg  = "var(--head)";
+  const heroBg    = "linear-gradient(145deg,#10265F,#0B4A47)";
+  const shadow    = "none";
+  const progBg    = "var(--lineSoft)";
+  const divider   = "var(--lineSoft)";
+  const sheetBg   = "var(--pop)";
+  const cellBg    = "var(--panel)";
+  const cellBdr   = "var(--lineSoft)";
 
   const card = (ex={}) => ({
     background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"16px",
@@ -183,15 +183,15 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
       <style>{`@keyframes cardShine{0%{left:-100%}60%,100%{left:200%}}`}</style>
 
       {/* HEADER */}
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 15px",borderBottom:`1px solid ${goldBdr}`,background:headerBg,backdropFilter:"blur(16px)",flexShrink:0,zIndex:20,position:"relative"}}>
+      <div className="nur-ph" style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"11px 15px",borderBottom:`1px solid ${goldBdr}`,background:headerBg,backdropFilter:"blur(16px)",flexShrink:0,zIndex:20,position:"relative"}}>
         {/* Hamburger — opens sidebar */}
-        <button onClick={onOpenSidebar} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 6px",display:"flex",flexDirection:"column",gap:"4px",flexShrink:0,position:"relative",zIndex:1}}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{background:"none",border:"none",cursor:"pointer",padding:"4px 6px",display:"flex",flexDirection:"column",gap:"4px",flexShrink:0,position:"relative",zIndex:1}}>
           <div style={{width:"18px",height:"2px",background:gold,borderRadius:"2px"}}/>
           <div style={{width:"13px",height:"2px",background:gold,borderRadius:"2px"}}/>
           <div style={{width:"18px",height:"2px",background:gold,borderRadius:"2px"}}/>
         </button>
-        <span style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>Islamic Calendar</span>
-        <button onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
+        <span className="nur-ph-title" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>Islamic Calendar</span>
+        <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
       </div>
 
       {/* SCROLL */}
@@ -204,26 +204,26 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{display:"flex",alignItems:"flex-start",gap:"10px",position:"relative",zIndex:2}}>
             <div style={{flex:1}}>
               <div style={{display:"inline-flex",alignItems:"center",background:"rgba(201,168,76,0.18)",border:"1px solid rgba(201,168,76,0.32)",borderRadius:"20px",padding:"3px 12px",marginBottom:"13px"}}>
-                <span style={{color:"#c9a84c",fontSize:`${10*ts}px`,fontWeight:700,letterSpacing:"0.5px"}}>Today</span>
+                <span style={{color:"#E4C173",fontSize:`${10*ts}px`,fontWeight:700,letterSpacing:"0.5px"}}>Today</span>
               </div>
               {loading?(
-                <div style={{color:"rgba(201,168,76,0.45)",fontSize:`${13*ts}px`,paddingBottom:"8px"}}>Loading…</div>
+                <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${13*ts}px`,paddingBottom:"8px"}}>Loading…</div>
               ):hijriToday?(
                 <>
                   <div style={{color:"#f0d78c",fontSize:`${25*ts}px`,fontWeight:900,lineHeight:1.15,marginBottom:"7px"}}>{hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH</div>
                   <div style={{color:"rgba(240,215,140,0.6)",fontSize:`${12*ts}px`,marginBottom:"2px"}}>{G_DAY_S[(gregToday.getDay()+6)%7]}, {gregToday.getDate()} {G_MON_S[gregToday.getMonth()]} {gregToday.getFullYear()}</div>
-                  <div style={{color:"rgba(240,215,140,0.38)",fontSize:`${11*ts}px`}}>{gregToday.toLocaleDateString("en-US",{weekday:"long"})}</div>
+                  <div style={{color:"rgba(240,215,140,0.62)",fontSize:`${11*ts}px`}}>{gregToday.toLocaleDateString("en-US",{weekday:"long"})}</div>
                 </>
               ):(
-                <div style={{color:"#e07b54",fontSize:`${13*ts}px`}}>Unable to load date</div>
+                <div style={{color:"var(--warn)",fontSize:`${13*ts}px`}}>Unable to load date</div>
               )}
               {nextEvent&&(
                 <div style={{marginTop:"15px",paddingTop:"14px",borderTop:"1px solid rgba(201,168,76,0.18)"}}>
-                  <div style={{color:"rgba(201,168,76,0.45)",fontSize:`${9*ts}px`,letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"5px"}}>Next Event</div>
+                  <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${9*ts}px`,letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"5px"}}>Next Event</div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div>
-                      <div style={{color:"#c9a84c",fontSize:`${15*ts}px`,fontWeight:800}}>{nextEvent.name}</div>
-                      <div style={{color:"rgba(201,168,76,0.45)",fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.away===0?"Today!":`${nextEvent.away} days remaining`}</div>
+                      <div style={{color:"#E4C173",fontSize:`${15*ts}px`,fontWeight:800}}>{nextEvent.name}</div>
+                      <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.away===0?"Today!":`${nextEvent.away} days remaining`}</div>
                     </div>
                     <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}}>⏳</div>
                   </div>
@@ -292,10 +292,10 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                         cursor:hasEvt?"pointer":"default",
                         boxShadow:isToday?`0 0 14px rgba(201,168,76,0.4)`:"none",
                       }}>
-                      <span style={{color:isToday?(lm?"#fff":"#07100a"):isFri?gold:text,fontSize:`${13*ts}px`,fontWeight:isToday||hasEvt?700:500,lineHeight:1}}>{cell.hDay}</span>
-                      <span style={{color:isToday?(lm?"rgba(255,255,255,0.6)":"rgba(7,16,10,0.55)"):textDim,fontSize:`${9*ts}px`,lineHeight:1,marginTop:"2px"}}>{cell.gDay}</span>
+                      <span style={{color:isToday?"var(--onGold)":isFri?gold:text,fontSize:`${13*ts}px`,fontWeight:isToday||hasEvt?700:500,lineHeight:1}}>{cell.hDay}</span>
+                      <span style={{color:isToday?"var(--onGold)":textDim,fontSize:`${9*ts}px`,lineHeight:1,marginTop:"2px"}}>{cell.gDay}</span>
                       {hasEvt&&!isToday&&<div style={{position:"absolute",top:"3px",right:"3px",width:"5px",height:"5px",borderRadius:"50%",background:gold}}/>}
-                      {isToday&&<div style={{position:"absolute",bottom:"2px",color:lm?"rgba(255,255,255,0.75)":"rgba(7,16,10,0.65)",fontSize:`${7*ts}px`}}>★</div>}
+                      {isToday&&<div style={{position:"absolute",bottom:"2px",color:"var(--onGold)",fontSize:`${7*ts}px`}}>★</div>}
                     </div>
                   );
                 })}
@@ -450,7 +450,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
             {EVENT_INFO[sheet.key]?.desc&&<div style={{color:textMid,fontSize:`${13*ts}px`,lineHeight:1.75,marginBottom:"16px"}}>{EVENT_INFO[sheet.key].desc}</div>}
             {EVENT_INFO[sheet.key]?.verse&&(
               <div style={{background:goldFaint,border:`1px solid ${goldBdr}`,borderRadius:"14px",padding:"16px",borderLeft:`3px solid ${gold}`,borderTopLeftRadius:"0",borderBottomLeftRadius:"0"}}>
-                <div style={{color:gold,fontSize:"24px",lineHeight:1,marginBottom:"6px",fontFamily:"Georgia,serif"}}>"</div>
+                <div style={{color:gold,fontSize:"24px",lineHeight:1,marginBottom:"6px",fontFamily:"var(--font-ar)"}}>"</div>
                 <div style={{color:textMid,fontSize:`${12*ts}px`,lineHeight:1.8,fontStyle:"italic",marginBottom:"10px"}}>{EVENT_INFO[sheet.key].verse}</div>
                 <div style={{color:gold,fontSize:`${11*ts}px`,fontWeight:700}}>— {EVENT_INFO[sheet.key].verseRef}</div>
               </div>

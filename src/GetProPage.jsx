@@ -17,14 +17,14 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
   const [unlockStatus, setUnlockStatus] = useState("idle");
   const [unlockError,  setUnlockError]  = useState("");
 
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.55)" : "rgba(201,168,76,0.5)";
-  const goldFaint= lightMode ? "rgba(122,88,16,0.08)" : "rgba(201,168,76,0.07)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.22)" : "rgba(201,168,76,0.22)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.82)"   : "rgba(255,255,240,0.82)";
-  const textDim  = lightMode ? "rgba(26,15,0,0.45)"   : "rgba(255,255,255,0.4)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
-  const cardBg   = lightMode ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.04)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldFaint = "var(--chip)";
+  const goldBdr = "var(--line)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
+  const cardBg = "var(--panel)";
 
   useEffect(() => {
     // Choose the Indian (Razorpay) checkout from the browser's own timezone — no third-party IP lookup.
@@ -66,14 +66,14 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Header */}
-      <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-        <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+      <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+        <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
-        <div style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Get Pro</div>
-        <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Get Pro</div>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"0 0 40px" }}>
@@ -83,7 +83,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           <div style={{ fontSize:`${44*textSize}px`, color:gold, fontWeight:900, letterSpacing:"6px", marginBottom:"4px" }}>NŪR</div>
           <div style={{ color:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"20px" }}>Ad‑Free · Unlimited</div>
 
-          <div style={{ fontSize:`${18*textSize}px`, color:gold, fontFamily:"Georgia,serif", marginBottom:"6px" }}>
+          <div style={{ fontSize:`${18*textSize}px`, color:gold, fontFamily:"var(--font-ar)", marginBottom:"6px" }}>
             طَلَبُ الْعِلْمِ فَرِيضَةٌ
           </div>
           <div style={{ color:textDim, fontSize:`${11*textSize}px`, letterSpacing:"1px", marginBottom:"8px" }}>
@@ -94,7 +94,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           </div>
 
           <a href={payUrl} target="_blank" rel="noreferrer"
-            style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"6px", width:"100%", maxWidth:"300px", background:`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`, borderRadius:"18px", color:lightMode?"#fff":"#0d1f14", padding:"18px 24px", fontSize:`${18*textSize}px`, fontWeight:800, textDecoration:"none", margin:"0 auto", boxShadow:`0 6px 28px ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.28)"}`, fontFamily:"Nunito,sans-serif" }}>
+            style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"6px", width:"100%", maxWidth:"300px", background:"var(--goldFill)", borderRadius:"18px", color:"var(--onGold)", padding:"18px 24px", fontSize:`${18*textSize}px`, fontWeight:800, textDecoration:"none", margin:"0 auto", boxShadow:`0 6px 28px ${"var(--line)"}`, fontFamily:"Nunito,sans-serif" }}>
             <span>🌙 Go Ad‑Free — {price}</span>
             <span style={{ fontSize:`${11*textSize}px`, fontWeight:400, opacity:0.8 }}>{payNote}</span>
           </a>
@@ -127,14 +127,14 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
             onKeyDown={e => e.key === "Enter" && redeem()}
             placeholder="NUR-XXXX-XXXX-XXXX"
             maxLength={40}
-            style={{ width:"100%", background:lightMode?"rgba(255,255,255,0.55)":"rgba(255,255,255,0.05)", border:`1px solid ${unlockStatus==="error"?"#e07b54":goldBdr}`, borderRadius:"12px", padding:"13px 16px", color:textClr, fontSize:`${15*textSize}px`, fontFamily:"monospace", letterSpacing:"2px", outline:"none", boxSizing:"border-box", marginBottom:"10px" }}
+            style={{ width:"100%", background:"var(--panel2)", border:`1px solid ${unlockStatus==="error"?"var(--warn)":goldBdr}`, borderRadius:"12px", padding:"13px 16px", color:textClr, fontSize:`${15*textSize}px`, fontFamily:"monospace", letterSpacing:"2px", outline:"none", boxSizing:"border-box", marginBottom:"10px" }}
           />
-          {unlockError && <div style={{ color:"#e07b54", fontSize:`${12*textSize}px`, marginBottom:"10px" }}>{unlockError}</div>}
+          {unlockError && <div style={{ color:"var(--warn)", fontSize:`${12*textSize}px`, marginBottom:"10px" }}>{unlockError}</div>}
           {unlockStatus === "success"
-            ? <div style={{ textAlign:"center", color:"#4caf84", fontSize:`${15*textSize}px`, fontWeight:700, padding:"12px" }}>✦ Unlocked! Jazakallahu Khairan 🌙</div>
+            ? <div style={{ textAlign:"center", color:"var(--green)", fontSize:`${15*textSize}px`, fontWeight:700, padding:"12px" }}>✦ Unlocked! Jazakallahu Khairan 🌙</div>
             : (
               <button onClick={redeem} disabled={!unlockCode.trim() || unlockStatus==="loading"}
-                style={{ width:"100%", padding:"13px", borderRadius:"12px", background:unlockCode.trim()?`linear-gradient(135deg,${gold},${lightMode?"#a07020":"#a8862e"})`:"transparent", border:`1px solid ${goldBdr}`, color:unlockCode.trim()?lightMode?"#fff":"#0d1f14":goldDim, fontSize:`${14*textSize}px`, fontWeight:700, cursor:unlockCode.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
+                style={{ width:"100%", padding:"13px", borderRadius:"12px", background:unlockCode.trim()?"var(--goldFill)":"transparent", border:`1px solid ${goldBdr}`, color:unlockCode.trim()?"var(--onGold)":goldDim, fontSize:`${14*textSize}px`, fontWeight:700, cursor:unlockCode.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
                 {unlockStatus==="loading" ? "Verifying…" : "Activate Pro Access"}
               </button>
             )

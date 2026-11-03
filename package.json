@@ -8,11 +8,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vercel/blob": "^2.8.2",
+    "@vercel/og": "^0.6.3",
+    "d3-geo": "^3.1.1",
+    "ffmpeg-static": "^5.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "@vercel/og": "^0.6.3",
-    "@vercel/blob": "^2.8.2",
-    "ffmpeg-static": "^5.2.0"
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.2.0",

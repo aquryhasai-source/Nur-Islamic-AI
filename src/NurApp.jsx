@@ -6,7 +6,7 @@ import ChatTab            from "./ChatTab.jsx";
 import QuranTab           from "./QuranTab.jsx";
 import HadithTab          from "./HadithTab.jsx";
 import Sidebar            from "./Sidebar.jsx";
-import WelcomeScreen, { WELCOME_KEY } from "./WelcomeScreen.jsx";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import GetProPage         from "./GetProPage.jsx";
 import SupportPage        from "./SupportPage.jsx";
 import FridayCard         from "./FridayCard.jsx";
@@ -24,38 +24,21 @@ import TermsPage          from "./TermsPage.jsx";
 import AdBanner           from "./AdBanner.jsx";
 import NotificationPrompt from "./NotificationPrompt.jsx";
 
-// ─── Floating patterns ────────────────────────────────────────────────────────
-const SHAPES = [
-  { t:"hex",      x:6,  y:8,  s:65, d:0,  dur:22 },
-  { t:"star",     x:76, y:6,  s:32, d:4,  dur:27 },
-  { t:"crescent", x:88, y:40, s:48, d:7,  dur:20 },
-  { t:"hex",      x:52, y:62, s:44, d:11, dur:18 },
-  { t:"star",     x:14, y:72, s:26, d:15, dur:24 },
-  { t:"hex",      x:85, y:78, s:38, d:3,  dur:30 },
-  { t:"crescent", x:32, y:18, s:42, d:9,  dur:25 },
-  { t:"star",     x:62, y:88, s:20, d:6,  dur:16 },
-];
-const HexSVG      = ({ s }) => <svg width={s} height={s} viewBox="0 0 100 100" fill="none"><polygon points="50,4 93,27 93,73 50,96 7,73 7,27" stroke="#c9a84c" strokeWidth="1.5"/><polygon points="50,18 80,35 80,65 50,82 20,65 20,35" stroke="#c9a84c" strokeWidth="0.8" opacity="0.5"/><circle cx="50" cy="50" r="4" stroke="#c9a84c" strokeWidth="1"/></svg>;
-const StarSVG     = ({ s }) => <svg width={s} height={s} viewBox="0 0 100 100" fill="none"><polygon points="50,5 61,35 95,35 68,57 79,91 50,72 21,91 32,57 5,35 39,35" stroke="#c9a84c" strokeWidth="1.5"/></svg>;
-const CrescentSVG = ({ s }) => <svg width={s} height={s} viewBox="0 0 100 100" fill="none"><path d="M65 15 A38 38 0 1 0 65 85 A28 28 0 1 1 65 15" stroke="#c9a84c" strokeWidth="1.5"/><circle cx="72" cy="30" r="4" stroke="#c9a84c" strokeWidth="1"/></svg>;
-
-const FloatingPatterns = () => (
-  <>
-    <style>{`
-      @keyframes fl0{0%,100%{transform:translateY(0)rotate(0deg)}50%{transform:translateY(-18px)rotate(6deg)}}
-      @keyframes fl1{0%,100%{transform:translateY(0)rotate(0deg)}50%{transform:translateY(-12px)rotate(-4deg)}}
-      @keyframes fl2{0%,100%{transform:translateY(0)rotate(0deg)}50%{transform:translateY(-22px)rotate(9deg)}}
-    `}</style>
-    <div style={{ position:"fixed", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" }}>
-      {SHAPES.map((sh, i) => (
-        <div key={i} style={{ position:"absolute", left:`${sh.x}%`, top:`${sh.y}%`, opacity:0.042, animation:`fl${i%3} ${sh.dur}s ease-in-out ${sh.d}s infinite` }}>
-          {sh.t==="hex"      && <HexSVG s={sh.s}/>}
-          {sh.t==="star"     && <StarSVG s={sh.s}/>}
-          {sh.t==="crescent" && <CrescentSVG s={sh.s}/>}
-        </div>
-      ))}
-    </div>
-  </>
+// ─── Background geometric pattern (khatam) ───────────────────────────────────
+const Khatam = () => (
+  <svg aria-hidden="true" style={{ position:"absolute", left:0, top:0, width:"100%", height:"100%", maxHeight:"1000px", pointerEvents:"none", zIndex:0 }} xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <pattern id="khatam" width="120" height="120" patternUnits="userSpaceOnUse">
+        <rect x="30" y="30" width="60" height="60" fill="none" style={{ stroke:"var(--pat)" }} strokeWidth="1"/>
+        <rect x="30" y="30" width="60" height="60" fill="none" style={{ stroke:"var(--pat)" }} strokeWidth="1" transform="rotate(45 60 60)"/>
+        <circle cx="60" cy="60" r="12" fill="none" style={{ stroke:"var(--pat)" }} strokeWidth="1"/>
+        <path d="M0 0 L30 30 M120 0 L90 30 M0 120 L30 90 M120 120 L90 90" fill="none" style={{ stroke:"var(--pat)" }} strokeWidth="1"/>
+      </pattern>
+      <linearGradient id="khatamFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0.45" stopColor="#000"/><stop offset="1" stopColor="#fff"/></linearGradient>
+      <mask id="khatamEdge"><rect width="100%" height="100%" fill="url(#khatamFade)"/></mask>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#khatam)" mask="url(#khatamEdge)" style={{ opacity:"var(--patOp)" }}/>
+  </svg>
 );
 
 const InstallModal = ({ onClose, isIOS }) => {
@@ -64,15 +47,15 @@ const InstallModal = ({ onClose, isIOS }) => {
     : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap",'"Add" to confirm'],["4","Find NŪR","on your home screen"]];
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)", zIndex:200, display:"flex", alignItems:"flex-end", padding:"20px" }}>
-      <div style={{ background:"linear-gradient(160deg,#0d1f14,#081510)", border:"1px solid rgba(201,168,76,0.25)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto" }}>
+      <div style={{ background:"var(--pop)", border:"1px solid var(--line)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto", color:"var(--text)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
-          <span style={{ color:"#c9a84c", fontSize:"17px", fontWeight:700 }}>Add to Home Screen</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"rgba(201,168,76,0.4)", fontSize:"22px", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontSize:"17px", fontWeight:700 }}>Add to Home Screen</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"22px", cursor:"pointer" }}>✕</button>
         </div>
         {steps.map(([n,a,b]) => (
           <div key={n} style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px" }}>
-            <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:"rgba(201,168,76,0.12)", border:"1px solid rgba(201,168,76,0.3)", display:"flex", alignItems:"center", justifyContent:"center", color:"#c9a84c", fontSize:"13px", fontWeight:700, flexShrink:0 }}>{n}</div>
-            <span style={{ color:"rgba(255,255,255,0.65)", fontSize:"14px" }}>{a} <strong style={{ color:"#c9a84c" }}>{b}</strong></span>
+            <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:"rgba(201,168,76,0.12)", border:"1px solid rgba(201,168,76,0.3)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", fontSize:"13px", fontWeight:700, flexShrink:0 }}>{n}</div>
+            <span style={{ color:"rgba(255,255,255,0.65)", fontSize:"14px" }}>{a} <strong style={{ color:"var(--gold)" }}>{b}</strong></span>
           </div>
         ))}
       </div>
@@ -82,7 +65,7 @@ const InstallModal = ({ onClose, isIOS }) => {
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 const TABS = ["chat", "quran", "hadith"];
-const TAB_LABELS = { chat:"NŪR", quran:"Quran", hadith:"Hadith" };
+const TAB_LABELS = { chat:"Chat", quran:"Quran", hadith:"Hadith" };
 
 export default function NurApp() {
   const deviceId = useRef(getAnonymousId());
@@ -103,12 +86,6 @@ export default function NurApp() {
   const [quranNav,     setQuranNav]     = useState(null);
   const [hadithNav,    setHadithNav]    = useState(null);
   const [hadithSearch, setHadithSearch] = useState(null);
-  const [showWelcome,  setShowWelcome]  = useState(() => {
-    const hash = window.location.hash.replace("#", "");
-    const skipWelcomeFor = ["privacy", "terms"];
-    if (skipWelcomeFor.includes(hash)) return false;
-    return !localStorage.getItem(WELCOME_KEY);
-  });
   const [showFriday,   setShowFriday]   = useState(false);
   const [bookmarks,    setBookmarks]    = useState(() => getBookmarks());
   const [lightMode,    setLightMode]    = useState(() => localStorage.getItem(KEYS.THEME) === "light");
@@ -218,7 +195,6 @@ export default function NurApp() {
 
   // ── Friday (Jumu'ah) card — once per device per Friday ────────────────────
   useEffect(() => {
-    if (showWelcome) return;
     const hash = window.location.hash.replace("#", "");
     if (["privacy", "terms"].includes(hash)) return;
     const t = setTimeout(() => {
@@ -228,7 +204,7 @@ export default function NurApp() {
       }
     }, 1500);
     return () => clearTimeout(t);
-  }, [showWelcome]);
+  }, []);
 
   // ── Swipe to change tabs (main view) ──────────────────────────────────────
   const touchStartX = useRef(null);
@@ -291,15 +267,7 @@ export default function NurApp() {
     }
   }, [activePage]);
 
-  // Theme vars
-  const appBg    = lightMode ? "linear-gradient(160deg,#fdf8ed 0%,#f4e9cf 50%,#faf3e2 100%)" : "linear-gradient(160deg,#0d1f14 0%,#081510 50%,#0a1a10 100%)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.92)";
-  const tabBarBg = lightMode ? "rgba(250,244,230,0.98)" : "rgba(8,21,16,0.9)";
-  const tabBdr   = lightMode ? "rgba(122,88,16,0.15)"   : "rgba(201,168,76,0.1)";
-  const gold     = lightMode ? "#7a5810" : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.4)" : "rgba(201,168,76,0.33)";
-
-  if (showWelcome) return <WelcomeScreen onDone={() => setShowWelcome(false)}/>;
+  const docked = useMedia(DOCK_QUERY);   // website view: sidebar stays on screen
 
   // Common page props — includes onOpenSidebar for every page
   const pageProps = {
@@ -311,9 +279,43 @@ export default function NurApp() {
     navigateTo,
   };
 
+  const TAB_ICONS = {
+    chat:   <path d="M5 5h14v10H10l-4 3.5V15H5V5Z"/>,
+    quran:  <g><path d="M5 4.5h10.5A3.5 3.5 0 0 1 19 8v11.5H8.5A3.5 3.5 0 0 1 5 16V4.5Z"/><path d="M5 16a3.5 3.5 0 0 1 3.5-3.5H19"/></g>,
+    hadith: <g><path d="M7 3.5h8l3.5 3.5v13.5H7V3.5Z"/><path d="M9.5 11h6M9.5 14.5h6M9.5 18h3.5"/></g>,
+  };
+
+  // Install button + Pro badge (sits in the header on phones, in the tab strip on the website)
+  const rightSlot = (
+    <div style={{ minWidth:"60px", display:"flex", justifyContent:"flex-end", alignItems:"center", gap:"8px" }}>
+      {showInstall && (
+        <button className="cb" onClick={handleInstall} style={{ background:"var(--chip)", border:"1px solid var(--line)", borderRadius:"20px", color:"var(--gold)", fontSize:`${12*textSize}px`, padding:"6px 12px", cursor:"pointer", fontWeight:700 }}>
+          + Home
+        </button>
+      )}
+      {!showInstall && unlocked && <div style={{ fontSize:`${11*textSize}px`, color:"var(--green)", letterSpacing:"1px", fontWeight:700 }}>✦ Pro</div>}
+    </div>
+  );
+
+  const tabStrip = (
+    <div className="tabstrip" role="tablist" aria-label="Home sections">
+      <div style={{ display:"flex", alignItems:"flex-end", gap:"12px", flex: docked ? "none" : 1 }}>
+        {Object.entries(TAB_LABELS).map(([key, label]) => (
+          <button key={key} role="tab" aria-selected={tab === key} className="tab" onClick={() => setTab(key)}
+            >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{TAB_ICONS[key]}</svg>
+            {label}
+          </button>
+        ))}
+      </div>
+      {docked && <div style={{ flex:1 }}/>}
+      {docked && <div style={{ paddingBottom:"8px" }}>{rightSlot}</div>}
+    </div>
+  );
+
   return (
-    <div style={{ height:"100%", minHeight:"100vh", display:"flex", flexDirection:"column", background:appBg, fontFamily:"'Nunito',sans-serif", position:"relative", color:lightMode?"rgba(26,15,0,0.88)":"rgba(255,255,240,0.88)" }}>
-      <FloatingPatterns/>
+    <div className={"nur-shell" + (docked ? " nur-docked" : "")} style={{ fontFamily:"var(--font-body)" }}>
+      <Khatam/>
 
       {showFriday && (
         <FridayCard
@@ -332,124 +334,99 @@ export default function NurApp() {
         unlocked={unlocked} lightMode={lightMode} setLightMode={setLightMode}
         onNavigate={navigateTo}
         textSize={textSize}
+        docked={docked} activePage={activePage}
       />
 
-      {/* ── HEADER ── */}
-      <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", borderBottom:`1px solid ${tabBdr}`, background:headerBg, backdropFilter:"blur(14px)", position:"sticky", top:0, zIndex:10, flexShrink:0 }}>
-        <button onClick={() => setSidebarOpen(true)} style={{ background:"none", border:"none", cursor:"pointer", padding:"6px", display:"flex", flexDirection:"column", gap:"4.5px" }}>
-          <div style={{ width:"20px", height:"2px", background:gold, borderRadius:"2px" }}/>
-          <div style={{ width:"15px", height:"2px", background:gold, borderRadius:"2px" }}/>
-          <div style={{ width:"20px", height:"2px", background:gold, borderRadius:"2px" }}/>
-        </button>
-        <div style={{ textAlign:"center" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:"6px", justifyContent:"center" }}>
-            <div style={{ color:gold, fontSize:`${20*textSize}px`, letterSpacing:"3px", fontVariant:"small-caps", fontWeight:700, lineHeight:1 }}>NŪR</div>
-            <span style={{ background:`${gold}22`, border:`1px solid ${gold}55`, borderRadius:"5px", color:gold, fontSize:`${8*textSize}px`, fontWeight:800, letterSpacing:"1.5px", padding:"2px 6px", lineHeight:1.4 }}>BETA</span>
+      <div className="nur-main">
+
+        {/* ── HEADER (phone only — the website view has the sidebar instead) ── */}
+        {!docked && (
+          <header style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 16px", borderBottom:"1px solid var(--lineSoft)", background:"var(--head)", backdropFilter:"blur(14px)", position:"sticky", top:0, zIndex:10, flexShrink:0 }}>
+            <button onClick={() => setSidebarOpen(true)} aria-label="Open menu" style={{ background:"none", border:"none", cursor:"pointer", padding:"6px", display:"flex", flexDirection:"column", gap:"4.5px" }}>
+              <div style={{ width:"20px", height:"2px", background:"var(--gold)", borderRadius:"2px" }}/>
+              <div style={{ width:"15px", height:"2px", background:"var(--gold)", borderRadius:"2px" }}/>
+              <div style={{ width:"20px", height:"2px", background:"var(--gold)", borderRadius:"2px" }}/>
+            </button>
+            <div style={{ textAlign:"center" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"7px", justifyContent:"center" }}>
+                <div style={{ fontFamily:"var(--font-head)", color:"var(--gold)", fontSize:`${26*textSize}px`, letterSpacing:"4px", fontWeight:700, lineHeight:1 }}>NŪR</div>
+                <span style={{ background:"var(--chip)", border:"1px solid var(--line)", borderRadius:"6px", color:"var(--gold)", fontSize:`${9*textSize}px`, fontWeight:700, letterSpacing:"1.5px", padding:"2px 6px", lineHeight:1.4 }}>BETA</span>
+              </div>
+              <div style={{ color:"var(--faint)", fontSize:`${9*textSize}px`, fontWeight:600, letterSpacing:"2.2px", textTransform:"uppercase", marginTop:"3px" }}>Free while we grow</div>
+            </div>
+            {rightSlot}
+          </header>
+        )}
+
+        {/* ── TAB STRIP ── */}
+        {tabStrip}
+
+        {/* ── AD BANNER (phone strip; on the website the ad lives in the sidebar) ── */}
+        {!docked && <AdBanner unlocked={unlocked} lightMode={lightMode}/>}
+
+        {/* ── NOTIFICATION PROMPT ── */}
+        <NotificationPrompt hasEngaged={activeSession.messages.length > 0} lightMode={lightMode} textSize={textSize}/>
+
+        {/* ── TAB CONTENT ── */}
+        <div className="nur-tabbody" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+          <div style={{ display:tab==="chat"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
+            <ChatTab
+              session={activeSession}
+              onSessionUpdate={handleSessionUpdate}
+              onNewChat={handleNewChat}
+              remaining={remaining} setRemaining={setRemaining}
+              unlocked={unlocked}   setUnlocked={setUnlocked}
+              profile={profile}     deviceId={deviceId.current}
+              lightMode={lightMode} textSize={textSize}
+              navigateTo={navigateTo}
+              onSwitchTab={handleSwitchTab}
+              onQuranSurah={handleQuranSurah}
+              onHadithNav={handleHadithNav}
+            />
           </div>
-          <div style={{ color:goldDim, fontSize:`${9*textSize}px`, letterSpacing:"2px", textTransform:"uppercase", marginTop:"2px" }}>Free while we grow</div>
+          <div style={{ display:tab==="quran"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
+            <QuranTab
+              initialNav={quranNav} bookmarks={bookmarks}
+              onToggleBookmark={handleToggleBookmark}
+              unlocked={unlocked} navigateTo={navigateTo}
+              lightMode={lightMode} textSize={textSize}
+            />
+          </div>
+          <div style={{ display:tab==="hadith"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
+            <HadithTab
+              initialTopic={hadithSearch} initialNav={hadithNav}
+              bookmarks={bookmarks}
+              onToggleBookmark={handleToggleBookmark}
+              unlocked={unlocked} navigateTo={navigateTo}
+              lightMode={lightMode} textSize={textSize}
+            />
+          </div>
         </div>
-        <div style={{ minWidth:"60px", display:"flex", justifyContent:"flex-end", alignItems:"center", gap:"8px" }}>
-          {showInstall && (
-            <button onClick={handleInstall} style={{ background:`rgba(${lightMode?"122,88,16":"201,168,76"},0.1)`, border:`1px solid ${lightMode?"rgba(122,88,16,0.3)":"rgba(201,168,76,0.3)"}`, borderRadius:"10px", color:gold, fontSize:`${11*textSize}px`, padding:"6px 10px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:700 }}>
-              + Home
-            </button>
-          )}
-          {!showInstall && unlocked && <div style={{ fontSize:`${10*textSize}px`, color:"rgba(76,175,132,0.75)", letterSpacing:"1px", fontWeight:600 }}>✦ Pro</div>}
-        </div>
-      </header>
 
-      {/* ── TAB NAV ── */}
-      <div style={{ display:"flex", flexShrink:0, background:tabBarBg, backdropFilter:"blur(14px)", borderBottom:`1px solid ${tabBdr}`, position:"sticky", top:"53px", zIndex:9 }}>
-        {Object.entries(TAB_LABELS).map(([key, label]) => {
-          const isActive = tab === key;
-          return (
-            <button key={key} onClick={() => setTab(key)} style={{ flex:1, padding:"10px 4px", background:"none", border:"none", borderBottom:isActive?`2px solid ${gold}`:"2px solid transparent", color:isActive?gold:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:isActive?700:400, transition:"all 0.2s" }}>
-              {label}
-            </button>
-          );
-        })}
+        {/* ── PAGE OVERLAY — covers the main area (website) or the screen (phone); swipe-from-left opens the drawer ── */}
+        {activePage && (
+          <div
+            style={{ position:docked ? "absolute" : "fixed", inset:0, zIndex:30, background:"var(--bg)", backgroundColor:"var(--bgSolid)", animation:docked ? "fadeIn 0.2s ease" : "slideInRight 0.28s ease", display:"flex", flexDirection:"column" }}
+            onTouchStart={onPageTouchStart}
+            onTouchEnd={onPageTouchEnd}
+          >
+            <div className="nur-page" style={{ width:"100%", maxWidth: docked ? "1040px" : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
+              {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining} setTextSize={setTextSize}/>}
+              {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
+              {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}
+              {activePage === "calendar" && <IslamicCalendarPage {...pageProps}/>}
+              {activePage === "recent"   && <RecentPage    {...pageProps} onContinue={handleContinueSession}/>}
+              {activePage === "getpro"   && <GetProPage    {...pageProps} setUnlocked={setUnlocked} setRemaining={setRemaining} deviceId={deviceId.current}/>}
+              {activePage === "support"  && <SupportPage   {...pageProps}/>}
+              {activePage === "about"    && <AboutPage     {...pageProps}/>}
+              {activePage === "prayers"  && <PrayerTimesPage {...pageProps}/>}
+              {activePage === "feedback" && <FeedbackPage  {...pageProps}/>}
+              {activePage === "privacy"  && <PrivacyPage   {...pageProps}/>}
+              {activePage === "terms"    && <TermsPage     {...pageProps}/>}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* ── AD BANNER ── */}
-      <AdBanner unlocked={unlocked} lightMode={lightMode}/>
-
-      {/* ── NOTIFICATION PROMPT ── */}
-      <NotificationPrompt hasEngaged={activeSession.messages.length > 0} lightMode={lightMode} textSize={textSize}/>
-
-      {/* ── TAB CONTENT ── */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", position:"relative", zIndex:1, minHeight:0 }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
-        <div style={{ display:tab==="chat"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
-          <ChatTab
-            session={activeSession}
-            onSessionUpdate={handleSessionUpdate}
-            onNewChat={handleNewChat}
-            remaining={remaining} setRemaining={setRemaining}
-            unlocked={unlocked}   setUnlocked={setUnlocked}
-            profile={profile}     deviceId={deviceId.current}
-            lightMode={lightMode} textSize={textSize}
-            navigateTo={navigateTo}
-            onSwitchTab={handleSwitchTab}
-            onQuranSurah={handleQuranSurah}
-            onHadithNav={handleHadithNav}
-          />
-        </div>
-        <div style={{ display:tab==="quran"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
-          <QuranTab
-            initialNav={quranNav} bookmarks={bookmarks}
-            onToggleBookmark={handleToggleBookmark}
-            unlocked={unlocked} navigateTo={navigateTo}
-            lightMode={lightMode} textSize={textSize}
-          />
-        </div>
-        <div style={{ display:tab==="hadith"?"flex":"none", flex:1, flexDirection:"column", minHeight:0 }}>
-          <HadithTab
-            initialTopic={hadithSearch} initialNav={hadithNav}
-            bookmarks={bookmarks}
-            onToggleBookmark={handleToggleBookmark}
-            unlocked={unlocked} navigateTo={navigateTo}
-            lightMode={lightMode} textSize={textSize}
-          />
-        </div>
-      </div>
-
-      {/* ── PAGE OVERLAY — swipe-from-left opens sidebar ── */}
-      {activePage && (
-        <div
-          style={{ position:"fixed", inset:0, zIndex:30, background:appBg, animation:"slideInRight 0.28s ease", display:"flex", flexDirection:"column" }}
-          onTouchStart={onPageTouchStart}
-          onTouchEnd={onPageTouchEnd}
-        >
-          {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining} setTextSize={setTextSize}/>}
-          {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
-          {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}
-          {activePage === "calendar" && <IslamicCalendarPage {...pageProps}/>}
-          {activePage === "recent"   && <RecentPage    {...pageProps} onContinue={handleContinueSession}/>}
-          {activePage === "getpro"   && <GetProPage    {...pageProps} setUnlocked={setUnlocked} setRemaining={setRemaining} deviceId={deviceId.current}/>}
-          {activePage === "support"  && <SupportPage   {...pageProps}/>}
-          {activePage === "about"    && <AboutPage     {...pageProps}/>}
-          {activePage === "prayers"  && <PrayerTimesPage {...pageProps}/>}
-          {activePage === "feedback" && <FeedbackPage  {...pageProps}/>}
-          {activePage === "privacy"  && <PrivacyPage   {...pageProps}/>}
-          {activePage === "terms"    && <TermsPage     {...pageProps}/>}
-        </div>
-      )}
-
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0;}
-        body{overscroll-behavior:none;}
-        ::-webkit-scrollbar{width:3px}
-        ::-webkit-scrollbar-thumb{background:rgba(201,168,76,0.2);border-radius:4px}
-        textarea::placeholder,input::placeholder{color:rgba(201,168,76,0.28)!important}
-        textarea:disabled{opacity:0.5}
-        select option{background:#0d1f14;color:rgba(255,255,240,0.88);}
-        button,input,select,textarea{font-family:'Nunito',sans-serif;}
-        html.nur-light select option{background:#fdf8ed;color:rgba(26,15,0,0.88);}
-        html.nur-light ::-webkit-scrollbar-thumb{background:rgba(122,88,16,0.2);}
-        html.nur-light textarea::placeholder,html.nur-light input::placeholder{color:rgba(122,88,16,0.35)!important}
-        @keyframes slideInRight{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
-        @keyframes pulse{0%,80%,100%{transform:scale(0.7);opacity:0.4}40%{transform:scale(1);opacity:1}}
-      `}</style>
     </div>
   );
 }

@@ -1,28 +1,28 @@
 import { isBookmarked } from "./utils.js";
 
 export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onToggle, unlocked, navigateTo, lightMode, textSize = 1 }) {
-  const gold     = lightMode ? "#7a5810"                 : "#c9a84c";
-  const goldDim  = lightMode ? "rgba(122,88,16,0.55)"   : "rgba(201,168,76,0.5)";
-  const goldBdr  = lightMode ? "rgba(122,88,16,0.2)"    : "rgba(201,168,76,0.2)";
-  const textClr  = lightMode ? "rgba(26,15,0,0.82)"     : "rgba(255,255,255,0.75)";
-  const textDim  = lightMode ? "rgba(26,15,0,0.4)"      : "rgba(255,255,255,0.35)";
-  const headerBg = lightMode ? "rgba(253,248,237,0.97)" : "rgba(8,21,16,0.95)";
+  const gold = "var(--gold)";
+  const goldDim = "var(--goldDim)";
+  const goldBdr = "var(--line)";
+  const textClr = "var(--text)";
+  const textDim = "var(--dim)";
+  const headerBg = "var(--head)";
 
-  const quranAccent  = lightMode ? "#3a7a4a" : "#5aaf7a";
-  const hadithAccent = lightMode ? "#8b6914" : "#c9a84c";
+  const quranAccent  = "var(--green)";
+  const hadithAccent = "var(--gold)";
 
   const Header = () => (
-    <div style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
-      <button onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
+    <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", borderBottom:`1px solid ${goldBdr}`, background:headerBg, backdropFilter:"blur(14px)", flexShrink:0 }}>
+      <button className="nur-ph-menu" onClick={onOpenSidebar} style={{ background:"none", border:"none", cursor:"pointer", padding:"4px 6px", display:"flex", flexDirection:"column", gap:"4px", flexShrink:0 }}>
         <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         <div style={{ width:"13px", height:"2px", background:gold, borderRadius:"2px" }}/>
         <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
       </button>
-      <div style={{ flex:1, textAlign:"center" }}>
+      <div className="nur-ph-title" style={{ flex:1, textAlign:"center" }}>
         <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Bookmarks</span>
         {bookmarks.length > 0 && <span style={{ color:goldDim, fontSize:`${12*textSize}px`, marginLeft:"8px" }}>{bookmarks.length} saved</span>}
       </div>
-      <button onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+      <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
     </div>
   );
 
@@ -54,7 +54,7 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
         <button onClick={() => onToggle(bm)} style={{ background:"none", border:"none", fontSize:"15px", cursor:"pointer", lineHeight:1, color:accent, opacity:0.7 }}>✕</button>
       </div>
       {bm.arabic && (
-        <div style={{ padding:"10px 14px 6px", color:accent, fontSize:`${19 * textSize}px`, fontFamily:"Georgia,serif", textAlign:"right", direction:"rtl", lineHeight:2 }}>
+        <div style={{ padding:"10px 14px 6px", color:accent, fontSize:`${19 * textSize}px`, fontFamily:"var(--font-ar)", textAlign:"right", direction:"rtl", lineHeight:2 }}>
           {bm.arabic}
         </div>
       )}

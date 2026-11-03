@@ -5,6 +5,7 @@
 const CACHE_NAME = "nur-v2"; // bumped: old caches (incl. any cached non-OK/cross-origin entries) are purged on activate
 const STATIC_ASSETS = [
   "/",
+  "/app",
   "/index.html",
   "/manifest.json",
   "/icon-192.png",
@@ -66,7 +67,7 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     icon: data.icon || "/icon-192.png",
     badge: data.badge || "/icon-192.png",
-    data: { url: data.url || "/" },
+    data: { url: data.url || "/app" },
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -75,12 +76,12 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   // Only ever open pages inside this app, whatever the push payload says.
-  let url = "/";
+  let url = "/app";
   try {
-    const raw = event.notification.data && event.notification.data.url ? event.notification.data.url : "/";
+    const raw = event.notification.data && event.notification.data.url ? event.notification.data.url : "/app";
     const u = new URL(raw, self.location.origin);
     if (u.origin === self.location.origin) url = u.pathname + u.search + u.hash;
-  } catch (e) { /* keep "/" */ }
+  } catch (e) { /* keep "/app" */ }
 
   event.waitUntil(
     clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
