@@ -16,12 +16,11 @@ import { useEffect, useRef } from "react";
 const ADSTERRA_KEY        = "893a395d1f6207394533f25b9ef5e695";   // ← Paste your Adsterra key here
 const ADSTERRA_INVOKE_URL = "https://www.highrevenueformat.com/893a395d1f6207394533f25b9ef5e695/invoke.js";   // ← Paste your Adsterra invoke.js URL here
 
-// Website view shows the ad in the sidebar as a 300×250 rectangle. Create a
-// 300×250 "Banner" unit in Adsterra for nurislamicai.app and paste its key and
-// invoke.js URL below. Until then the slot falls back to the 320×50 unit above,
-// so nothing is lost while the new unit is being set up.
-const ADSTERRA_RECT_KEY        = "";
-const ADSTERRA_RECT_INVOKE_URL = "";
+// Website view shows the ad in the sidebar as a 300×250 rectangle (the
+// 300×250 Banner unit created in Adsterra for nurislamicai.app). If either value
+// is ever cleared, the slot falls back to the 320×50 unit above.
+const ADSTERRA_RECT_KEY        = "50eb6887d5a004ef6129192f037001cf";
+const ADSTERRA_RECT_INVOKE_URL = "https://bauval.org/22/50eb6887d5a004ef6129192f037001cf";
 
 export default function AdBanner({ unlocked, lightMode, variant = "strip" }) {
   const isSlot  = variant === "slot";
@@ -69,7 +68,7 @@ export default function AdBanner({ unlocked, lightMode, variant = "strip" }) {
 
   if (isSlot) {
     return (
-      <div style={{ flex:"none", padding:"12px 16px 14px", borderTop:"1px solid var(--lineSoft)" }}>
+      <div style={{ flex:"none", padding:"12px 15px 14px", borderTop:"1px solid var(--lineSoft)" }}>
         <div style={{ textAlign:"center", fontSize:"9.5px", fontWeight:700, letterSpacing:"1.8px", color:"var(--faint)" }}>ADVERTISEMENT</div>
         <div ref={containerRef} style={{ width:`${adW}px`, maxWidth:"100%", height:`${adH}px`, margin:"6px auto 0", overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"12px" }}/>
       </div>

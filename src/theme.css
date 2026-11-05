@@ -135,7 +135,7 @@ html.nur-light .hl{color:#8A5F0E}
 /* ── Layout shell (website view ≥ 1024px: persistent sidebar) ────────────── */
 .nur-shell{height:100%;min-height:100vh;display:flex;background:var(--bg);color:var(--text);position:relative;overflow:hidden}
 .nur-main{flex:1;min-width:0;display:flex;flex-direction:column;position:relative;z-index:1}
-.nur-side-dock{width:300px;flex-shrink:0;display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--lineSoft);backdrop-filter:blur(14px);position:relative;z-index:2}
+.nur-side-dock{width:332px;flex-shrink:0;display:flex;flex-direction:column;background:var(--side);border-right:1px solid var(--lineSoft);backdrop-filter:blur(14px);position:relative;z-index:2}
 .nur-rightpane{width:320px;flex-shrink:0;border-left:1px solid var(--lineSoft);background:var(--pane);display:flex;flex-direction:column;min-height:0}
 @media (max-width:1023px){.nur-rightpane{display:none}}
 
