@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { QR_PATH, QR_SIZE } from "./qrPath.js";
 import { geoAzimuthalEquidistant, geoPath } from "d3-geo";
 import { merge, mesh } from "topojson-client";
 import world from "world-atlas/countries-110m.json";
@@ -14,10 +15,10 @@ const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
 const WINDS = ["North","North-northeast","Northeast","East-northeast","East","East-southeast","Southeast","South-southeast","South","South-southwest","Southwest","West-southwest","West","West-northwest","Northwest","North-northwest"];
 
 export const CITIES = [
-  ["Hyderabad","India",17.385,78.4867],["Karachi","Pakistan",24.8607,67.0011],["Dhaka","Bangladesh",23.8103,90.4125],
-  ["Kuala Lumpur","Malaysia",3.139,101.6869],["Jakarta","Indonesia",-6.2088,106.8456],["Dubai","UAE",25.2048,55.2708],
-  ["Cairo","Egypt",30.0444,31.2357],["Istanbul","Türkiye",41.0082,28.9784],["London","United Kingdom",51.5074,-0.1278],
-  ["Johannesburg","South Africa",-26.2041,28.0473],["New York","United States",40.7128,-74.006],["Sydney","Australia",-33.8688,151.2093],
+  ["Hyderabad","India",17.385,78.4867,"Asia/Kolkata"],["Karachi","Pakistan",24.8607,67.0011,"Asia/Karachi"],["Dhaka","Bangladesh",23.8103,90.4125,"Asia/Dhaka"],
+  ["Kuala Lumpur","Malaysia",3.139,101.6869,"Asia/Kuala_Lumpur"],["Jakarta","Indonesia",-6.2088,106.8456,"Asia/Jakarta"],["Dubai","UAE",25.2048,55.2708,"Asia/Dubai"],
+  ["Cairo","Egypt",30.0444,31.2357,"Africa/Cairo"],["Istanbul","Türkiye",41.0082,28.9784,"Europe/Istanbul"],["London","United Kingdom",51.5074,-0.1278,"Europe/London"],
+  ["Johannesburg","South Africa",-26.2041,28.0473,"Africa/Johannesburg"],["New York","United States",40.7128,-74.006,"America/New_York"],["Sydney","Australia",-33.8688,151.2093,"Australia/Sydney"],
 ];
 
 function bearingTo(lat1, lon1, lat2, lon2) {
@@ -103,58 +104,167 @@ function QiblaMap({ lat, lon, name }) {
   );
 }
 
+// ── "Check it yourself": the sun stands over the Kaaba twice a year ───────────
+// 27/28 May (~09:17 UTC) and 15/16 July (~09:28 UTC). Times are shown in the
+// viewer's own zone; the dates are worked out from today, nothing is stored.
+const SUN_EVENTS = [{ m: 4, d: [28, 27], utc: 9.283 }, { m: 6, d: [16, 15], utc: 9.467 }];
+const isLeap = y => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const MONTHS3 = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function clock12(h) {
+  h = ((h % 24) + 24) % 24;
+  let H = Math.floor(h), M = Math.round((h - H) * 60);
+  if (M === 60) { H = (H + 1) % 24; M = 0; }
+  return (H % 12 || 12) + ":" + String(M).padStart(2, "0") + " " + (H >= 12 ? "PM" : "AM");
+}
+function zoneOffsetHours(zone, atMs) {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", { timeZone: zone, timeZoneName: "longOffset" }).formatToParts(new Date(atMs));
+    const v = (p.find(x => x.type === "timeZoneName") || {}).value || "GMT";
+    const m = /GMT([+-])(\d{1,2})(?::?(\d{2}))?/.exec(v);
+    if (!m) return 0;
+    return (m[1] === "-" ? -1 : 1) * (Number(m[2]) + (m[3] ? Number(m[3]) / 60 : 0));
+  } catch { return -new Date(atMs).getTimezoneOffset() / 60; }
+}
+function nextSunEvents(now = new Date()) {
+  const out = [];
+  for (const y of [now.getFullYear(), now.getFullYear() + 1, now.getFullYear() + 2]) {
+    for (const e of SUN_EVENTS) {
+      const day = isLeap(y) ? e.d[1] : e.d[0];
+      const at = Date.UTC(y, e.m, day, Math.floor(e.utc), Math.round((e.utc % 1) * 60));
+      if (at > now.getTime()) out.push({ at, label: `${day} ${MONTHS3[e.m]} ${y}`, utc: e.utc });
+    }
+  }
+  return out.sort((a, b) => a.at - b.at).slice(0, 2);
+}
+function sunLine(name, lon, zone) {
+  const [e1, e2] = nextSunEvents();
+  const solar = (((e1.utc + lon / 15) % 24) + 24) % 24;
+  if (!(solar > 6.5 && solar < 17.5)) {
+    return `This happens twice a year, in late May and mid July. The sun is not up in ${name} at that moment, so this check will not work here.`;
+  }
+  const t = e => clock12(e.utc + zoneOffsetHours(zone, e.at));
+  return `Next: ${e1.label}, about ${t(e1)} local time, then ${e2.label}, about ${t(e2)}. Your shadow points directly away from the Qibla.`;
+}
+
+const CSS = `
+.qw-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start;width:100%;max-width:1120px;margin:0 auto}
+.qw-cities{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:20px}
+@media (max-width:1359px){.qw-cities{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1199px){.qw-grid{grid-template-columns:minmax(0,1fr)}}
+`;
+
+const Ico = ({ size = 16, children }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{children}</svg>
+);
+
 export default function QiblaWeb({ userPos, locationName, textSize = 1 }) {
+  const ts = textSize || 1;
   const [preview, setPreview] = useState(null);   // a CITIES row, or null for "my location"
-  const here = preview ? { name:preview[0], lat:preview[2], lon:preview[3] } : { name:locationName || "Your location", lat:userPos.lat, lon:userPos.lon };
+  const [copied, setCopied] = useState(false);
+  const myZone = (() => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch { return "UTC"; } })();
+  const here = preview
+    ? { name:preview[0], lat:preview[2], lon:preview[3], zone:preview[4] }
+    : { name:locationName || "Your location", lat:userPos.lat, lon:userPos.lon, zone:myZone };
   const cur = info(here.lat, here.lon);
   const rows = CITIES.map(c => ({ c, ...info(c[2], c[3]) }));
-  const stat = (label, value, extra) => (
-    <div style={{ flex:1, padding:"14px 18px" }}>
-      <div className="lbl">{label}</div>
-      <div style={{ marginTop:"4px", fontFamily:"var(--font-head)", fontWeight:700, fontSize:`${26*textSize}px`, color:"var(--text)", display:"flex", alignItems:"center", gap:"10px" }}>{value}{extra}</div>
+  const bearingTxt = Math.round(cur.b);
+
+  const copy = async () => {
+    try { await navigator.clipboard.writeText(`${bearingTxt}° from True North (${cur.dir})`); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* clipboard blocked */ }
+  };
+  const tile = (icon, title, body, last) => (
+    <div style={{ display:"flex", gap:"12px", padding:"12px 0", borderBottom: last ? "none" : "1px solid var(--lineSoft)" }}>
+      <span style={{ flex:"none", width:"32px", height:"32px", borderRadius:"10px", border:"1px solid var(--lineSoft)", background:"var(--chip)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)" }}>{icon}</span>
+      <div>
+        <div style={{ fontSize:`${13*ts}px`, fontWeight:600 }}>{title}</div>
+        <div style={{ marginTop:"2px", fontSize:`${12*ts}px`, lineHeight:1.55, fontWeight:500, color:"var(--dim)" }}>{body}</div>
+      </div>
     </div>
   );
-  return (
-    <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1.55fr) minmax(300px,1fr)", gap:"20px", alignItems:"start", width:"100%", maxWidth:"1120px", margin:"0 auto" }}>
-      <section className="card" style={{ overflow:"hidden", gridColumn:"span 1" }}>
-        <QiblaMap lat={here.lat} lon={here.lon} name={here.name}/>
-        <div style={{ display:"flex", borderTop:"1px solid var(--lineSoft)" }}>
-          {stat("BEARING", Math.round(cur.b) + "°", <MiniCompass deg={cur.b} size={Math.round(24*textSize)}/>)}
-          <div style={{ width:1, background:"var(--lineSoft)" }}/>
-          {stat("DISTANCE", fmt(cur.km) + " km")}
-          <div style={{ width:1, background:"var(--lineSoft)" }}/>
-          {stat("DIRECTION", <span style={{ fontSize:`${19*textSize}px`, lineHeight:1.2 }}>{cur.dir}</span>)}
-        </div>
-        {preview && (
-          <div style={{ padding:"10px 18px", borderTop:"1px solid var(--lineSoft)", display:"flex", alignItems:"center", justifyContent:"space-between", fontSize:`${13*textSize}px`, color:"var(--dim)" }}>
-            <span>Previewing {preview[0]}, not your location.</span>
-            <button className="cb" onClick={() => setPreview(null)} style={{ border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", borderRadius:"10px", padding:"6px 12px", fontWeight:700, cursor:"pointer", fontSize:`${12.5*textSize}px` }}>Back to my location</button>
-          </div>
-        )}
-      </section>
 
-      <section className="card" style={{ padding:"18px 8px 10px" }}>
-        <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:"12px", padding:"0 12px 10px" }}>
-          <span className="lbl">QIBLA FROM MAJOR CITIES</span>
-          <span style={{ fontSize:"11.5px", fontWeight:500, color:"var(--faint)" }}>Select a city to preview its map</span>
-        </div>
-        <div role="list">
-          {rows.map(({ c, b, km }) => {
-            const on = preview && preview[0] === c[0];
-            return (
-              <button key={c[0]} role="listitem" className="pc" aria-pressed={!!on} onClick={() => setPreview(on ? null : c)}
-                style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) auto auto", alignItems:"center", gap:"14px", width:"100%", padding:"10px 12px", border:`1px solid ${on ? "var(--gold)" : "transparent"}`, borderRadius:"12px", background:on ? "var(--active)" : "transparent", color:"var(--text)", textAlign:"left", cursor:"pointer" }}>
-                <span style={{ minWidth:0 }}>
-                  <span style={{ display:"block", fontSize:`${14*textSize}px`, fontWeight:700 }}>{c[0]}</span>
-                  <span style={{ display:"block", fontSize:`${12*textSize}px`, color:"var(--faint)", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{c[1]}</span>
-                </span>
-                <span style={{ display:"flex", alignItems:"center", gap:"8px", fontSize:`${14*textSize}px`, fontWeight:700, color:"var(--gold)" }}>{Math.round(b)}°<MiniCompass deg={b} size={Math.round(16*textSize)}/></span>
-                <span style={{ fontSize:`${12.5*textSize}px`, color:"var(--dim)", minWidth:"72px", textAlign:"right" }}>{fmt(km)} km</span>
-              </button>
-            );
-          })}
-        </div>
-      </section>
+  return (
+    <div className="qw-grid">
+      <style>{CSS}</style>
+
+      <div style={{ display:"flex", flexDirection:"column", gap:"20px", minWidth:0 }}>
+        <section className="card" style={{ overflow:"hidden" }}>
+          <QiblaMap lat={here.lat} lon={here.lon} name={here.name}/>
+          {preview && (
+            <div style={{ padding:"10px 16px", borderTop:"1px solid var(--lineSoft)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", fontSize:`${12.5*ts}px`, color:"var(--dim)" }}>
+              <span>Previewing {preview[0]}, not your location.</span>
+              <button className="cb" onClick={() => setPreview(null)} style={{ border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", borderRadius:"9px", padding:"5px 12px", fontFamily:"inherit", fontWeight:700, cursor:"pointer", fontSize:`${12*ts}px` }}>Back to my location</button>
+            </div>
+          )}
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"16px", padding:"10px 16px", borderTop:"1px solid var(--lineSoft)", fontSize:`${11.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>
+            <span>Centred on {here.name} · north is up · rings show distance</span>
+            <span style={{ display:"flex", alignItems:"center", gap:"6px", flex:"none" }}><span style={{ width:"14px", height:0, borderTop:"2px dashed var(--gold)" }}/>Qibla line</span>
+          </div>
+        </section>
+
+        <section className="card" style={{ padding:"18px 20px 14px" }}>
+          <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:"12px" }}>
+            <span className="lbl">Qibla from major cities</span>
+            <span style={{ fontSize:`${11.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>Select a city to preview its map</span>
+          </div>
+          <div className="qw-cities" style={{ marginTop:"10px" }}>
+            {rows.map(({ c, b, km }) => {
+              const on = !!preview && preview[0] === c[0];
+              return (
+                <button key={c[0]} className="pc" aria-pressed={on} onClick={() => setPreview(on ? null : c)}
+                  style={{ display:"flex", alignItems:"center", gap:"10px", width:"100%", height:"42px", padding:"0 10px", borderRadius:"10px", border:`1px solid ${on ? "var(--gold)" : "transparent"}`, background: on ? "var(--active)" : "transparent", color:"var(--text)", fontFamily:"inherit", textAlign:"left", cursor:"pointer" }}>
+                  <span style={{ flex:1, minWidth:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", fontSize:`${13*ts}px`, fontWeight:600 }}>{c[0]}<span style={{ marginLeft:"8px", fontSize:`${11.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>{c[1]}</span></span>
+                  <MiniCompass deg={b} size={18}/>
+                  <span style={{ flex:"none", width:"36px", textAlign:"right", fontSize:`${13*ts}px`, fontWeight:600, fontVariantNumeric:"tabular-nums", color:"var(--gold)" }}>{Math.round(b)}°</span>
+                  <span style={{ flex:"none", width:"64px", textAlign:"right", fontSize:`${12*ts}px`, fontWeight:500, fontVariantNumeric:"tabular-nums", color:"var(--dim)" }}>{fmt(km)} km</span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+
+      <div style={{ display:"flex", flexDirection:"column", gap:"16px", minWidth:0 }}>
+        <section className="card" style={{ padding:"20px 22px 18px", background:"var(--panel2)" }}>
+          <div className="lbl">Qibla bearing</div>
+          <div style={{ marginTop:"8px", display:"flex", alignItems:"baseline", gap:"10px" }}>
+            <span style={{ fontSize:`${46*ts}px`, fontWeight:600, lineHeight:1, letterSpacing:"-0.5px", fontVariantNumeric:"tabular-nums" }}>{bearingTxt}°</span>
+            <span style={{ alignSelf:"center", display:"inline-flex", marginLeft:"2px" }}><MiniCompass deg={cur.b} size={40}/></span>
+            <span style={{ fontSize:`${12.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>from True North</span>
+          </div>
+          <div style={{ marginTop:"6px", fontSize:`${14*ts}px`, fontWeight:600, color:"var(--gold)" }}>{cur.dir}</div>
+          <div style={{ height:"1px", background:"var(--lineSoft)", margin:"16px 0 14px" }}/>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px" }}>
+            <div>
+              <div className="lbl">Distance</div>
+              <div style={{ marginTop:"3px", fontSize:`${17*ts}px`, fontWeight:600, fontVariantNumeric:"tabular-nums" }}>{fmt(cur.km)} <span style={{ fontSize:`${12*ts}px`, fontWeight:500, color:"var(--faint)" }}>km, great-circle</span></div>
+            </div>
+            <button className="cb" onClick={copy} style={{ display:"flex", alignItems:"center", gap:"7px", height:"34px", padding:"0 12px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:`${12*ts}px`, fontWeight:600, cursor:"pointer" }}>
+              <Ico size={14}><rect x="9" y="9" width="11" height="11" rx="2.5"/><path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H15"/></Ico>{copied ? "Copied" : "Copy bearing"}
+            </button>
+          </div>
+        </section>
+
+        <section className="card" style={{ padding:"18px 20px 6px" }}>
+          <div className="lbl">Check it yourself</div>
+          <div style={{ marginTop:"8px", display:"flex", flexDirection:"column" }}>
+            {tile(<Ico size={17}><path d="M8 12a4 4 0 1 0 8 0 4 4 0 1 0-8 0M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4"/></Ico>, "Sun over the Kaaba", sunLine(here.name, here.lon, here.zone))}
+            {tile(<Ico size={17}><path d="M6 20V10a6 6 0 0 1 12 0v10M4 20h16M10 20v-5a2 2 0 0 1 4 0v5"/></Ico>, "A nearby mosque", "The mihrab marks the Qibla, though a few mosques are built a few degrees off.")}
+            {tile(<Ico size={17}><path d="M3.5 12a8.5 8.5 0 1 0 17 0 8.5 8.5 0 1 0-17 0M15.5 8.5l-2 5-5 2 2-5 5-2Z"/></Ico>, "A magnetic compass", <>Set it to <MiniCompass deg={cur.b} size={14}/> {bearingTxt}° True North, then correct for your local magnetic declination.</>, true)}
+          </div>
+        </section>
+
+        <section className="card" style={{ display:"flex", alignItems:"center", gap:"16px", padding:"16px 18px" }}>
+          <svg viewBox={`0 0 ${QR_SIZE} ${QR_SIZE}`} width="76" height="76" role="img" aria-label="QR code that opens NŪR on a phone" style={{ display:"block", flex:"none", borderRadius:"8px" }}>
+            <rect width={QR_SIZE} height={QR_SIZE} fill="#FFFFFF"/>
+            <path d={QR_PATH} fill="#0A1236"/>
+          </svg>
+          <div>
+            <div style={{ fontSize:`${13*ts}px`, fontWeight:600 }}>Live compass on your phone</div>
+            <div style={{ marginTop:"3px", fontSize:`${12*ts}px`, lineHeight:1.55, fontWeight:500, color:"var(--dim)" }}>Scan to open NŪR on your phone. The compass starts on its own.</div>
+            <div style={{ marginTop:"5px", fontSize:`${11*ts}px`, fontWeight:600, color:"var(--faint)" }}>nurislamicai.app/app</div>
+          </div>
+        </section>
+      </div>
     </div>
   );
 }
