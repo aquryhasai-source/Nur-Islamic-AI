@@ -44,7 +44,7 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
             style={{ background:"none", border:"none", fontSize:"15px", cursor:"pointer", lineHeight:1, padding:"2px 6px", opacity: saved ? 1 : 0.35, transition:"opacity 0.2s" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = saved ? "1" : "0.35"}>
-            🔖
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/></svg>
           </button>
           <button onClick={() => setExpanded(expanded === i ? null : i)}
             style={{ background:"none", border:"none", color:goldDim, fontSize:"18px", cursor:"pointer", lineHeight:1 }}>
@@ -221,7 +221,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
               onMouseEnter={e => { e.currentTarget.style.background = "var(--chip)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = cardBg; }}>
               <div style={{ width:"42px", height:"42px", borderRadius:"12px", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:"20px" }}>
-                📜
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M12 6.5C10.5 5 8 4.5 4.5 4.5v13c3.5 0 6 .5 7.5 2 1.5-1.5 4-2 7.5-2v-13c-3.5 0-6 .5-7.5 2Z"/><path d="M12 6.5v13"/></svg>
               </div>
               <div style={{ flex:1 }}>
                 <div style={{ color:textClr, fontSize:`${14 * textSize}px`, fontWeight:700 }}>{coll.label}</div>

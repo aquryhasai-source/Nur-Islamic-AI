@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { saveProfile, KEYS, DAILY_LIMIT } from "./utils.js";
 import { subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { trackEvent, trackError } from "./analytics.js";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
 const TEXT_SIZES = [
   { label: "XS", value: 0.75,  name: "Tiny"   },
@@ -12,6 +13,7 @@ const TEXT_SIZES = [
 ];
 
 export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, setTextSize, lightMode }) {
+  const docked = useMedia(DOCK_QUERY);
   const [name,        setName]        = useState(profile.name || "");
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
   const [pushStatus,  setPushStatus]  = useState("idle"); // idle | loading | granted | denied | unsupported | error
@@ -77,6 +79,156 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
     textTransform:"uppercase", marginBottom:"10px", display:"block",
   };
   const divider = <div style={{ height:"1px", background:goldBdr, margin:"22px 0" }}/>;
+
+  if (docked) {
+    const modeText = age && age > 0 && age < 120
+      ? age < 13 ? "Child mode active" : age < 18 ? "Teen mode active" : "Standard mode"
+      : null;
+    const ts = textSize || 1;
+    const pickSize = (value) => {
+      setTextSize(value);
+      localStorage.setItem(KEYS.TEXT_SIZE, String(value));
+    };
+    const dInput = {
+      boxSizing:"border-box", width:"100%", height:"42px", padding:"0 14px", borderRadius:"12px",
+      border:"1px solid var(--line)", background:"var(--panel2)", color:"var(--text)",
+      fontFamily:"inherit", fontSize:`${14*ts}px`, fontWeight:600, outline:0,
+    };
+    const fieldLbl = { display:"block", marginBottom:"7px", fontSize:`${12*ts}px`, fontWeight:600, color:"var(--dim)" };
+    const secStyle = { padding:"22px 24px" };
+    const leftColor = remaining <= 3 ? "var(--warn)" : "var(--gold)";
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+        <style>{`
+          .nurp-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:start}
+          .nurp-col{display:flex;flex-direction:column;gap:20px;min-width:0}
+          @media (max-width:1199px){.nurp-grid{grid-template-columns:minmax(0,1fr)}}
+        `}</style>
+        <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
+          <div className="nur-ph-title">
+            <span>Profile</span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>Personalise how NŪR answers you and how the app reads.</span></span>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
+          <div className="nurp-grid">
+            <div className="nurp-col">
+              <section className="card" style={secStyle}>
+                <span className="lbl">Today's Usage</span>
+                {unlocked ? (
+                  <div style={{ marginTop:"14px", display:"flex", alignItems:"center", gap:"10px", fontSize:`${14*ts}px`, fontWeight:700, color:"var(--green)" }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+                    Lifetime Access — Unlimited
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ marginTop:"14px", display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:"12px" }}>
+                      <span style={{ fontSize:"30px", fontWeight:600, lineHeight:1, fontVariantNumeric:"tabular-nums", color:"var(--text)" }}>
+                        {usedToday}<span style={{ marginLeft:"8px", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>of {DAILY_LIMIT} used</span>
+                      </span>
+                      <span style={{ fontSize:`${13*ts}px`, fontWeight:700, color:leftColor }}>{remaining} left today</span>
+                    </div>
+                    <div style={{ marginTop:"14px", height:"6px", borderRadius:"4px", background:"var(--lineSoft)", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${pct}%`, borderRadius:"4px", background:barColor, transition:"width 0.4s" }}/>
+                    </div>
+                    <div style={{ marginTop:"10px", fontSize:`${12*ts}px`, fontWeight:500, color:"var(--faint)" }}>Resets at midnight</div>
+                  </>
+                )}
+              </section>
+
+              <section className="card" style={secStyle}>
+                <span className="lbl">About You</span>
+                <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"minmax(0,1fr) 150px", gap:"14px" }}>
+                  <label style={{ display:"block" }}>
+                    <span style={fieldLbl}>My name</span>
+                    <input value={name} onChange={e => setName(e.target.value)} onBlur={persist}
+                      placeholder="Your name (optional)" style={dInput}/>
+                  </label>
+                  <label style={{ display:"block" }}>
+                    <span style={fieldLbl}>Year of birth</span>
+                    <input value={yearOfBirth} onChange={e => setYearOfBirth(e.target.value)} onBlur={persist}
+                      placeholder="e.g. 2005" type="number" min="1900" max={new Date().getFullYear()}
+                      style={{ ...dInput, fontVariantNumeric:"tabular-nums" }}/>
+                  </label>
+                </div>
+                {modeText && (
+                  <div style={{ marginTop:"14px", display:"inline-flex", alignItems:"center", gap:"8px", height:"30px", padding:"0 12px", borderRadius:"15px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontSize:`${12.5*ts}px`, fontWeight:700 }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8L12 4Z"/></svg>
+                    {modeText}
+                  </div>
+                )}
+              </section>
+            </div>
+
+            <div className="nurp-col">
+              <section className="card" style={secStyle}>
+                <span className="lbl">Text Size</span>
+                <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"repeat(5,minmax(0,1fr))", gap:"8px" }}>
+                  {TEXT_SIZES.map(({ label, value, name: sizeName }) => {
+                    const active = Math.abs(textSize - value) < 0.05;
+                    return (
+                      <button key={label} className="pc" aria-pressed={active} onClick={() => pickSize(value)}
+                        style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"3px", height:"58px", borderRadius:"12px",
+                          border:`1px solid ${active ? "var(--gold)" : "var(--line)"}`,
+                          background: active ? "var(--goldFill)" : "var(--chip)",
+                          color: active ? "var(--onGold)" : "var(--gold)",
+                          fontFamily:"inherit", cursor:"pointer" }}>
+                        <span style={{ fontSize:"15px", fontWeight:700, lineHeight:1 }}>{label}</span>
+                        <span style={{ fontSize:"10.5px", fontWeight:500, opacity:0.8 }}>{sizeName}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <div style={{ marginTop:"16px", padding:"16px 18px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)" }}>
+                  <div style={{ fontSize:`${14*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--text)" }}>This is how text will look across chat, Quran, Hadith and all pages.</div>
+                </div>
+                <div style={{ marginTop:"12px", fontSize:"12px", fontWeight:500, color:"var(--faint)" }}>
+                  Applies to chat, Quran, Hadith and all pages.
+                </div>
+              </section>
+
+              <section className="card" style={secStyle}>
+                <span className="lbl">Daily Reminders</span>
+                {pushStatus === "granted" ? (
+                  <>
+                    <div style={{ marginTop:"12px", display:"flex", alignItems:"center", gap:"10px", fontSize:`${14*ts}px`, fontWeight:700, color:"var(--green)" }}>
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>
+                      Notifications enabled
+                    </div>
+                    <div style={{ marginTop:"8px", fontSize:`${13*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>You will receive the daily Hadith and prayer reminders.</div>
+                  </>
+                ) : pushStatus === "denied" ? (
+                  <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>
+                    Blocked in your browser settings. Enable them there to get the daily Hadith and prayer reminders.
+                  </div>
+                ) : pushStatus === "unsupported" ? (
+                  <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>
+                    Not supported in this browser.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>
+                      Get a daily Hadith each morning, right on your device.
+                    </div>
+                    <button className="pc" onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
+                      style={{ marginTop:"16px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", width:"100%", height:"44px", borderRadius:"12px",
+                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:"14px", fontWeight:700,
+                        cursor: pushStatus === "loading" ? "default" : "pointer" }}>
+                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>
+                      {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
+                    </button>
+                    {pushError && (
+                      <div style={{ color:"var(--warn)", fontSize:`${12*ts}px`, marginTop:"8px" }}>{pushError}</div>
+                    )}
+                  </>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>

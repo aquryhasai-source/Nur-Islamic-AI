@@ -1,4 +1,7 @@
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
+
 export default function AboutPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
+  const docked = useMedia(DOCK_QUERY);
   const gold = "var(--gold)";
   const goldDim = "var(--goldDim)";
   const goldBdr = "var(--line)";
@@ -14,6 +17,54 @@ export default function AboutPage({ onBack, onOpenSidebar, lightMode, textSize =
     { label:"Hadith API",    value:"fawazahmed0 / jsDelivr CDN" },
     { label:"Prayer times",  value:"AlAdhan.com" },
   ];
+
+  if (docked) {
+    const ts = textSize || 1;
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+        <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
+          <div className="nur-ph-title">
+            <span>About</span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>The app, where its content comes from, and a reminder.</span></span>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", gap:"22px", alignItems:"stretch" }}>
+            <section className="card" style={{ padding:"48px 32px", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", textAlign:"center" }}>
+              <div style={{ fontFamily:"var(--font-head)", fontWeight:700, fontSize:`${56*ts}px`, lineHeight:1, letterSpacing:"9px", paddingLeft:"9px", color:gold }}>NŪR</div>
+              <div className="lbl" style={{ marginTop:"14px", letterSpacing:"3px" }}>Islamic Knowledge Assistant</div>
+              <div style={{ width:"44px", height:"1px", margin:"26px auto 24px", background:`linear-gradient(90deg,transparent,${gold},transparent)` }}/>
+              <div lang="ar" dir="rtl" style={{ fontFamily:"var(--font-ar)", fontSize:`${34*ts}px`, lineHeight:1.6, color:gold }}>وَقُل رَّبِّ زِدْنِي عِلْمًا</div>
+              <div style={{ marginTop:"6px", fontSize:`${13*ts}px`, fontWeight:500, color:"var(--faint)" }}>"My Lord, increase me in knowledge" — Surah Ta-Ha 20:114</div>
+            </section>
+            <div style={{ display:"flex", flexDirection:"column", gap:"22px", minWidth:0 }}>
+              <section className="card" style={{ padding:"8px 24px" }}>
+                {INFO.map(({ label, value }, i) => (
+                  <div key={label} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:"16px", padding:"14px 0", borderTop: i ? "1px solid var(--lineSoft)" : "none" }}>
+                    <span style={{ fontSize:`${13.5*ts}px`, fontWeight:500, color:textDim }}>{label}</span>
+                    <span style={{ fontSize:`${13.5*ts}px`, fontWeight:700, color:textClr, textAlign:"right" }}>{value}</span>
+                  </div>
+                ))}
+              </section>
+              <section className="card" style={{ padding:"22px 26px" }}>
+                <span className="lbl">Disclaimer</span>
+                <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.8, color:textDim }}>
+                  NŪR is an educational tool designed to help explore Islamic knowledge. The AI responses are generated based on Quranic verses and authentic Hadith, but they should not replace the guidance of a qualified Islamic scholar (Alim).
+                </div>
+                <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.8, color:textDim }}>
+                  For personal religious rulings (fatwa), matters of fiqh, or any important Islamic decisions, always consult a qualified scholar. Allahu A'lam — Allah knows best.
+                </div>
+              </section>
+            </div>
+          </div>
+          <div style={{ marginTop:"34px", textAlign:"center" }}>
+            <div lang="ar" dir="rtl" style={{ fontFamily:"var(--font-ar)", fontSize:`${24*ts}px`, color:gold }}>وَمَا تَوْفِيقِي إِلَّا بِاللَّهِ</div>
+            <div style={{ marginTop:"4px", fontSize:`${12.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>"My success is only through Allah" — Surah Hud 11:88</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>

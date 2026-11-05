@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
 // ── Inline data ──────────────────────────────────────────────────────────────
 const HIJRI_MONTHS = [
@@ -54,6 +55,40 @@ function ShineLayer({ delay = "0s" }) {
   );
 }
 
+
+// ── Website-view helpers (stroke icons + moon disc) ──────────────────────────
+const DK_MOON  = "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z";
+const DK_CAL   = "M6.5 5.5h11A2.5 2.5 0 0 1 20 8v9.5a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 17.5V8a2.5 2.5 0 0 1 2.5-2.5ZM4 10h16M8.5 3.5v4M15.5 3.5v4";
+const DK_PREV  = "m15 6-6 6 6 6";
+const DK_NEXT  = "m9 6 6 6-6 6";
+function DkIco({ d, size = 20, sw = 1.8 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
+}
+// Lit portion of the moon for a given age in days (display only)
+function MoonDisc({ age, size = 56 }) {
+  const f = Math.min(Math.max(age / 29.53058867, 0), 1);
+  const r = 26, c = 30;
+  const k = Math.cos(2 * Math.PI * f);
+  const rx = Math.abs(k) * r;
+  const waxing = f < 0.5;
+  const sweep = waxing ? (k > 0 ? 0 : 1) : (k < 0 ? 0 : 1);
+  const lit = waxing
+    ? `M${c} ${c - r}A${r} ${r} 0 0 1 ${c} ${c + r}A${rx} ${r} 0 0 ${sweep} ${c} ${c - r}Z`
+    : `M${c} ${c - r}A${r} ${r} 0 0 0 ${c} ${c + r}A${rx} ${r} 0 0 ${sweep} ${c} ${c - r}Z`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 60" aria-hidden="true" style={{ flex:"none" }}>
+      <circle cx={c} cy={c} r={r} fill="var(--lineSoft)"/>
+      <path d={lit} fill="var(--gold)" opacity=".92"/>
+      <circle cx={c} cy={c} r={r} fill="none" stroke="var(--line)"/>
+    </svg>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = ()=>{}, lightMode = false, textSize = 1 }) {
   const [hijriToday, setHijriToday] = useState(null);
@@ -65,6 +100,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   const [sheet,      setSheet]      = useState(null);
   const [showAll,    setShowAll]    = useState(false);
   const [moon]                      = useState(getMoonPhase);
+  const docked                      = useMedia(DOCK_QUERY);
   const ts = textSize;
   const lm = lightMode;
 
@@ -177,6 +213,146 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
     if(hijriToday)setViewMonth({month:hijriToday.month,year:hijriToday.year,monthEn:hijriToday.monthEn});
   };
 
+  // ── Website view body (matches the approved desktop design) ─────────────────
+  const dkLbl  = { fontSize:"10.5px", fontWeight:600, letterSpacing:"1.6px", color:"var(--faint)", textTransform:"uppercase" };
+  const dkSel  = sheet || (nextEvent ? nextEvent : null);
+  const dkMonthEvents = viewMonth
+    ? Object.entries(ISLAMIC_EVENTS).filter(([k])=>k.startsWith(`${viewMonth.month}-`)).map(([k,name])=>{
+        const d=+k.split("-")[1];
+        return { key:k, name, day:d, away:-1, hDateStr:`${d} ${HIJRI_MONTHS[viewMonth.month-1]} ${viewMonth.year} AH`, hShort:`${d} ${HIJRI_MONTHS[viewMonth.month-1]}` };
+      })
+    : [];
+  const dkUpcoming = showAll ? upcoming : upcoming.slice(0,3);
+
+  const dockedBody = (
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 360px",gap:"24px",alignItems:"start"}}>
+
+      {/* ── Left column ── */}
+      <div style={{display:"flex",flexDirection:"column",gap:"22px",minWidth:0}}>
+        <section className="card" style={{padding:"24px 26px 22px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"16px",marginBottom:"18px"}}>
+            <button onClick={()=>navMonth(-1)} aria-label="Previous month" style={{width:"40px",height:"40px",borderRadius:"50%",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><DkIco d={DK_PREV} size={20} sw={2}/></button>
+            <div style={{textAlign:"center"}}>
+              <div className="h2" style={{fontSize:"28px",lineHeight:1.1}}>{viewMonth ? `${viewMonth.monthEn} ${viewMonth.year} AH` : "—"}</div>
+              {gregLabel&&<div style={{marginTop:"3px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{gregLabel}</div>}
+            </div>
+            <button onClick={()=>navMonth(+1)} aria-label="Next month" style={{width:"40px",height:"40px",borderRadius:"50%",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><DkIco d={DK_NEXT} size={20} sw={2}/></button>
+          </div>
+
+          {calLoading ? (
+            <div style={{textAlign:"center",color:goldDim,padding:"60px 0",fontSize:"13px"}}>Loading calendar…</div>
+          ) : viewCal ? (
+            <>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:"6px",marginBottom:"6px"}}>
+                {WDAY_S.map((d,i)=>(<div key={d} style={{textAlign:"center",fontSize:"10.5px",fontWeight:700,letterSpacing:"1.4px",color:i===5?gold:textDim}}>{d}</div>))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:"6px"}}>
+                {Array(firstDow).fill(null).map((_,i)=><div key={`g${i}`}/>)}
+                {viewCal.map((cell,idx)=>{
+                  const isToday=isCurrMonth&&hijriToday&&cell.hDay===hijriToday.day;
+                  const evKey=`${cell.hMonth}-${cell.hDay}`;
+                  const hasEvt=ISLAMIC_EVENTS[evKey];
+                  const isFri=(firstDow+idx)%7===5;
+                  const Cell=hasEvt?"button":"div";
+                  return (
+                    <Cell key={idx}
+                      {...(hasEvt?{onClick:()=>setSheet({key:evKey,name:hasEvt,away:-1,hDateStr:`${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]} ${cell.hYear} AH`,hShort:`${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]}`}),"aria-label":`${hasEvt}, ${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]}`}:{})}
+                      style={{position:"relative",height:"70px",padding:"8px 9px",borderRadius:"11px",
+                        border:isToday?`1px solid ${gold}`:hasEvt?`1px solid ${goldBdr}`:`1px solid ${cellBdr}`,
+                        background:isToday?"var(--goldFill)":hasEvt?goldHl:cellBg,
+                        color:text,fontFamily:"inherit",textAlign:"left",cursor:hasEvt?"pointer":"default"}}>
+                      <span style={{display:"block",fontFamily:"var(--font-head)",fontSize:"21px",fontWeight:700,lineHeight:1,color:isToday?"var(--onGold)":isFri?gold:text}}>{cell.hDay}</span>
+                      <span style={{position:"absolute",right:"9px",top:"9px",fontSize:"10.5px",fontWeight:600,color:isToday?"var(--onGold)":textDim}}>{cell.gDay}</span>
+                      {hasEvt&&(<span style={{position:"absolute",left:"9px",bottom:"8px",display:"flex",alignItems:"center",gap:"5px",fontSize:"10px",fontWeight:700,color:isToday?"var(--onGold)":gold}}><span style={{width:"7px",height:"7px",borderRadius:"50%",background:isToday?"var(--onGold)":gold}}/>Event</span>)}
+                    </Cell>
+                  );
+                })}
+              </div>
+            </>
+          ) : null}
+
+          <div style={{marginTop:"16px",paddingTop:"14px",borderTop:`1px solid ${divider}`,display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
+            <span style={dkLbl}>This month contains</span>
+            {dkMonthEvents.length>0 ? dkMonthEvents.map(e=>(
+              <button key={e.key} className="cb" onClick={()=>setSheet(e)} style={{height:"30px",padding:"0 12px",borderRadius:"10px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"12px",fontWeight:700,cursor:"pointer"}}>{e.name} · {e.day}</button>
+            )) : (<span style={{fontSize:"12.5px",fontWeight:600,color:textDim}}>No major events this month</span>)}
+          </div>
+        </section>
+
+        {dkSel&&(
+          <section className="card" aria-live="polite" style={{padding:"24px 26px 22px",background:"linear-gradient(160deg,var(--active),var(--panel))"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}}>
+              <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+                <span style={{width:"50px",height:"50px",borderRadius:"11px",border:`1px solid ${goldBdr}`,background:goldFaint,display:"flex",alignItems:"center",justifyContent:"center",color:gold}}><DkIco d={DK_MOON} size={26}/></span>
+                <div>
+                  <div className="h2" style={{fontSize:"26px",lineHeight:1.1,color:text}}>{dkSel.name}</div>
+                  <div style={{marginTop:"2px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{dkSel.hDateStr}</div>
+                </div>
+              </div>
+              {dkSel.away>=0&&(<span style={{fontSize:"11.5px",fontWeight:700,letterSpacing:".6px",padding:"5px 12px",borderRadius:"9px",color:"var(--onGold)",background:"var(--goldFill)"}}>{dkSel.away===0?"Today!":`In ${dkSel.away} days`}</span>)}
+            </div>
+            {EVENT_INFO[dkSel.key]?.desc&&<p style={{margin:"16px 0 0",fontSize:"14px",lineHeight:1.8,fontWeight:500,color:textMid}}>{EVENT_INFO[dkSel.key].desc}</p>}
+            {EVENT_INFO[dkSel.key]?.verse&&(
+              <div style={{marginTop:"16px",padding:"16px 18px",borderRadius:"13px",border:`1px solid ${goldBdr}`,background:goldFaint}}>
+                <div style={{fontSize:"14px",lineHeight:1.75,fontWeight:600,fontStyle:"italic",color:text}}>“{EVENT_INFO[dkSel.key].verse}”</div>
+                <div style={{marginTop:"6px",fontSize:"12px",fontWeight:700,color:gold}}>— {EVENT_INFO[dkSel.key].verseRef}</div>
+              </div>
+            )}
+          </section>
+        )}
+      </div>
+
+      {/* ── Right column ── */}
+      <div style={{display:"flex",flexDirection:"column",gap:"16px",minWidth:0}}>
+        {nextEvent&&(
+          <section className="card" style={{padding:"20px 22px",background:"var(--panel2)"}}>
+            <div style={dkLbl}>Next important date</div>
+            <div style={{marginTop:"10px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
+              <div>
+                <div className="h2" style={{fontSize:"21px",lineHeight:1.15,color:text}}>{nextEvent.name}</div>
+                <div style={{marginTop:"3px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{nextEvent.hDateStr}</div>
+              </div>
+              <div style={{textAlign:"center",flex:"none",padding:"8px 14px",borderRadius:"11px",border:`1px solid ${goldBdr}`,background:goldFaint}}>
+                <div style={{fontSize:"24px",fontWeight:600,lineHeight:1,color:gold,fontVariantNumeric:"tabular-nums"}}>{nextEvent.away}</div>
+                <div style={{marginTop:"3px",fontSize:"9.5px",fontWeight:700,letterSpacing:"1px",color:textDim}}>DAYS LEFT</div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        <section className="card" style={{display:"flex",alignItems:"center",gap:"16px",padding:"16px 20px"}}>
+          <MoonDisc age={moon.age}/>
+          <div>
+            <div style={dkLbl}>Moon phase</div>
+            <div className="h2" style={{marginTop:"3px",fontSize:"19px",color:text}}>{moon.name}</div>
+            <div style={{fontSize:"12px",fontWeight:600,color:textDim}}>{moon.age} days old</div>
+          </div>
+        </section>
+
+        <section className="card" style={{padding:"18px 20px 14px"}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <span style={dkLbl}>Upcoming events</span>
+            {upcoming.length>3&&(<button className="cb" onClick={()=>setShowAll(v=>!v)} aria-expanded={showAll} style={{border:0,background:"transparent",padding:0,color:gold,fontFamily:"inherit",fontSize:"12px",fontWeight:700,cursor:"pointer"}}>{showAll?"Show less":"View all"}</button>)}
+          </div>
+          <div style={{marginTop:"8px",display:"flex",flexDirection:"column"}}>
+            {dkUpcoming.map((ev,i)=>(
+              <button key={ev.key} className="pc" onClick={()=>setSheet(ev)} style={{display:"flex",alignItems:"center",gap:"12px",width:"100%",padding:"12px 4px",border:0,borderTop:i===0?"0":`1px solid ${divider}`,background:"transparent",color:text,fontFamily:"inherit",textAlign:"left",cursor:"pointer"}}>
+                <span style={{width:"38px",height:"38px",borderRadius:"10px",border:`1px solid ${goldBdr}`,background:goldFaint,display:"flex",alignItems:"center",justifyContent:"center",color:gold,flex:"none"}}><DkIco d={DK_MOON} size={19}/></span>
+                <span style={{flex:1,minWidth:0}}>
+                  <span style={{display:"block",fontSize:"13.5px",fontWeight:700}}>{ev.name}</span>
+                  <span style={{display:"block",marginTop:"2px",fontSize:"11.5px",fontWeight:600,color:textDim}}>{ev.hDateStr}</span>
+                </span>
+                <span style={{textAlign:"right",flex:"none"}}>
+                  {ev.away===0?(<span style={{fontSize:"11px",fontWeight:700,color:gold}}>Today!</span>):(<><span style={{display:"block",fontSize:"16px",fontWeight:700,lineHeight:1,color:gold}}>{ev.away}</span><span style={{display:"block",marginTop:"2px",fontSize:"10px",fontWeight:600,color:textDim}}>days</span></>)}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      </div>
+    </div>
+  );
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative"}}>
@@ -190,12 +366,14 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{width:"13px",height:"2px",background:gold,borderRadius:"2px"}}/>
           <div style={{width:"18px",height:"2px",background:gold,borderRadius:"2px"}}/>
         </button>
-        <span className="nur-ph-title" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>Islamic Calendar</span>
+        <span className="nur-ph-title" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>{docked ? (<><div>Islamic Calendar</div>{hijriToday&&<div>Today · {hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH · {gregToday.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>}</>) : "Islamic Calendar"}</span>
         <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
+        {docked&&<button onClick={goToToday} style={{display:"flex",alignItems:"center",gap:"8px",height:"40px",padding:"0 16px",borderRadius:"12px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"13px",fontWeight:700,cursor:"pointer",flexShrink:0}}><DkIco d={DK_CAL} size={16}/>Jump to today</button>}
       </div>
 
       {/* SCROLL */}
-      <div style={{flex:1,overflowY:"auto",padding:"12px 13px 48px"}}>
+      <div style={{flex:1,overflowY:"auto",padding:docked?"10px 40px 52px":"12px 13px 48px"}}>
+      {docked ? dockedBody : (<>
 
         {/* ═══ HERO CARD ═══ */}
         <div style={{background:heroBg,borderRadius:"20px",padding:"20px",marginBottom:"10px",border:"1px solid rgba(201,168,76,0.22)",boxShadow:"0 6px 30px rgba(0,0,0,0.45)",position:"relative",overflow:"hidden",isolation:"isolate"}}>
@@ -211,7 +389,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
               ):hijriToday?(
                 <>
                   <div style={{color:"#f0d78c",fontSize:`${25*ts}px`,fontWeight:900,lineHeight:1.15,marginBottom:"7px"}}>{hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH</div>
-                  <div style={{color:"rgba(240,215,140,0.6)",fontSize:`${12*ts}px`,marginBottom:"2px"}}>{G_DAY_S[(gregToday.getDay()+6)%7]}, {gregToday.getDate()} {G_MON_S[gregToday.getMonth()]} {gregToday.getFullYear()}</div>
+                  <div style={{color:"rgba(240,215,140,0.6)",fontSize:`${12*ts}px`,marginBottom:"2px"}}>{G_DAY_S[gregToday.getDay()]}, {gregToday.getDate()} {G_MON_S[gregToday.getMonth()]} {gregToday.getFullYear()}</div>
                   <div style={{color:"rgba(240,215,140,0.62)",fontSize:`${11*ts}px`}}>{gregToday.toLocaleDateString("en-US",{weekday:"long"})}</div>
                 </>
               ):(
@@ -382,10 +560,11 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           </div>
         </div>
 
+      </>)}
       </div>
 
       {/* ═══ VIEW ALL EVENTS SHEET ═══ */}
-      {showAll&&(
+      {showAll&&!docked&&(
         <div onClick={()=>setShowAll(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"80%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 0"}}/>
@@ -434,7 +613,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
       )}
 
       {/* ═══ EVENT BOTTOM SHEET ═══ */}
-      {sheet&&(
+      {sheet&&!docked&&(
         <div onClick={()=>setSheet(null)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"74%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 18px"}}/>

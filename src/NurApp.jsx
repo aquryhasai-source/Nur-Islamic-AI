@@ -410,7 +410,7 @@ export default function NurApp() {
             onTouchStart={onPageTouchStart}
             onTouchEnd={onPageTouchEnd}
           >
-            <div className="nur-page" style={{ width:"100%", maxWidth: docked ? "1040px" : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
+            <div className="nur-page" style={{ width:"100%", maxWidth: docked ? "1280px" : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
               {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining} setTextSize={setTextSize}/>}
               {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
               {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}

@@ -1,14 +1,15 @@
 import { useState, useEffect } from "react";
 import { PROXY_URL, KEYS, deviceHeaders } from "./utils.js";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
 const LS_URL = "https://yasirhaquecreativelabs.lemonsqueezy.com/checkout/buy/c19a2e49-4416-4cf7-b9b5-2f8140da3962";
 const RZ_URL = "https://rzp.io/rzp/RxurFTj";
 
 const PRO_FEATURES = [
-  { icon: "🚫", label: "Remove all ads — clean experience forever" },
-  { icon: "✦",  label: "Unlimited AI reflections daily" },
-  { icon: "⭐", label: "Support NŪR's ongoing development" },
-  { icon: "🌙", label: "Priority access to new features" },
+  { icon: "🚫", svg: "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17ZM6 6l12 12", label: "Remove all ads — clean experience forever" },
+  { icon: "✦",  svg: "M12 12c-1.5-2.2-3-3.5-4.8-3.5a3.5 3.5 0 1 0 0 7c1.8 0 3.3-1.3 4.8-3.5Zm0 0c1.5 2.2 3 3.5 4.8 3.5a3.5 3.5 0 1 0 0-7c-1.8 0-3.3 1.3-4.8 3.5Z", label: "Unlimited AI reflections daily" },
+  { icon: "⭐", svg: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z", label: "Support NŪR's ongoing development" },
+  { icon: "🌙", svg: "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z", label: "Priority access to new features" },
 ];
 
 export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnlocked, setRemaining, deviceId, lightMode, textSize = 1 }) {
@@ -16,6 +17,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
   const [unlockCode,   setUnlockCode]   = useState("");
   const [unlockStatus, setUnlockStatus] = useState("idle");
   const [unlockError,  setUnlockError]  = useState("");
+  const docked = useMedia(DOCK_QUERY);   // website view
 
   const gold = "var(--gold)";
   const goldDim = "var(--goldDim)";
@@ -62,6 +64,97 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
   const payUrl  = isIndia ? RZ_URL  : LS_URL;
   const price   = isIndia ? "₹299"  : "$2.99";
   const payNote = isIndia ? "UPI · Cards · Net Banking · Wallets" : "Cards · PayPal · Worldwide";
+
+
+  // ── Website view (>=1024px): two-column layout per the approved desktop design ──
+  if (docked) {
+    const fs = n => `${n*textSize}px`;
+    const filled = !!unlockCode.trim();
+    const Ico = ({ d, size=18, sw=1.8, children }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d ? <path d={d}/> : children}</svg>
+    );
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+        <style>{`
+          .gp-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:22px;align-items:start}
+          .gp-cta:hover{filter:brightness(1.05)}
+          .gp-in:focus{border-color:var(--gold)!important}
+        `}</style>
+        <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", flexShrink:0 }}>
+          <div className="nur-ph-title" style={{ flex:1 }}>
+            <span>Get Pro</span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>One payment. No ads, no daily limit, yours for good.</span></span>
+          </div>
+        </div>
+
+        <div className="msgscroll" style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
+          <div className="gp-grid">
+            {/* Hero */}
+            <section className="card" style={{ padding:"40px 40px 34px", textAlign:"center", background:"linear-gradient(160deg, var(--active), var(--panel))" }}>
+              <div style={{ fontFamily:"var(--font-head)", fontWeight:700, fontSize:fs(46), lineHeight:1, letterSpacing:"8px", color:gold, paddingLeft:"8px" }}>NŪR</div>
+              <div className="lbl" style={{ marginTop:"12px", letterSpacing:"3px" }}>Ad‑Free · Unlimited</div>
+              <div lang="ar" dir="rtl" style={{ marginTop:"26px", fontFamily:"var(--font-ar)", fontSize:fs(36), lineHeight:1.5, color:gold }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
+              <div style={{ marginTop:"4px", fontSize:fs(12.5), fontWeight:500, color:"var(--faint)" }}>"Seeking knowledge is an obligation" — Ibn Mājah</div>
+              <div style={{ margin:"20px auto 0", maxWidth:"400px", fontSize:fs(14), fontWeight:500, lineHeight:1.75, color:textDim }}>
+                All features are free. Pro removes ads and lifts the daily chat limit — a one-time payment to support NŪR forever.
+              </div>
+              <a href={payUrl} target="_blank" rel="noreferrer" className="gp-cta"
+                style={{ margin:"28px auto 0", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"4px", width:"100%", maxWidth:"340px", minHeight:"74px", boxSizing:"border-box", borderRadius:"20px", background:"var(--goldFill)", color:"var(--onGold)", textDecoration:"none", boxShadow:"0 10px 30px -12px var(--gold)", fontFamily:"var(--font-body)" }}>
+                <span style={{ display:"flex", alignItems:"center", gap:"9px", fontSize:fs(18), fontWeight:700 }}><Ico d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z"/>Go Ad‑Free — {price}</span>
+                <span style={{ fontSize:fs(11.5), fontWeight:500, opacity:0.8 }}>{payNote}</span>
+              </a>
+              <div style={{ marginTop:"14px", display:"flex", alignItems:"center", justifyContent:"center", gap:"7px", fontSize:fs(12), fontWeight:500, color:"var(--faint)" }}>
+                <Ico size={14}><rect x="5" y="10.5" width="14" height="9.5" rx="2.5"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/></Ico>
+                One-time payment · Yours forever
+              </div>
+            </section>
+
+            <div style={{ display:"flex", flexDirection:"column", gap:"22px", minWidth:0 }}>
+              {/* Features */}
+              <section className="card" style={{ padding:"22px 24px" }}>
+                <span className="lbl">What Pro gives you</span>
+                <div style={{ marginTop:"14px", display:"flex", flexDirection:"column", gap:"10px" }}>
+                  {PRO_FEATURES.map((f, i) => (
+                    <div key={i} style={{ display:"flex", alignItems:"center", gap:"14px", padding:"12px 14px", borderRadius:"13px", border:"1px solid var(--lineSoft)", background:"var(--panel)" }}>
+                      <span style={{ flex:"none", display:"flex", alignItems:"center", justifyContent:"center", width:"36px", height:"36px", borderRadius:"11px", border:"1px solid var(--lineSoft)", background:goldFaint, color:gold }}><Ico d={f.svg} size={19}/></span>
+                      <span style={{ fontSize:fs(14), fontWeight:600, lineHeight:1.4, color:textClr }}>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Code entry */}
+              <section className="card" style={{ padding:"22px 24px" }}>
+                <span className="lbl">Already paid? Enter your code</span>
+                <label style={{ display:"block", marginTop:"14px" }}>
+                  <span style={{ position:"absolute", width:"1px", height:"1px", overflow:"hidden", clip:"rect(0 0 0 0)" }}>Unlock code</span>
+                  <input className="gp-in"
+                    value={unlockCode}
+                    onChange={e => setUnlockCode(e.target.value.toUpperCase())}
+                    onKeyDown={e => e.key === "Enter" && redeem()}
+                    placeholder="NUR-XXXX-XXXX-XXXX"
+                    maxLength={40}
+                    style={{ boxSizing:"border-box", width:"100%", height:"48px", padding:"0 16px", borderRadius:"13px", border:`1px solid ${unlockStatus==="error"?"var(--warn)":goldBdr}`, background:"var(--panel2)", color:textClr, fontFamily:"ui-monospace,'SF Mono',Menlo,monospace", fontSize:fs(15), fontWeight:600, letterSpacing:"2px", outline:"none" }}
+                  />
+                </label>
+                {unlockError && <div style={{ marginTop:"10px", fontSize:fs(12.5), fontWeight:600, color:"var(--warn)" }}>{unlockError}</div>}
+                {unlockStatus === "success" ? (
+                  <div style={{ marginTop:"14px", display:"flex", alignItems:"center", justifyContent:"center", gap:"9px", padding:"12px", fontSize:fs(15), fontWeight:700, color:"var(--green)" }}>
+                    <Ico d="m5 12.5 4.5 4.5L19 7.5" sw={2.2}/>Unlocked! Jazakallahu Khairan
+                  </div>
+                ) : (
+                  <button className="pc" onClick={redeem} disabled={!filled || unlockStatus==="loading"}
+                    style={{ marginTop:"12px", width:"100%", height:"46px", borderRadius:"13px", border:`1px solid ${filled?"transparent":goldBdr}`, background:filled?"var(--goldFill)":"transparent", color:filled?"var(--onGold)":"var(--faint)", fontFamily:"var(--font-body)", fontSize:fs(14), fontWeight:700, cursor:filled?"pointer":"not-allowed" }}>
+                    {unlockStatus==="loading" ? "Verifying…" : "Activate Pro Access"}
+                  </button>
+                )}
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>

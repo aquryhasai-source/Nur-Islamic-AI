@@ -146,6 +146,8 @@ html.nur-light .hl{color:#8A5F0E}
 .nur-docked .nur-ph-menu,.nur-docked .nur-ph-back{display:none!important}
 .nur-docked .nur-ph-title{position:static!important;transform:none!important;flex:1!important;text-align:left!important;font-size:30px!important;line-height:1.1!important;letter-spacing:.012em!important}
 .nur-docked .nur-page{padding:0 24px}
+/* Website view: pages sit on the shell gradient instead of painting their own solid block */
+.nur-docked .nur-page>div{background:transparent!important}
 
 /* ── Shared card/label classes ───────────────────────────────────────────── */
 .card{border:1px solid var(--lineSoft);background:var(--panel);border-radius:16px}

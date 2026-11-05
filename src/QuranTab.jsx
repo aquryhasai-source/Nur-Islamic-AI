@@ -166,7 +166,7 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
                   style={{ background:"none", border:"none", fontSize:"16px", cursor:"pointer", padding:"2px 6px", lineHeight:1, opacity: saved ? 1 : 0.4, transition:"opacity 0.2s", position:"relative" }}
                   onMouseEnter={e => e.currentTarget.style.opacity = "1"}
                   onMouseLeave={e => e.currentTarget.style.opacity = saved ? "1" : "0.4"}>
-                  🔖
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/></svg>
                 </button>
               </div>
               <div className="rd-ar" lang="ar" style={{ textAlign:"right", marginBottom:"10px", direction:"rtl" }}>

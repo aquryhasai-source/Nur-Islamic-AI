@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import { getSessions, deleteSession, clearAllSessions, shareOrDownloadBackup, importBackupJSON } from "./utils.js";
 
 function timeAgo(ts) {
@@ -27,6 +28,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
   const [importState, setImportState] = useState("idle");
   const [importMsg,   setImportMsg]   = useState("");
   const fileRef = useRef(null);
+  const docked = useMedia(DOCK_QUERY);
 
   const gold = "var(--gold)";
   const goldDim = "var(--goldDim)";
@@ -100,6 +102,140 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
     (session.messages || [])
       .filter(m => m.role === "user" || m.role === "assistant")
       .slice(0, 6);
+
+  if (docked) {
+    const ts = textSize || 1;
+    const ico = (d, sz = 16) => (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+    );
+    const sel = filtered.find(x => x.id === expanded) || filtered[0] || null;
+    const msgs = sel ? (sel.messages || []).filter(m => m.role === "user" || m.role === "assistant") : [];
+    const count = sessions.length === 0 ? "Nothing saved yet" : `${sessions.length} conversation${sessions.length !== 1 ? "s" : ""} saved on this device`;
+    const bkBusy = backupState === "saving";
+    const bkDone = backupState === "done";
+    const rsDone = importState === "done";
+    const rsErr = importState === "error";
+    const hiddenFile = <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>;
+    const backupCard = (
+      <section className="card" style={{ padding:"22px 26px" }}>
+        <span className="lbl">Backup &amp; Restore</span>
+        <div style={{ marginTop:"12px", fontSize:`${13*ts}px`, fontWeight:500, lineHeight:1.65, color:"var(--dim)" }}>Chats are stored only on this device. Back up to your Drive, iCloud, or email to keep them safe.</div>
+        <div style={{ marginTop:"16px", display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", gap:"12px" }}>
+          <button className="pc" onClick={handleBackup} disabled={bkBusy} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", height:"42px", borderRadius:"12px", border:`1px solid ${bkDone ? greenClr : goldBdr}`, background: bkDone ? "color-mix(in srgb,var(--green) 12%,transparent)" : goldFaint, color: bkDone ? greenClr : gold, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
+            {ico(<><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></>)}
+            {bkBusy ? "Preparing…" : bkDone ? "Backup saved" : backupState === "error" ? "Failed — try again" : "Save backup"}
+          </button>
+          <button className="pc" onClick={() => fileRef.current?.click()} disabled={importState === "importing"} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", height:"42px", borderRadius:"12px", border:`1px solid ${rsDone ? greenClr : rsErr ? dangerClr : goldBdr}`, background:"transparent", color: rsDone ? greenClr : rsErr ? dangerClr : "var(--dim)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
+            {ico(<><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></>)}
+            {importState === "importing" ? "Importing…" : importMsg ? importMsg : "Restore from file"}
+          </button>
+        </div>
+        {hiddenFile}
+      </section>
+    );
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+        <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
+          <div className="nur-ph-title">
+            <span>Chat History</span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>{count}</span></span>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
+          {sessions.length === 0 ? (
+            <section className="card" style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"72px 24px", textAlign:"center" }}>
+              <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"56px", height:"56px", borderRadius:"16px", border:"1px solid var(--lineSoft)", background:"var(--chip)", color:"var(--gold)" }}>{ico(<><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></>, 24)}</span>
+              <h2 className="h2" style={{ marginTop:"18px", fontSize:"26px" }}>No History Yet</h2>
+              <div style={{ marginTop:"8px", maxWidth:"360px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.7, color:"var(--dim)" }}>Your conversations will appear here. Start chatting!</div>
+              <button className="pc" onClick={() => fileRef.current?.click()} style={{ marginTop:"22px", display:"flex", alignItems:"center", gap:"8px", height:"40px", padding:"0 18px", borderRadius:"12px", border:`1px solid ${goldBdr}`, background:goldFaint, color:gold, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
+                {ico(<><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></>)}
+                Restore from backup
+              </button>
+              {hiddenFile}
+              {importMsg && <div style={{ marginTop:"10px", fontSize:`${12*ts}px`, color: rsErr ? dangerClr : greenClr }}>{importMsg}</div>}
+            </section>
+          ) : (
+            <div className="nurh-grid" style={{ display:"grid", gridTemplateColumns:"380px minmax(0,1fr)", gap:"22px", alignItems:"start" }}>
+              <div style={{ display:"flex", flexDirection:"column", gap:"14px", minWidth:0 }}>
+                <label style={{ display:"flex", alignItems:"center", gap:"10px", height:"44px", padding:"0 14px", borderRadius:"13px", border:"1px solid var(--line)", background:"var(--panel2)", color:"var(--faint)" }}>
+                  {ico(<><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></>, 17)}
+                  <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search conversations…" aria-label="Search conversations" style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:`${13.5*ts}px`, fontWeight:600 }}/>
+                  {search && <button className="pc" onClick={() => setSearch("")} aria-label="Clear search" style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"24px", height:"24px", borderRadius:"7px", border:0, background:"transparent", color:"var(--faint)", cursor:"pointer" }}>{ico(<path d="M6 6l12 12M18 6 6 18"/>, 14)}</button>}
+                </label>
+                {filtered.length > 0 ? (
+                  <div className="card" style={{ padding:"8px", display:"flex", flexDirection:"column", gap:"4px" }}>
+                    {filtered.map(x => {
+                      const on = sel && sel.id === x.id;
+                      return (
+                        <button key={x.id} className="pc" aria-pressed={on} onClick={() => setExpanded(x.id)} style={{ display:"block", width:"100%", padding:"12px 14px", borderRadius:"11px", border:`1px solid ${on ? "var(--line)" : "transparent"}`, background: on ? "var(--active)" : "transparent", color:"var(--text)", fontFamily:"inherit", textAlign:"left", cursor:"pointer" }}>
+                          <span style={{ display:"block", fontSize:`${13.5*ts}px`, fontWeight:700, lineHeight:1.4, color: on ? "var(--gold)" : "var(--text)" }}>{x.title}</span>
+                          <span style={{ display:"block", marginTop:"4px", fontSize:`${11.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>{timeAgo(x.updatedAt)} · {msgCount(x)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding:"36px 20px", textAlign:"center", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>No conversations match "{search}"</div>
+                )}
+                {!search && (
+                  <div style={{ textAlign:"center" }}>
+                    {confirmAll ? (
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"12px", padding:"16px", borderRadius:"14px", border:"1px solid var(--warn)", background:"var(--panel)" }}>
+                        <span style={{ fontSize:`${13.5*ts}px`, fontWeight:700, color:dangerClr }}>Delete all conversations?</span>
+                        <div style={{ display:"flex", gap:"10px" }}>
+                          <button className="pc" onClick={() => setConfirmAll(false)} style={{ height:"36px", padding:"0 20px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                          <button className="pc" onClick={handleClearAll} style={{ height:"36px", padding:"0 20px", borderRadius:"10px", border:"1px solid var(--warn)", background:"transparent", color:dangerClr, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Delete all</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button className="pc" onClick={() => setConfirmAll(true)} style={{ padding:"8px 12px", border:0, borderRadius:"8px", background:"transparent", color:"var(--faint)", fontFamily:"inherit", fontSize:`${12.5*ts}px`, fontWeight:600, textDecoration:"underline", cursor:"pointer" }}>Delete all conversations</button>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div style={{ display:"flex", flexDirection:"column", gap:"20px", minWidth:0 }}>
+                {sel ? (
+                  <section className="card" style={{ overflow:"hidden" }}>
+                    <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"20px", padding:"22px 26px 18px", borderBottom:"1px solid var(--lineSoft)" }}>
+                      <div style={{ minWidth:0 }}>
+                        <h2 className="h2" style={{ fontSize:"25px", lineHeight:1.2 }}>{sel.title}</h2>
+                        <div style={{ marginTop:"6px", fontSize:`${12.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>{timeAgo(sel.updatedAt)} · {msgCount(sel)}</div>
+                      </div>
+                      <div style={{ flex:"none", display:"flex", gap:"10px" }}>
+                        <button className="pc" onClick={() => handleDelete(sel.id)} style={{ display:"flex", alignItems:"center", gap:"7px", height:"38px", padding:"0 14px", borderRadius:"11px", border:"1px solid var(--warn)", background:"transparent", color:dangerClr, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
+                          {ico(<><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12h9.4l.8-12"/></>, 15)}Delete
+                        </button>
+                        <button className="pc" onClick={() => onContinue(sel)} style={{ display:"flex", alignItems:"center", gap:"8px", height:"38px", padding:"0 18px", borderRadius:"11px", border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
+                          Continue chat{ico(<path d="M5 12h14M13 6l6 6-6 6"/>, 15)}
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:"14px", padding:"22px 26px 26px" }}>
+                      {msgs.slice(0, 8).map((m, i) => {
+                        const u = m.role === "user";
+                        const t = m.display || m.content || "";
+                        return (
+                          <div key={i} style={{ alignSelf: u ? "flex-end" : "flex-start", maxWidth:"82%", padding:"11px 16px 12px", border:"1px solid var(--line)", borderRadius: u ? "16px 4px 16px 16px" : "4px 16px 16px 16px", background: u ? "var(--chip)" : "var(--panel)" }}>
+                            <div style={{ marginBottom:"4px", fontSize:`${10*ts}px`, fontWeight:700, letterSpacing:"1.2px", color: u ? "var(--gold)" : "var(--dim)" }}>{u ? "YOU" : "NŪR"}</div>
+                            <div style={{ fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.7, color:"var(--text)" }}>{t.slice(0, 400)}{t.length > 400 ? "…" : ""}</div>
+                          </div>
+                        );
+                      })}
+                      {msgs.length > 8 && <div style={{ textAlign:"center", fontSize:`${12*ts}px`, color:"var(--faint)" }}>+ {msgs.length - 8} more messages. Continue the chat to see them all.</div>}
+                    </div>
+                  </section>
+                ) : (
+                  <section className="card" style={{ padding:"70px 24px", textAlign:"center", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>Select a conversation to preview it here.</section>
+                )}
+                {backupCard}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>

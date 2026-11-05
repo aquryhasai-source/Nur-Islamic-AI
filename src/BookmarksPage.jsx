@@ -1,6 +1,8 @@
 import { isBookmarked } from "./utils.js";
+import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
 export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onToggle, unlocked, navigateTo, lightMode, textSize = 1 }) {
+  const docked = useMedia(DOCK_QUERY);
   const gold = "var(--gold)";
   const goldDim = "var(--goldDim)";
   const goldBdr = "var(--line)";
@@ -25,6 +27,65 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
       <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
     </div>
   );
+
+  if (docked) {
+    const ts = textSize || 1;
+    const qB = bookmarks.filter(b => b.type === "quran");
+    const hB = bookmarks.filter(b => b.type === "hadith");
+    const count = bookmarks.length === 0 ? "Nothing saved yet" : `${bookmarks.length} saved`;
+    const ico = (d, sz = 16) => (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{d}</svg>
+    );
+    const bmIcon = <path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/>;
+    const xIcon = <path d="M6 6l12 12M18 6 6 18"/>;
+    const DCard = ({ b, accent }) => (
+      <article className="card" style={{ overflow:"hidden", borderColor:`color-mix(in srgb, ${accent} 30%, transparent)` }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px", height:"42px", padding:"0 12px 0 16px", background:`color-mix(in srgb, ${accent} 10%, transparent)`, borderBottom:`1px solid color-mix(in srgb, ${accent} 22%, transparent)` }}>
+          <span style={{ fontSize:`${13*ts}px`, fontWeight:700, color:accent }}>{b.title}</span>
+          <button className="pc" onClick={() => onToggle(b)} aria-label={`Remove bookmark ${b.title}`} style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"28px", height:"28px", borderRadius:"8px", border:0, background:"transparent", color:accent, cursor:"pointer" }}>{ico(xIcon, 15)}</button>
+        </div>
+        {b.arabic && (
+          <div lang="ar" dir="rtl" style={{ padding:"14px 18px 4px", fontFamily:"var(--font-ar)", fontSize:`${25*ts}px`, lineHeight:2, textAlign:"right", color:accent }}>{b.arabic}</div>
+        )}
+        <div style={{ padding: b.arabic ? "0 18px 16px" : "16px 18px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.75, color:"var(--dim)" }}>{b.text}</div>
+      </article>
+    );
+    const Col = ({ list, accent, label }) => (
+      <section style={{ flex:"1 1 0", minWidth:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"9px", marginBottom:"12px" }}>
+          <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:accent }}/>
+          <span className="lbl" style={{ color:accent }}>{label}</span>
+        </div>
+        <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+          {list.map(b => <DCard key={b.id} b={b} accent={accent}/>)}
+        </div>
+      </section>
+    );
+    return (
+      <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
+        <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
+          <div className="nur-ph-title">
+            <span>Bookmarks</span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>{count}</span></span>
+          </div>
+        </div>
+        <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
+          {bookmarks.length === 0 ? (
+            <section className="card" style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"72px 24px", textAlign:"center" }}>
+              <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"56px", height:"56px", borderRadius:"16px", border:"1px solid var(--lineSoft)", background:"var(--chip)", color:"var(--gold)" }}>{ico(bmIcon, 24)}</span>
+              <h2 className="h2" style={{ marginTop:"18px", fontSize:"26px" }}>No Bookmarks Yet</h2>
+              <div style={{ marginTop:"8px", maxWidth:"360px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.7, color:"var(--dim)" }}>Tap the bookmark icon on any ayah or hadith to save it here.</div>
+            </section>
+          ) : (
+            <div style={{ display:"flex", gap:"22px", alignItems:"flex-start" }}>
+              {qB.length > 0 && <Col list={qB} accent={quranAccent} label={`Quran — ${qB.length} ayah${qB.length !== 1 ? "s" : ""}`}/>}
+              {hB.length > 0 && <Col list={hB} accent={hadithAccent} label={`Hadith — ${hB.length} hadith${hB.length !== 1 ? "s" : ""}`}/>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   if (bookmarks.length === 0) {
     return (

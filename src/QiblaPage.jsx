@@ -1173,6 +1173,22 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     } catch {}
   };
 
+  // ── Re-read the device location (website view button) ──────────────────────
+  const useMyLocation = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        setQiblaAngle(calculateQibla(coords.latitude, coords.longitude));
+        setUserPos({ lat: coords.latitude, lon: coords.longitude });
+        setLocationName("Current Location");
+        setLocError(null);
+        setShowCity(false);
+      },
+      () => { setLocError("Location access denied"); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // ── Alignment calculation ───────────────────────────────────────────────────
   const diff = qiblaAngle !== null
     ? (() => { let d = ((qiblaAngle - bearing) % 360 + 360) % 360; return d > 180 ? d - 360 : d; })()
@@ -1307,14 +1323,39 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               color:goldDim, fontSize:`${11*textSize}px`, marginTop:"2px",
               overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap",
             }}>
-              📍 {locationName}
+              {docked ? (
+                <span style={{ display:"inline-flex", alignItems:"center", gap:"10px", overflow:"visible", whiteSpace:"normal", flexWrap:"wrap" }}>
+                  <span style={{ display:"inline-flex", alignItems:"center", gap:"6px", color:gold, fontWeight:600 }}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM9.6 10a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0"/></svg>
+                    {locationName}
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>Shortest route to the Kaaba, measured from True North</span>
+                </span>
+              ) : <>📍 {locationName}</>}
             </div>
           )}
         </div>
 
         {/* City toggle + Back */}
         <div style={{ display:"flex", alignItems:"center", gap:"6px", flexShrink:0 }}>
-          <button
+          {docked && (
+            <>
+              <label style={{ display:"flex", alignItems:"center", gap:"8px", width:"270px", boxSizing:"border-box", height:"36px", padding:"0 12px", borderRadius:"10px", border:"1px solid var(--lineSoft)", background:"var(--panel2)", color:"var(--faint)" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM9.6 10a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0"/></svg>
+                <span style={{ position:"absolute", width:"1px", height:"1px", overflow:"hidden", clip:"rect(0 0 0 0)" }}>Search a city or address</span>
+                <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key === "Enter" && lookupCity()}
+                  placeholder="Search a city or address…"
+                  style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"13px", fontWeight:500 }}/>
+              </label>
+              <button className="cb" onClick={useMyLocation}
+                style={{ display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:"12.5px", fontWeight:600, cursor:"pointer" }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
+                Use my location
+              </button>
+            </>
+          )}
+          {!docked && <button
             onClick={() => setShowCity(v => !v)}
             style={{
               background: showCity ? goldFaint : "transparent",
@@ -1326,7 +1367,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
             }}
           >
             📍
-          </button>
+          </button>}
           <button className="nur-ph-back" onClick={onBack}
             style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 4px" }}>
             ←
@@ -1335,7 +1376,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       </div>
 
       {/* ── City input (slides in below header) ── */}
-      {showCity && (
+      {showCity && !docked && (
         <div style={{
           padding:"10px 16px", borderBottom:`1px solid ${goldBdr}`,
           background:headerBg, flexShrink:0, position:"relative", zIndex:2,
@@ -1373,7 +1414,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       <div style={{
         flex:1, display:"flex", flexDirection:"column",
         alignItems:"center", justifyContent:"flex-start",
-        padding:"14px 24px 32px",
+        padding: docked ? "14px 40px 32px" : "14px 24px 32px",
         position:"relative", zIndex:1, overflowX:"hidden", overflowY:"auto",
         WebkitOverflowScrolling:"touch",
         gap:"0px",
