@@ -10,6 +10,7 @@ import { useMedia, DOCK_QUERY } from "./useMedia.js";
 const GetProPage = lazy(() => import("./GetProPage.jsx"));
 const SupportPage = lazy(() => import("./SupportPage.jsx"));
 import FridayCard         from "./FridayCard.jsx";
+import ConsentModal, { hasConsented, saveConsent } from "./ConsentModal.jsx";
 import { shouldShowFridayCard } from "./sadaqah.js";
 const ProfilePage = lazy(() => import("./ProfilePage.jsx"));
 const BookmarksPage = lazy(() => import("./BookmarksPage.jsx"));
@@ -98,6 +99,7 @@ export default function NurApp() {
   const [hadithNav,    setHadithNav]    = useState(null);
   const [hadithSearch, setHadithSearch] = useState(null);
   const [showFriday,   setShowFriday]   = useState(false);
+  const [consented,    setConsented]    = useState(() => hasConsented());
   const [bookmarks,    setBookmarks]    = useState(() => getBookmarks());
   const [lightMode,    setLightMode]    = useState(() => localStorage.getItem(KEYS.THEME) === "light");
   const [textSize,     setTextSize]     = useState(() => snapTextSize(localStorage.getItem(KEYS.TEXT_SIZE) || "1"));
@@ -333,7 +335,16 @@ export default function NurApp() {
     <div className={"nur-shell" + (docked ? " nur-docked" : "")} style={{ fontFamily:"var(--font-body)" }}>
       <Khatam/>
 
-      {showFriday && (
+      {/* First-visit notice: other pop-ups wait until it is accepted; it steps aside while the Terms / Privacy pages are open */}
+      {!consented && !["privacy","terms"].includes(activePage) && (
+        <ConsentModal
+          onAccept={() => { saveConsent(); setConsented(true); trackEvent("consent_accepted"); }}
+          onDeny={() => { trackEvent("consent_denied"); window.location.assign("/"); }}
+          onOpenPage={navigateTo}
+        />
+      )}
+
+      {consented && showFriday && (
         <FridayCard
           lightMode={lightMode}
           textSize={textSize}
@@ -381,7 +392,7 @@ export default function NurApp() {
         {!docked && <AdBanner unlocked={unlocked} lightMode={lightMode}/>}
 
         {/* ── NOTIFICATION PROMPT ── */}
-        <NotificationPrompt hasEngaged={activeSession.messages.length > 0} lightMode={lightMode} textSize={textSize}/>
+        {consented && <NotificationPrompt hasEngaged={activeSession.messages.length > 0} lightMode={lightMode} textSize={textSize}/>}
 
         {/* ── TAB CONTENT ── */}
         <div className="nur-tabbody" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
