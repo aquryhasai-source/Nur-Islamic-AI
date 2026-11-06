@@ -40,23 +40,49 @@ const IconBox = ({ children }) => (
   <span style={{ width:"28px", height:"28px", borderRadius:"8px", background:"var(--chip)", border:"1px solid var(--lineSoft)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", flex:"none" }}>{children}</span>
 );
 
-export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLightMode, onNavigate, textSize = 1, docked = false, activePage = null }) {
+// Text-size slider: small A, slider, big A. The centre stop is the default (1×).
+export const TEXT_MIN = 0.75, TEXT_MAX = 1.25, TEXT_STEP = 0.05;
+export const snapTextSize = (v) => {
+  const n = parseFloat(v);
+  if (!isFinite(n)) return 1;
+  return Math.round(Math.min(TEXT_MAX, Math.max(TEXT_MIN, n)) / TEXT_STEP) * TEXT_STEP;
+};
+function TextSizeSlider({ textSize, setTextSize }) {
+  const v = snapTextSize(textSize);
+  const word = Math.abs(v - 1) < 0.01 ? "Default" : v < 1 ? "Smaller" : "Larger";
+  return (
+    <div style={{ flex:"none", padding:"10px 20px 12px", borderTop:"1px solid var(--lineSoft)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+        <span aria-hidden="true" style={{ fontFamily:"var(--font-body)", fontSize:"12px", fontWeight:700, color:"var(--dim)", width:"14px", textAlign:"center" }}>A</span>
+        <div className="ts-wrap">
+          <input className="ts-range" type="range" min={TEXT_MIN} max={TEXT_MAX} step={TEXT_STEP} value={v}
+            aria-label="Text size" aria-valuetext={word}
+            onChange={e => setTextSize(snapTextSize(e.target.value))}/>
+        </div>
+        <span aria-hidden="true" style={{ fontFamily:"var(--font-body)", fontSize:"22px", fontWeight:700, color:"var(--gold)", width:"20px", textAlign:"center", lineHeight:1 }}>A</span>
+      </div>
+    </div>
+  );
+}
+
+export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLightMode, onNavigate, textSize = 1, setTextSize = () => {}, docked = false, activePage = null }) {
   // One group open at a time. Starts on whichever group holds the current page.
   const [openGroup, setOpenGroup] = useState(() => groupOf(activePage) || "tools");
+  const fs = (n) => `calc(${n}px * var(--ts, 1))`;
   const go = (key) => { onNavigate(key); if (!docked) onClose(); };
 
   const header = (
     <div style={{ flex:"none", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"20px 20px 16px", borderBottom:"1px solid var(--lineSoft)" }}>
       <div>
         <div style={{ display:"flex", alignItems:"center", gap:"9px" }}>
-          <span style={{ fontFamily:"var(--font-head)", fontSize:"30px", fontWeight:700, letterSpacing:"5px", color:"var(--gold)", lineHeight:1.1 }}>NŪR</span>
-          <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"1.5px", color:"var(--gold)", border:"1px solid var(--line)", borderRadius:"6px", padding:"2px 7px", background:"var(--chip)" }}>BETA</span>
+          <span style={{ fontFamily:"var(--font-head)", fontSize:fs(30), fontWeight:700, letterSpacing:"5px", color:"var(--gold)", lineHeight:1.1 }}>NŪR</span>
+          <span style={{ fontSize:fs(10), fontWeight:700, letterSpacing:"1.5px", color:"var(--gold)", border:"1px solid var(--line)", borderRadius:"6px", padding:"2px 7px", background:"var(--chip)" }}>BETA</span>
         </div>
-        <div style={{ fontSize:"10px", fontWeight:600, letterSpacing:"2.4px", color:"var(--faint)", marginTop:"4px" }}>FREE WHILE WE GROW</div>
+        <div style={{ fontSize:fs(10), fontWeight:600, letterSpacing:"2.4px", color:"var(--faint)", marginTop:"4px" }}>FREE WHILE WE GROW</div>
       </div>
       <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
         <button className="cb" onClick={() => setLightMode(m => !m)} aria-label="Switch colour theme"
-          style={{ display:"flex", alignItems:"center", gap:"7px", background:"var(--chip)", border:"1px solid var(--line)", borderRadius:"20px", padding:"7px 13px", color:"var(--gold)", fontSize:`${12*textSize}px`, fontWeight:700, cursor:"pointer" }}>
+          style={{ display:"flex", alignItems:"center", gap:"7px", background:"var(--chip)", border:"1px solid var(--line)", borderRadius:"20px", padding:"7px 13px", color:"var(--gold)", fontSize:fs(12), fontWeight:700, cursor:"pointer" }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor"/></svg>
           {lightMode ? "Dark" : "Light"}
         </button>
@@ -76,8 +102,8 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
       <button className="nb" aria-current={activePage === "getpro" ? "page" : undefined} onClick={() => go("getpro")} style={{ height:"40px", marginBottom:"3px" }}>
         <IconBox>{I.pro}</IconBox><span style={{ flex:1 }}>Get Pro</span>
         {!unlocked
-          ? <span style={{ background:"var(--goldFill)", color:"var(--onGold)", fontSize:"9.5px", fontWeight:700, letterSpacing:"1px", padding:"3px 8px", borderRadius:"10px" }}>AD‑FREE</span>
-          : <span style={{ color:"var(--green)", fontSize:"11px" }}>✦</span>}
+          ? <span style={{ background:"var(--goldFill)", color:"var(--onGold)", fontSize:fs(9.5), fontWeight:700, letterSpacing:"1px", padding:"3px 8px", borderRadius:"10px" }}>AD‑FREE</span>
+          : <span style={{ color:"var(--green)", fontSize:fs(11) }}>✦</span>}
       </button>
 
       {GROUPS.slice(2).filter(g => !g.support || SADAQAH_ENABLED || true).map(g => (
@@ -88,8 +114,8 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
 
   const footer = (
     <div style={{ flex:"none", padding:"11px 18px 13px", textAlign:"center", borderTop:"1px solid var(--lineSoft)" }}>
-      <div lang="ar" className="ar" style={{ fontSize:"20px", color:"var(--gold)", lineHeight:1.3 }}>بِسْمِ اللّٰهِ</div>
-      <div style={{ fontSize:"9.5px", fontWeight:600, letterSpacing:"1.4px", color:"var(--faint)", marginTop:"2px" }}>ALWAYS CONSULT A QUALIFIED SCHOLAR</div>
+      <div lang="ar" className="ar" style={{ fontSize:fs(20), color:"var(--gold)", lineHeight:1.3 }}>بِسْمِ اللّٰهِ</div>
+      <div style={{ fontSize:fs(9.5), fontWeight:600, letterSpacing:"1.4px", color:"var(--faint)", marginTop:"2px" }}>ALWAYS CONSULT A QUALIFIED SCHOLAR</div>
     </div>
   );
 
@@ -98,6 +124,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
     return (
       <aside className="nur-side-dock" aria-label="Sidebar">
         {header}{nav}
+        <TextSizeSlider textSize={textSize} setTextSize={setTextSize}/>
         <AdBanner unlocked={unlocked} lightMode={lightMode} variant="slot"/>
         {footer}
       </aside>
@@ -110,7 +137,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
       {isOpen && <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(4,8,28,.62)", zIndex:50, backdropFilter:"blur(4px)", animation:"fadeIn .2s ease" }}/>}
       <aside aria-label="Sidebar" aria-hidden={!isOpen}
         style={{ position:"fixed", top:0, left:0, bottom:0, width:"min(86vw,330px)", background:"var(--side)", backgroundColor:"var(--bgSolid)", borderRight:"1px solid var(--lineSoft)", zIndex:51, display:"flex", flexDirection:"column", transition:"transform .28s ease", transform:isOpen ? "translateX(0)" : "translateX(-100%)", visibility:isOpen ? "visible" : "hidden", transitionProperty:"transform, visibility" }}>
-        {header}{nav}{footer}
+        {header}{nav}<TextSizeSlider textSize={textSize} setTextSize={setTextSize}/>{footer}
       </aside>
     </>
   );
@@ -132,7 +159,7 @@ function Group({ g, openGroup, setOpenGroup, activePage, go, hideKeys = [] }) {
         <div style={{ margin:"0 0 6px 27px", paddingLeft:"12px", borderLeft:"1px solid var(--line)" }}>
           {items.map(([k, label, icon]) => (
             <button key={k} className="nb" aria-current={activePage === k ? "page" : undefined} onClick={() => go(k)}
-              style={{ height:"36px", padding:"0 10px", borderRadius:"9px", fontSize:"13px", gap:"11px", color: activePage === k ? "var(--text)" : "var(--dim)", fontWeight: activePage === k ? 700 : 600 }}>
+              style={{ height:"36px", padding:"0 10px", borderRadius:"9px", fontSize:"calc(13px * var(--ts, 1))", gap:"11px", color: activePage === k ? "var(--text)" : "var(--dim)", fontWeight: activePage === k ? 700 : 600 }}>
               <span style={{ color:"var(--gold)", display:"flex" }}>{icon}</span>{label}
             </button>
           ))}

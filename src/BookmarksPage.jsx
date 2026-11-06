@@ -1,8 +1,11 @@
+import { useState } from "react";
 import { isBookmarked } from "./utils.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
 export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onToggle, unlocked, navigateTo, lightMode, textSize = 1 }) {
   const docked = useMedia(DOCK_QUERY);
+  const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
   const gold = "var(--gold)";
   const goldDim = "var(--goldDim)";
   const goldBdr = "var(--line)";
@@ -24,7 +27,7 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
         <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Bookmarks</span>
         {bookmarks.length > 0 && <span style={{ color:goldDim, fontSize:`${12*textSize}px`, marginLeft:"8px" }}>{bookmarks.length} saved</span>}
       </div>
-      <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+      <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
     </div>
   );
 
@@ -50,37 +53,65 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
         <div style={{ padding: b.arabic ? "0 18px 16px" : "16px 18px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.75, color:"var(--dim)" }}>{b.text}</div>
       </article>
     );
-    const Col = ({ list, accent, label }) => (
-      <section style={{ flex:"1 1 0", minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:"9px", marginBottom:"12px" }}>
-          <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:accent }}/>
-          <span className="lbl" style={{ color:accent }}>{label}</span>
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
-          {list.map(b => <DCard key={b.id} b={b} accent={accent}/>)}
-        </div>
-      </section>
-    );
+    const q = query.trim().toLowerCase();
+    const shown = bookmarks.filter(b =>
+      (filter === "all" || b.type === filter) &&
+      (!q || `${b.title} ${b.text} ${b.arabic || ""}`.toLowerCase().includes(q)));
+    const exportAll = () => {
+      try {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(bookmarks, null, 2)], { type:"application/json" }));
+        const a = document.createElement("a"); a.href = url; a.download = "nur-bookmarks.json"; a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch {}
+    };
+    const chip = (key, label) => {
+      const on = filter === key;
+      return (
+        <button key={key} className="pc" aria-pressed={on} onClick={() => setFilter(key)}
+          style={{ height:"34px", padding:"0 16px", borderRadius:"999px", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer",
+            border:`1px solid ${on ? "var(--line)" : "var(--lineSoft)"}`, background: on ? "var(--active)" : "var(--panel)", color: on ? "var(--gold)" : "var(--dim)" }}>{label}</button>
+      );
+    };
     return (
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
         <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
           <div className="nur-ph-title">
             <span>Bookmarks</span>
-            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>{count}</span></span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>{count}{qB.length > 0 && hB.length > 0 ? ` · ${qB.length} from the Quran · ${hB.length} from Hadith` : ""}</span></span>
           </div>
+          {bookmarks.length > 0 && (
+            <button className="cb" onClick={exportAll} style={{ display:"flex", alignItems:"center", gap:"7px", height:"40px", padding:"0 16px", borderRadius:"12px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Export</button>
+          )}
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
           {bookmarks.length === 0 ? (
             <section className="card" style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"72px 24px", textAlign:"center" }}>
               <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"56px", height:"56px", borderRadius:"16px", border:"1px solid var(--lineSoft)", background:"var(--chip)", color:"var(--gold)" }}>{ico(bmIcon, 24)}</span>
-              <h2 className="h2" style={{ marginTop:"18px", fontSize:"26px" }}>No Bookmarks Yet</h2>
+              <h2 className="h2" style={{ marginTop:"18px", fontSize:"calc(26px * var(--ts, 1))" }}>No Bookmarks Yet</h2>
               <div style={{ marginTop:"8px", maxWidth:"360px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.7, color:"var(--dim)" }}>Tap the bookmark icon on any ayah or hadith to save it here.</div>
             </section>
           ) : (
-            <div style={{ display:"flex", gap:"22px", alignItems:"flex-start" }}>
-              {qB.length > 0 && <Col list={qB} accent={quranAccent} label={`Quran — ${qB.length} ayah${qB.length !== 1 ? "s" : ""}`}/>}
-              {hB.length > 0 && <Col list={hB} accent={hadithAccent} label={`Hadith — ${hB.length} hadith${hB.length !== 1 ? "s" : ""}`}/>}
-            </div>
+            <>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"20px", flexWrap:"wrap", marginBottom:"18px" }}>
+                <div role="group" aria-label="Filter bookmarks" style={{ display:"flex", gap:"8px" }}>
+                  {chip("all", `All ${bookmarks.length}`)}
+                  {chip("quran", `Quran ${qB.length}`)}
+                  {chip("hadith", `Hadith ${hB.length}`)}
+                </div>
+                <label style={{ display:"flex", alignItems:"center", gap:"10px", width:"min(380px,100%)", height:"40px", padding:"0 14px", borderRadius:"12px", background:"var(--panel)", border:"1px solid var(--lineSoft)", color:"var(--faint)" }}>
+                  {ico(<><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></>, 15)}
+                  <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search your bookmarks" aria-label="Search your bookmarks"
+                    style={{ flex:1, minWidth:0, background:"none", border:"none", outline:"none", color:"var(--text)", fontFamily:"inherit", fontSize:`${13*ts}px` }}/>
+                </label>
+              </div>
+              {shown.length === 0 ? (
+                <div className="card" style={{ padding:"48px 24px", textAlign:"center", fontSize:`${13.5*ts}px`, color:"var(--dim)" }}>No bookmarks match.</div>
+              ) : (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(min(100%,400px),1fr))", gap:"16px", alignItems:"start" }}>
+                  {shown.map(b => <DCard key={b.id} b={b} accent={b.type === "quran" ? quranAccent : hadithAccent}/>)}
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -92,7 +123,7 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
         <Header/>
         <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"40px 24px", textAlign:"center" }}>
-          <div style={{ fontSize:"36px", marginBottom:"14px", opacity:0.5 }}>🔖</div>
+          <div style={{ fontSize:"calc(36px * var(--ts, 1))", marginBottom:"14px", opacity:0.5 }}>🔖</div>
           <div style={{ color:gold, fontSize:`${17 * textSize}px`, fontWeight:700, marginBottom:"10px" }}>No Bookmarks Yet</div>
           <div style={{ color:textDim, fontSize:`${13 * textSize}px`, lineHeight:1.8 }}>
             Tap the 🔖 icon on any ayah or hadith to save it here.
@@ -112,7 +143,7 @@ export default function BookmarksPage({ onBack, onOpenSidebar, bookmarks, onTogg
           <div style={{ width:"8px", height:"8px", borderRadius:"50%", background:accent, flexShrink:0 }}/>
           <span style={{ color:accent, fontSize:`${12*textSize}px`, fontWeight:700 }}>{bm.title}</span>
         </div>
-        <button onClick={() => onToggle(bm)} style={{ background:"none", border:"none", fontSize:"15px", cursor:"pointer", lineHeight:1, color:accent, opacity:0.7 }}>✕</button>
+        <button onClick={() => onToggle(bm)} style={{ background:"none", border:"none", fontSize:"calc(15px * var(--ts, 1))", cursor:"pointer", lineHeight:1, color:accent, opacity:0.7 }}>✕</button>
       </div>
       {bm.arabic && (
         <div style={{ padding:"10px 14px 6px", color:accent, fontSize:`${19 * textSize}px`, fontFamily:"var(--font-ar)", textAlign:"right", direction:"rtl", lineHeight:2 }}>

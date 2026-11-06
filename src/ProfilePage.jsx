@@ -1,18 +1,10 @@
 import { useState, useEffect } from "react";
-import { saveProfile, KEYS, DAILY_LIMIT } from "./utils.js";
+import { saveProfile, DAILY_LIMIT } from "./utils.js";
 import { subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { trackEvent, trackError } from "./analytics.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
-const TEXT_SIZES = [
-  { label: "XS", value: 0.75,  name: "Tiny"   },
-  { label: "S",  value: 0.88,  name: "Small"  },
-  { label: "M",  value: 1.0,   name: "Medium" },
-  { label: "L",  value: 1.14,  name: "Large"  },
-  { label: "XL", value: 1.28,  name: "Huge"   },
-];
-
-export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, setTextSize, lightMode }) {
+export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, lightMode }) {
   const docked = useMedia(DOCK_QUERY);
   const [name,        setName]        = useState(profile.name || "");
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
@@ -85,10 +77,6 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
       ? age < 13 ? "Child mode active" : age < 18 ? "Teen mode active" : "Standard mode"
       : null;
     const ts = textSize || 1;
-    const pickSize = (value) => {
-      setTextSize(value);
-      localStorage.setItem(KEYS.TEXT_SIZE, String(value));
-    };
     const dInput = {
       boxSizing:"border-box", width:"100%", height:"42px", padding:"0 14px", borderRadius:"12px",
       border:"1px solid var(--line)", background:"var(--panel2)", color:"var(--text)",
@@ -107,7 +95,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
           <div className="nur-ph-title">
             <span>Profile</span>
-            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>Personalise how NŪR answers you and how the app reads.</span></span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>Personalise how NŪR answers you and how the app reads.</span></span>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
@@ -123,7 +111,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                 ) : (
                   <>
                     <div style={{ marginTop:"14px", display:"flex", alignItems:"baseline", justifyContent:"space-between", gap:"12px" }}>
-                      <span style={{ fontSize:"30px", fontWeight:600, lineHeight:1, fontVariantNumeric:"tabular-nums", color:"var(--text)" }}>
+                      <span style={{ fontSize:"calc(30px * var(--ts, 1))", fontWeight:600, lineHeight:1, fontVariantNumeric:"tabular-nums", color:"var(--text)" }}>
                         {usedToday}<span style={{ marginLeft:"8px", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>of {DAILY_LIMIT} used</span>
                       </span>
                       <span style={{ fontSize:`${13*ts}px`, fontWeight:700, color:leftColor }}>{remaining} left today</span>
@@ -162,32 +150,6 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
 
             <div className="nurp-col">
               <section className="card" style={secStyle}>
-                <span className="lbl">Text Size</span>
-                <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"repeat(5,minmax(0,1fr))", gap:"8px" }}>
-                  {TEXT_SIZES.map(({ label, value, name: sizeName }) => {
-                    const active = Math.abs(textSize - value) < 0.05;
-                    return (
-                      <button key={label} className="pc" aria-pressed={active} onClick={() => pickSize(value)}
-                        style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"3px", height:"58px", borderRadius:"12px",
-                          border:`1px solid ${active ? "var(--gold)" : "var(--line)"}`,
-                          background: active ? "var(--goldFill)" : "var(--chip)",
-                          color: active ? "var(--onGold)" : "var(--gold)",
-                          fontFamily:"inherit", cursor:"pointer" }}>
-                        <span style={{ fontSize:"15px", fontWeight:700, lineHeight:1 }}>{label}</span>
-                        <span style={{ fontSize:"10.5px", fontWeight:500, opacity:0.8 }}>{sizeName}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ marginTop:"16px", padding:"16px 18px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)" }}>
-                  <div style={{ fontSize:`${14*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--text)" }}>This is how text will look across chat, Quran, Hadith and all pages.</div>
-                </div>
-                <div style={{ marginTop:"12px", fontSize:"12px", fontWeight:500, color:"var(--faint)" }}>
-                  Applies to chat, Quran, Hadith and all pages.
-                </div>
-              </section>
-
-              <section className="card" style={secStyle}>
                 <span className="lbl">Daily Reminders</span>
                 {pushStatus === "granted" ? (
                   <>
@@ -212,7 +174,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                     </div>
                     <button className="pc" onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
                       style={{ marginTop:"16px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", width:"100%", height:"44px", borderRadius:"12px",
-                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:"14px", fontWeight:700,
+                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700,
                         cursor: pushStatus === "loading" ? "default" : "pointer" }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>
                       {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
@@ -240,7 +202,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Profile</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 40px" }}>
@@ -282,33 +244,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
           <div style={{ color:goldDim, fontSize:`${12*textSize}px`, marginTop:"8px" }}>{ageLabel}</div>
         )}
 
-        {divider}
 
-        {/* Text size — 5 levels */}
-        <span style={labelStyle}>Text Size</span>
-        <div style={{ display:"flex", gap:"6px" }}>
-          {TEXT_SIZES.map(({ label, value, name: sizeName }) => {
-            const active = Math.abs(textSize - value) < 0.05;
-            return (
-              <button key={label}
-                onClick={() => {
-                  setTextSize(value);
-                  localStorage.setItem(KEYS.TEXT_SIZE, String(value));
-                }}
-                style={{ flex:1, padding:"10px 4px", borderRadius:"12px",
-                  background: active ? "var(--goldFill)" : goldFaint,
-                  border:`1px solid ${active ? gold : goldBdr}`,
-                  color: active ? "var(--onGold)" : goldDim,
-                  cursor:"pointer", fontFamily:"Nunito,sans-serif", transition:"all 0.2s" }}>
-                <div style={{ fontSize:`${active ? 16*value : 14}px`, fontWeight:800, marginBottom:"3px" }}>{label}</div>
-                <div style={{ fontSize:"9px", opacity:0.75 }}>{sizeName}</div>
-              </button>
-            );
-          })}
-        </div>
-        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"10px" }}>
-          Applies to chat, Quran, Hadith and all pages.
-        </div>
 
         {divider}
 

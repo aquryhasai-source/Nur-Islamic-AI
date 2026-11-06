@@ -31,7 +31,7 @@ export default function LegalLayout({ title, updated, toc, textSize = 1, childre
       <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
         <div className="nur-ph-title">
           <span>{title}</span>
-          <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>{updated}</span></span>
+          <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>{updated}</span></span>
         </div>
       </div>
       <div ref={scrollRef} onScroll={onScroll} className="msgscroll" style={{ flex:1, overflowY:"auto", padding:"16px 40px 56px" }}>

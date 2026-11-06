@@ -5,7 +5,7 @@ import { trackEvent, trackError } from "./analytics.js";
 import ChatTab            from "./ChatTab.jsx";
 import QuranTab           from "./QuranTab.jsx";
 import HadithTab          from "./HadithTab.jsx";
-import Sidebar            from "./Sidebar.jsx";
+import Sidebar, { snapTextSize } from "./Sidebar.jsx";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import GetProPage         from "./GetProPage.jsx";
 import SupportPage        from "./SupportPage.jsx";
@@ -49,13 +49,13 @@ const InstallModal = ({ onClose, isIOS }) => {
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)", zIndex:200, display:"flex", alignItems:"flex-end", padding:"20px" }}>
       <div style={{ background:"var(--pop)", border:"1px solid var(--line)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto", color:"var(--text)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
-          <span style={{ color:"var(--gold)", fontSize:"17px", fontWeight:700 }}>Add to Home Screen</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"22px", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontSize:"calc(17px * var(--ts, 1))", fontWeight:700 }}>Add to Home Screen</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"calc(22px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
         </div>
         {steps.map(([n,a,b]) => (
           <div key={n} style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px" }}>
-            <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:"rgba(201,168,76,0.12)", border:"1px solid rgba(201,168,76,0.3)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", fontSize:"13px", fontWeight:700, flexShrink:0 }}>{n}</div>
-            <span style={{ color:"rgba(255,255,255,0.65)", fontSize:"14px" }}>{a} <strong style={{ color:"var(--gold)" }}>{b}</strong></span>
+            <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:"rgba(201,168,76,0.12)", border:"1px solid rgba(201,168,76,0.3)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", fontSize:"calc(13px * var(--ts, 1))", fontWeight:700, flexShrink:0 }}>{n}</div>
+            <span style={{ color:"rgba(255,255,255,0.65)", fontSize:"calc(14px * var(--ts, 1))" }}>{a} <strong style={{ color:"var(--gold)" }}>{b}</strong></span>
           </div>
         ))}
       </div>
@@ -89,7 +89,12 @@ export default function NurApp() {
   const [showFriday,   setShowFriday]   = useState(false);
   const [bookmarks,    setBookmarks]    = useState(() => getBookmarks());
   const [lightMode,    setLightMode]    = useState(() => localStorage.getItem(KEYS.THEME) === "light");
-  const [textSize,     setTextSize]     = useState(() => parseFloat(localStorage.getItem(KEYS.TEXT_SIZE) || "1"));
+  const [textSize,     setTextSize]     = useState(() => snapTextSize(localStorage.getItem(KEYS.TEXT_SIZE) || "1"));
+  // One CSS variable carries the text scale so class-based text (sidebar, labels, tabs, reader) follows it too
+  useEffect(() => {
+    document.documentElement.style.setProperty("--ts", String(textSize));
+    try { localStorage.setItem(KEYS.TEXT_SIZE, String(textSize)); } catch {}
+  }, [textSize]);
   const installPrompt   = useRef(null);
   const sessionTracked  = useRef(false);
   // Swipe-from-left-edge to open sidebar (works on page overlays too)
@@ -333,7 +338,7 @@ export default function NurApp() {
         isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)}
         unlocked={unlocked} lightMode={lightMode} setLightMode={setLightMode}
         onNavigate={navigateTo}
-        textSize={textSize}
+        textSize={textSize} setTextSize={setTextSize}
         docked={docked} activePage={activePage}
       />
 
@@ -410,8 +415,8 @@ export default function NurApp() {
             onTouchStart={onPageTouchStart}
             onTouchEnd={onPageTouchEnd}
           >
-            <div className="nur-page" style={{ width:"100%", maxWidth: docked ? "1280px" : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
-              {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining} setTextSize={setTextSize}/>}
+            <div className="nur-page" style={{ width:"100%", maxWidth: docked ? (activePage === "bookmarks" ? "2000px" : ["prayers","qibla","calendar","recent","getpro"].includes(activePage) ? "1560px" : "1280px") : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
+              {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining}/>}
               {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
               {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}
               {activePage === "calendar" && <IslamicCalendarPage {...pageProps}/>}

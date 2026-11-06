@@ -147,8 +147,9 @@ function sunLine(name, lon, zone) {
 }
 
 const CSS = `
-.qw-grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start;width:100%;max-width:1120px;margin:0 auto}
+.qw-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:20px;align-items:start;width:100%;max-width:1480px;margin:0 auto}
 .qw-cities{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:20px}
+@media (min-width:1800px){.qw-cities{grid-template-columns:repeat(3,minmax(0,1fr));column-gap:16px}}
 @media (max-width:1359px){.qw-cities{grid-template-columns:minmax(0,1fr)}}
 @media (max-width:1199px){.qw-grid{grid-template-columns:minmax(0,1fr)}}
 `;

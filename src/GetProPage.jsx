@@ -76,21 +76,51 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
     return (
       <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
         <style>{`
-          .gp-grid{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);gap:22px;align-items:start}
+          .gp-grid{display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:20px;align-items:start}
+          .gp-left{order:1}.gp-right{order:2}
+          @media (max-width:1279px){.gp-grid{grid-template-columns:minmax(0,1fr)}.gp-right{order:0}}
           .gp-cta:hover{filter:brightness(1.05)}
           .gp-in:focus{border-color:var(--gold)!important}
         `}</style>
         <div className="nur-ph" style={{ display:"flex", alignItems:"center", padding:"12px 16px", flexShrink:0 }}>
           <div className="nur-ph-title" style={{ flex:1 }}>
             <span>Get Pro</span>
-            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>One payment. No ads, no daily limit, yours for good.</span></span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>One payment. No ads, no daily limit, yours for good.</span></span>
           </div>
         </div>
 
         <div className="msgscroll" style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
           <div className="gp-grid">
+            <div className="gp-left" style={{ display:"flex", flexDirection:"column", gap:"20px", minWidth:0 }}>
+              <div>
+                <span className="lbl">What Pro gives you</span>
+                <div style={{ marginTop:"12px", display:"grid", gridTemplateColumns:"repeat(2,minmax(0,1fr))", gap:"16px" }}>
+                  {PRO_FEATURES.map((f, i) => (
+                    <div key={i} className="card" style={{ display:"flex", alignItems:"flex-start", gap:"14px", padding:"18px 20px" }}>
+                      <span style={{ flex:"none", display:"flex", alignItems:"center", justifyContent:"center", width:"38px", height:"38px", borderRadius:"11px", border:"1px solid var(--lineSoft)", background:goldFaint, color:gold }}><Ico d={f.svg} size={20}/></span>
+                      <span style={{ fontSize:fs(14.5), fontWeight:600, lineHeight:1.5, color:textClr }}>{f.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <section className="card" style={{ overflow:"hidden" }}>
+                <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 140px 140px", alignItems:"center", height:"46px", background:"var(--panel2)" }}>
+                  <span className="lbl" style={{ padding:"0 20px" }}>Compare</span>
+                  <span className="lbl" style={{ textAlign:"center" }}>Free</span>
+                  <span className="lbl" style={{ textAlign:"center", color:gold }}>Pro</span>
+                </div>
+                {[["Prayer times, Qibla, calendar","Included","Included"],["Quran, Hadith, bookmarks","Included","Included"],["AI reflections","Daily limit","Unlimited"],["Advertising","Shown","None"]].map(([a,b,c]) => (
+                  <div key={a} style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 140px 140px", alignItems:"center", minHeight:"46px", borderTop:"1px solid var(--lineSoft)", fontSize:fs(13.5) }}>
+                    <span style={{ padding:"0 20px", fontWeight:600 }}>{a}</span>
+                    <span style={{ textAlign:"center", color:textDim }}>{b}</span>
+                    <span style={{ textAlign:"center", fontWeight:700, color:gold }}>{c}</span>
+                  </div>
+                ))}
+              </section>
+            </div>
+            <div className="gp-right" style={{ display:"flex", flexDirection:"column", gap:"20px", minWidth:0 }}>
             {/* Hero */}
-            <section className="card" style={{ padding:"40px 40px 34px", textAlign:"center", background:"linear-gradient(160deg, var(--active), var(--panel))" }}>
+            <section className="card" style={{ padding:"34px 32px 30px", textAlign:"center", background:"linear-gradient(160deg, var(--active), var(--panel))" }}>
               <div style={{ fontFamily:"var(--font-head)", fontWeight:700, fontSize:fs(46), lineHeight:1, letterSpacing:"8px", color:gold, paddingLeft:"8px" }}>NŪR</div>
               <div className="lbl" style={{ marginTop:"12px", letterSpacing:"3px" }}>Ad‑Free · Unlimited</div>
               <div lang="ar" dir="rtl" style={{ marginTop:"26px", fontFamily:"var(--font-ar)", fontSize:fs(36), lineHeight:1.5, color:gold }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
@@ -108,20 +138,6 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
                 One-time payment · Yours forever
               </div>
             </section>
-
-            <div style={{ display:"flex", flexDirection:"column", gap:"22px", minWidth:0 }}>
-              {/* Features */}
-              <section className="card" style={{ padding:"22px 24px" }}>
-                <span className="lbl">What Pro gives you</span>
-                <div style={{ marginTop:"14px", display:"flex", flexDirection:"column", gap:"10px" }}>
-                  {PRO_FEATURES.map((f, i) => (
-                    <div key={i} style={{ display:"flex", alignItems:"center", gap:"14px", padding:"12px 14px", borderRadius:"13px", border:"1px solid var(--lineSoft)", background:"var(--panel)" }}>
-                      <span style={{ flex:"none", display:"flex", alignItems:"center", justifyContent:"center", width:"36px", height:"36px", borderRadius:"11px", border:"1px solid var(--lineSoft)", background:goldFaint, color:gold }}><Ico d={f.svg} size={19}/></span>
-                      <span style={{ fontSize:fs(14), fontWeight:600, lineHeight:1.4, color:textClr }}>{f.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
 
               {/* Code entry */}
               <section className="card" style={{ padding:"22px 24px" }}>
@@ -166,7 +182,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Get Pro</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"0 0 40px" }}>
@@ -200,7 +216,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             {PRO_FEATURES.map((f, i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"18px", flexShrink:0 }}>
+                <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(18px * var(--ts, 1))", flexShrink:0 }}>
                   {f.icon}
                 </div>
                 <span style={{ color:textClr, fontSize:`${14*textSize}px`, fontWeight:600 }}>{f.label}</span>

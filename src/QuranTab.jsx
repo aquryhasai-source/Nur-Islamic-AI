@@ -63,13 +63,13 @@ function SurahList({ onSelect, lightMode, textSize }) {
             onMouseEnter={e => e.currentTarget.style.background = "var(--chip)"}
             onMouseLeave={e => e.currentTarget.style.background = cardBg}>
             <div style={{ width:"34px", height:"34px", borderRadius:"50%", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{s.number}</span>
+              <span style={{ color:gold, fontSize:"calc(11px * var(--ts, 1))", fontWeight:700 }}>{s.number}</span>
             </div>
             <div style={{ flex:1 }}>
               <div style={{ color:textClr, fontSize:`${14 * textSize}px`, fontWeight:600 }}>{s.englishName}</div>
               <div style={{ color:goldDim, fontSize:`${11 * textSize}px`, marginTop:"2px" }}>{s.englishNameTranslation} · {s.numberOfAyahs} ayahs · {s.revelationType}</div>
             </div>
-            <div style={{ color:gold, fontSize:"17px", fontFamily:"var(--font-ar)", opacity:0.8 }}>{s.name}</div>
+            <div style={{ color:gold, fontSize:"calc(17px * var(--ts, 1))", fontFamily:"var(--font-ar)", opacity:0.8 }}>{s.name}</div>
           </button>
         ))}
       </div>
@@ -156,14 +156,14 @@ function SurahReader({ surahNumber, translation, onBack, initialAyah, bookmarks,
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
                   <div className="rd-num" style={{ width:"26px", height:"26px", borderRadius:"50%", background:"var(--chip)", border:`1px solid ${"var(--line)"}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                    <span style={{ color:gold, fontSize:"11px", fontWeight:700 }}>{ayah.numberInSurah}</span>
+                    <span style={{ color:gold, fontSize:"calc(11px * var(--ts, 1))", fontWeight:700 }}>{ayah.numberInSurah}</span>
                   </div>
                   <span className="rd-num" style={{ color:goldDim, fontSize:`${11 * textSize}px` }}>{meta.number}:{ayah.numberInSurah}</span>
                 </div>
                 <button
                   onClick={() => onToggleBookmark(bmItem)}
                   title={saved ? "Remove bookmark" : "Bookmark this ayah"}
-                  style={{ background:"none", border:"none", fontSize:"16px", cursor:"pointer", padding:"2px 6px", lineHeight:1, opacity: saved ? 1 : 0.4, transition:"opacity 0.2s", position:"relative" }}
+                  style={{ background:"none", border:"none", fontSize:"calc(16px * var(--ts, 1))", cursor:"pointer", padding:"2px 6px", lineHeight:1, opacity: saved ? 1 : 0.4, transition:"opacity 0.2s", position:"relative" }}
                   onMouseEnter={e => e.currentTarget.style.opacity = "1"}
                   onMouseLeave={e => e.currentTarget.style.opacity = saved ? "1" : "0.4"}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/></svg>
@@ -294,11 +294,11 @@ function QuranTabBody({ initialNav, bookmarks = [], onToggleBookmark, unlocked, 
             placeholder="Search by keyword…"
             style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif" }}/>
           {searchQuery && (
-            <button onClick={doSearch} style={{ background:"var(--active)", border:"none", borderRadius:"6px", padding:"3px 10px", color:gold, fontSize:"12px", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:600 }}>Go</button>
+            <button onClick={doSearch} style={{ background:"var(--active)", border:"none", borderRadius:"6px", padding:"3px 10px", color:gold, fontSize:"calc(12px * var(--ts, 1))", cursor:"pointer", fontFamily:"Nunito,sans-serif", fontWeight:600 }}>Go</button>
           )}
         </div>
         <select value={translation} onChange={e => setTranslation(e.target.value)}
-          style={{ background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"8px", color:gold, padding:"6px 8px", fontSize:"12px", outline:"none", fontFamily:"Nunito,sans-serif", cursor:"pointer", flexShrink:0 }}>
+          style={{ background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"8px", color:gold, padding:"6px 8px", fontSize:"calc(12px * var(--ts, 1))", outline:"none", fontFamily:"Nunito,sans-serif", cursor:"pointer", flexShrink:0 }}>
           {QURAN_TRANSLATIONS.map(t => <option key={t.code} value={t.code}>{t.label}</option>)}
         </select>
       </div>

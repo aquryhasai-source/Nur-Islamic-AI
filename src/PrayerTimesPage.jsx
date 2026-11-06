@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo } from "./utils.js";
+import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo, getWeekTimes } from "./utils.js";
 import { syncPrayerLocation, subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
@@ -225,6 +225,7 @@ export default function PrayerTimesPage({
   const [currentKey,     setCurrentKey]     = useState(null);
   const [countdown,      setCountdown]      = useState("--:--:--");
   const [selectedPrayer, setSelectedPrayer] = useState(null);
+  const [week,           setWeek]           = useState([]);
   const firedAlarms = useRef(new Set());
   const docked = useMedia(DOCK_QUERY);
 
@@ -286,6 +287,14 @@ export default function PrayerTimesPage({
       else { setLocError("Enter your city to load prayer times."); setShowCityInput(true); setLoading(false); }
     }
   }, []);
+
+  // Website view only: the next 7 days for the "Week ahead" table
+  useEffect(() => {
+    if (!docked || !locCoords) return;
+    let live = true;
+    getWeekTimes(locCoords).then(w => { if (live) setWeek(w); });
+    return () => { live = false; };
+  }, [docked, locCoords]);
 
   // ── Tick: current/next/countdown every second ─────────────────────────────────
   useEffect(() => {
@@ -422,7 +431,7 @@ export default function PrayerTimesPage({
             width:"20px", height:"20px", borderRadius:"50%", flexShrink:0,
             border:`2px solid ${dotBrd}`, background:dotBg,
             display:"flex", alignItems:"center", justifyContent:"center",
-            fontSize:"10px", fontWeight:800, color:dotClr,
+            fontSize:"calc(10px * var(--ts, 1))", fontWeight:800, color:dotClr,
           }}>
             {isPast ? "✓" : ""}
           </div>
@@ -453,7 +462,7 @@ export default function PrayerTimesPage({
             width:"36px", height:"36px", borderRadius:"10px", flexShrink:0,
             background: isCurrent ? `color-mix(in srgb,${gold} 16%,transparent)` : goldFaint,
             border:`1px solid ${goldBdr}`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"17px",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(17px * var(--ts, 1))",
           }}>
             {prayer.icon}
           </div>
@@ -495,7 +504,7 @@ export default function PrayerTimesPage({
               fontSize:`${14*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums",
               display:"flex", alignItems:"center", gap:"4px",
             }}>
-              <span style={{ fontSize:"12px", opacity:0.6 }}>🕐</span>
+              <span style={{ fontSize:"calc(12px * var(--ts, 1))", opacity:0.6 }}>🕐</span>
               {time || "--:--"}
             </div>
             {prayer.hasAlarm && (
@@ -541,19 +550,19 @@ export default function PrayerTimesPage({
   const dkCur     = to12(prayerTimes?.[currentKey]);
   const dkNxt     = to12(prayerTimes?.[nextKey]);
   const dkDetTime = to12(prayerTimes?.[dkDetail.key]);
-  const dkLbl     = { fontSize:"10.5px", fontWeight:600, letterSpacing:"1.6px", color:"var(--faint)", textTransform:"uppercase" };
+  const dkLbl     = { fontSize:"calc(10.5px * var(--ts, 1))", fontWeight:600, letterSpacing:"1.6px", color:"var(--faint)", textTransform:"uppercase" };
   const dkBox     = (sz, r) => ({ width:sz, height:sz, borderRadius:r, border:"1px solid var(--line)", background:"var(--chip)", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--gold)", flex:"none" });
 
   const dockedBody = prayerTimes ? (
-    <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 360px", gap:"24px", alignItems:"start" }}>
+    <div style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 380px", gap:"20px", alignItems:"start" }}>
 
       {/* ── Left column ── */}
       <div style={{ display:"flex", flexDirection:"column", gap:"22px", minWidth:0 }}>
         {permError && (
-          <div style={{ background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", borderRadius:"12px", padding:"10px 14px", fontSize:"12.5px", color:"var(--warn)" }}>{permError}</div>
+          <div style={{ background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", borderRadius:"12px", padding:"10px 14px", fontSize:"calc(12.5px * var(--ts, 1))", color:"var(--warn)" }}>{permError}</div>
         )}
         {notifPerm === "denied" && !permError && (
-          <div style={{ border:"1px solid var(--lineSoft)", background:"var(--panel)", borderRadius:"12px", padding:"10px 14px", fontSize:"12px", color:"var(--warn)" }}>Notifications blocked — alarms won't fire in the background.</div>
+          <div style={{ border:"1px solid var(--lineSoft)", background:"var(--panel)", borderRadius:"12px", padding:"10px 14px", fontSize:"calc(12px * var(--ts, 1))", color:"var(--warn)" }}>Notifications blocked — alarms won't fire in the background.</div>
         )}
 
         {/* Hero */}
@@ -563,36 +572,36 @@ export default function PrayerTimesPage({
               <div style={{ display:"flex", alignItems:"center", gap:"16px" }}>
                 <span style={dkBox("58px","13px")}><DkIco d={DK_ICON[currentKey] || DK_ICON.Dhuhr} size={30}/></span>
                 <div>
-                  <span style={{ display:"inline-block", fontSize:"9.5px", fontWeight:700, letterSpacing:"1px", color:"var(--onGold)", background:"var(--goldFill)", padding:"3px 9px", borderRadius:"7px" }}>CURRENT PRAYER</span>
+                  <span style={{ display:"inline-block", fontSize:"calc(9.5px * var(--ts, 1))", fontWeight:700, letterSpacing:"1px", color:"var(--onGold)", background:"var(--goldFill)", padding:"3px 9px", borderRadius:"7px" }}>CURRENT PRAYER</span>
                   <div style={{ marginTop:"4px" }}>
-                    <span className="h2" style={{ fontSize:"32px", lineHeight:1, color:"var(--text)" }}>{currentPrayer?.label || "—"}</span>
-                    <span lang="ar" style={{ marginLeft:"12px", fontFamily:"var(--font-ar)", fontSize:"21px", color:"var(--gold)" }}>{currentPrayer?.arabic}</span>
+                    <span className="h2" style={{ fontSize:"calc(32px * var(--ts, 1))", lineHeight:1, color:"var(--text)" }}>{currentPrayer?.label || "—"}</span>
+                    <span lang="ar" style={{ marginLeft:"12px", fontFamily:"var(--font-ar)", fontSize:"calc(21px * var(--ts, 1))", color:"var(--gold)" }}>{currentPrayer?.arabic}</span>
                   </div>
                 </div>
               </div>
               <div style={{ marginTop:"18px", display:"flex", alignItems:"baseline", gap:"10px", color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>
-                <span style={{ fontSize:"44px", fontWeight:700, letterSpacing:"2px", lineHeight:1 }}>{dkCur.t}</span>
-                <span style={{ fontSize:"18px", fontWeight:700 }}>{dkCur.ap}</span>
+                <span style={{ fontSize:"calc(44px * var(--ts, 1))", fontWeight:700, letterSpacing:"2px", lineHeight:1 }}>{dkCur.t}</span>
+                <span style={{ fontSize:"calc(18px * var(--ts, 1))", fontWeight:700 }}>{dkCur.ap}</span>
               </div>
             </div>
             {nextPrayer && (
               <div style={{ padding:"18px 20px", borderRadius:"14px", border:"1px solid var(--line)", background:"var(--panel2)", display:"flex", flexDirection:"column", justifyContent:"center" }}>
                 <div style={dkLbl}>Next prayer</div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:"10px", marginTop:"6px" }}>
-                  <span className="h2" style={{ fontSize:"22px", color:"var(--text)" }}>{nextPrayer.label}</span>
-                  <span lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"19px", color:"var(--gold)" }}>{nextPrayer.arabic}</span>
-                  <span style={{ marginLeft:"auto", fontSize:"14px", fontWeight:700, color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{dkNxt.t} {dkNxt.ap}</span>
+                  <span className="h2" style={{ fontSize:"calc(22px * var(--ts, 1))", color:"var(--text)" }}>{nextPrayer.label}</span>
+                  <span lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(19px * var(--ts, 1))", color:"var(--gold)" }}>{nextPrayer.arabic}</span>
+                  <span style={{ marginLeft:"auto", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{dkNxt.t} {dkNxt.ap}</span>
                 </div>
                 <div style={{ height:"1px", background:"var(--lineSoft)", margin:"14px 0" }}/>
                 <div style={dkLbl}>Remaining</div>
-                <div style={{ marginTop:"2px", fontSize:"26px", fontWeight:600, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"1px" }}>{countdown}</div>
+                <div style={{ marginTop:"2px", fontSize:"calc(26px * var(--ts, 1))", fontWeight:600, color:"var(--gold)", fontVariantNumeric:"tabular-nums", letterSpacing:"1px" }}>{countdown}</div>
               </div>
             )}
           </div>
           <div style={{ marginTop:"22px", height:"6px", borderRadius:"3px", background:"var(--lineSoft)", overflow:"hidden" }}>
             <div style={{ height:"100%", width:`${progress.toFixed(1)}%`, borderRadius:"3px", background:"var(--gold)", opacity:.9, transition:"width 1s linear" }}/>
           </div>
-          <div style={{ marginTop:"8px", fontSize:"12px", fontWeight:600, color:"var(--faint)" }}>{Math.round(progress)}% of {currentPrayer?.label} time has passed</div>
+          <div style={{ marginTop:"8px", fontSize:"calc(12px * var(--ts, 1))", fontWeight:600, color:"var(--faint)" }}>{Math.round(progress)}% of {currentPrayer?.label} time has passed</div>
         </section>
 
         {/* Prayer cards */}
@@ -610,17 +619,17 @@ export default function PrayerTimesPage({
                   style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:0, borderRadius:"inherit", background:"transparent", cursor:"pointer" }}/>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px" }}>
                   <span style={dkBox("40px","12px")}><DkIco d={DK_ICON[prayer.key]} size={21}/></span>
-                  <span style={{ fontSize:"10.5px", fontWeight:700, letterSpacing:".6px", padding:"3px 9px", borderRadius:"7px", color: st === "past" ? "var(--green)" : isCur ? "var(--onGold)" : "var(--faint)", background: isCur ? "var(--goldFill)" : "transparent" }}>{chip}</span>
+                  <span style={{ fontSize:"calc(10.5px * var(--ts, 1))", fontWeight:700, letterSpacing:".6px", padding:"3px 9px", borderRadius:"7px", color: st === "past" ? "var(--green)" : isCur ? "var(--onGold)" : "var(--faint)", background: isCur ? "var(--goldFill)" : "transparent" }}>{chip}</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"baseline", gap:"10px", marginTop:"12px" }}>
-                  <span className="h2" style={{ fontSize:"21px", lineHeight:1.1, color: isCur ? "var(--gold)" : "var(--text)" }}>{prayer.label}</span>
-                  <span lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"17px", color:"var(--gold)" }}>{prayer.arabic}</span>
+                  <span className="h2" style={{ fontSize:"calc(21px * var(--ts, 1))", lineHeight:1.1, color: isCur ? "var(--gold)" : "var(--text)" }}>{prayer.label}</span>
+                  <span lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(17px * var(--ts, 1))", color:"var(--gold)" }}>{prayer.arabic}</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", marginTop:"8px" }}>
-                  <span style={{ whiteSpace:"nowrap", fontSize:"17px", fontWeight:600, fontVariantNumeric:"tabular-nums", color: isCur ? "var(--gold)" : "var(--text)" }}>{t12.t}<span style={{ fontSize:"11.5px", fontWeight:700, color:"var(--faint)" }}> {t12.ap}</span></span>
+                  <span style={{ whiteSpace:"nowrap", fontSize:"calc(17px * var(--ts, 1))", fontWeight:600, fontVariantNumeric:"tabular-nums", color: isCur ? "var(--gold)" : "var(--text)" }}>{t12.t}<span style={{ fontSize:"calc(11.5px * var(--ts, 1))", fontWeight:700, color:"var(--faint)" }}> {t12.ap}</span></span>
                   {prayer.hasAlarm && (
                     <button onClick={() => toggleAlarm(prayer.key)} aria-pressed={on} aria-label={`${on ? "Disable" : "Enable"} ${prayer.label} alarm`}
-                      style={{ position:"relative", zIndex:2, display:"flex", alignItems:"center", gap:"5px", height:"28px", padding:"0 9px", borderRadius:"9px", border:`1px solid ${on ? "var(--gold)" : "var(--line)"}`, background: on ? "var(--chip)" : "transparent", color: on ? "var(--gold)" : "var(--faint)", fontFamily:"inherit", fontSize:"10.5px", fontWeight:700, cursor:"pointer" }}>
+                      style={{ position:"relative", zIndex:2, display:"flex", alignItems:"center", gap:"5px", height:"28px", padding:"0 9px", borderRadius:"9px", border:`1px solid ${on ? "var(--gold)" : "var(--line)"}`, background: on ? "var(--chip)" : "transparent", color: on ? "var(--gold)" : "var(--faint)", fontFamily:"inherit", fontSize:"calc(10.5px * var(--ts, 1))", fontWeight:700, cursor:"pointer" }}>
                       <DkIco d={on ? DK_BELL : DK_BELLOFF} size={14} sw={2}/>{on ? "On" : "Off"}
                     </button>
                   )}
@@ -629,6 +638,32 @@ export default function PrayerTimesPage({
             );
           })}
         </div>
+
+        {/* Week ahead */}
+        {week.length > 1 && (
+          <section className="card" style={{ padding:"20px 24px 8px" }}>
+            <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between" }}>
+              <span style={dkLbl}>Week ahead</span>
+              <span style={{ fontSize:"11.5px", fontWeight:500, color:"var(--faint)" }}>Same location and method as today</span>
+            </div>
+            <div style={{ overflowX:"auto" }}><div role="table" aria-label="Prayer times for the next seven days" style={{ marginTop:"12px", minWidth:`${96 + week.length*88}px`, fontSize:"13px", fontWeight:600, fontVariantNumeric:"tabular-nums" }}>
+              <div role="row" style={{ display:"grid", gridTemplateColumns:`96px repeat(${week.length},minmax(0,1fr))`, alignItems:"center", height:"36px", color:"var(--faint)", fontSize:"11.5px", letterSpacing:".6px" }}>
+                <span role="columnheader"/>
+                {week.map((d, i) => (
+                  <span role="columnheader" key={i} style={{ padding:"6px 10px", borderRadius:"8px", background: i === 0 ? "var(--active)" : "transparent", color: i === 0 ? "var(--gold)" : "var(--faint)", fontWeight: i === 0 ? 700 : 600 }}>
+                    {d.date.toLocaleDateString("en-GB", { weekday:"short", day:"numeric" })}
+                  </span>
+                ))}
+              </div>
+              {["Fajr","Dhuhr","Asr","Maghrib","Isha"].map(k => (
+                <div role="row" key={k} style={{ display:"grid", gridTemplateColumns:`96px repeat(${week.length},minmax(0,1fr))`, alignItems:"center", height:"42px", borderTop:"1px solid var(--lineSoft)" }}>
+                  <span role="rowheader" style={{ color:"var(--dim)" }}>{k}</span>
+                  {week.map((d, i) => { const t = to12(d.timings[k]); return <span role="cell" key={i} style={{ padding:"0 10px", whiteSpace:"nowrap" }}>{t.t} {t.ap}</span>; })}
+                </div>
+              ))}
+            </div></div>
+          </section>
+        )}
       </div>
 
       {/* ── Right column ── */}
@@ -638,27 +673,27 @@ export default function PrayerTimesPage({
             <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
               <span style={dkBox("46px","10px")}><DkIco d={DK_ICON[dkDetail.key]} size={24}/></span>
               <div>
-                <div className="h2" style={{ fontSize:"22px", lineHeight:1.1, color:"var(--text)" }}>{dkDetail.label}</div>
-                <div lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"18px", color:"var(--gold)" }}>{dkDetail.arabic}</div>
+                <div className="h2" style={{ fontSize:"calc(22px * var(--ts, 1))", lineHeight:1.1, color:"var(--text)" }}>{dkDetail.label}</div>
+                <div lang="ar" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(18px * var(--ts, 1))", color:"var(--gold)" }}>{dkDetail.arabic}</div>
               </div>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={dkLbl}>Time</div>
-              <div style={{ fontSize:"17px", fontWeight:600, color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{dkDetTime.t} {dkDetTime.ap}</div>
+              <div style={{ fontSize:"calc(17px * var(--ts, 1))", fontWeight:600, color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{dkDetTime.t} {dkDetTime.ap}</div>
             </div>
           </div>
           <div style={{ height:"1px", background:"var(--lineSoft)", margin:"16px 0" }}/>
           <div style={dkLbl}>Rakats</div>
-          <div style={{ marginTop:"4px", fontSize:"14px", fontWeight:700, color:"var(--gold)" }}>{dkInfo?.rakats}</div>
+          <div style={{ marginTop:"4px", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>{dkInfo?.rakats}</div>
           <div style={{ ...dkLbl, marginTop:"14px" }}>About</div>
-          <div style={{ marginTop:"4px", fontSize:"13.5px", lineHeight:1.7, fontWeight:500, color:"var(--dim)" }}>{dkInfo?.desc}</div>
+          <div style={{ marginTop:"4px", fontSize:"calc(13.5px * var(--ts, 1))", lineHeight:1.7, fontWeight:500, color:"var(--dim)" }}>{dkInfo?.desc}</div>
           {dkLines.length > 0 && (
             <div style={{ marginTop:"16px", padding:"14px 16px", borderRadius:"11px", border:"1px solid var(--line)", background:"var(--chip)" }}>
               <div style={dkLbl}>Recommended adhkar</div>
               {dkLines.map((line, i) => i === 0 ? (
-                <div key={i} lang="ar" dir="rtl" style={{ marginTop:"8px", fontFamily:"var(--font-ar)", fontSize:"22px", lineHeight:1.6, color:"var(--gold)" }}>{line}</div>
+                <div key={i} lang="ar" dir="rtl" style={{ marginTop:"8px", fontFamily:"var(--font-ar)", fontSize:"calc(22px * var(--ts, 1))", lineHeight:1.6, color:"var(--gold)" }}>{line}</div>
               ) : (
-                <div key={i} style={{ marginTop:"4px", fontSize:"12.5px", lineHeight:1.6, fontWeight:600, color:"var(--text)" }}>{line}</div>
+                <div key={i} style={{ marginTop:"4px", fontSize:"calc(12.5px * var(--ts, 1))", lineHeight:1.6, fontWeight:600, color:"var(--text)" }}>{line}</div>
               ))}
             </div>
           )}
@@ -670,8 +705,8 @@ export default function PrayerTimesPage({
               <div key={lab} className="card" style={{ display:"flex", alignItems:"center", gap:"12px", padding:"14px 16px", borderRadius:"13px" }}>
                 <span style={{ color:"var(--gold)" }}><DkIco d={ic} size={26}/></span>
                 <div>
-                  <div style={{ fontSize:"10.5px", fontWeight:600, color:"var(--faint)" }}>{lab}</div>
-                  <div style={{ fontSize:"14.5px", fontWeight:700, fontVariantNumeric:"tabular-nums" }}>{to12(val).t} {to12(val).ap}</div>
+                  <div style={{ fontSize:"calc(10.5px * var(--ts, 1))", fontWeight:600, color:"var(--faint)" }}>{lab}</div>
+                  <div style={{ fontSize:"calc(14.5px * var(--ts, 1))", fontWeight:700, fontVariantNumeric:"tabular-nums" }}>{to12(val).t} {to12(val).ap}</div>
                 </div>
               </div>
             ))}
@@ -681,17 +716,17 @@ export default function PrayerTimesPage({
         <section className="card" style={{ display:"flex", gap:"12px", padding:"16px 18px", borderRadius:"13px", background:"var(--chip)" }}>
           <span style={{ flex:"none", color:"var(--gold)", marginTop:"1px" }}><DkIco d={DK_QUOTE} size={22}/></span>
           <div>
-            <div style={{ fontSize:"13.5px", lineHeight:1.65, fontWeight:600 }}>{insight.text}</div>
-            <div style={{ marginTop:"6px", fontSize:"11.5px", fontWeight:700, color:"var(--gold)" }}>— {insight.source}</div>
+            <div style={{ fontSize:"calc(13.5px * var(--ts, 1))", lineHeight:1.65, fontWeight:600 }}>{insight.text}</div>
+            <div style={{ marginTop:"6px", fontSize:"calc(11.5px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>— {insight.source}</div>
           </div>
         </section>
 
-        <button className="cb" onClick={() => navigateTo("qibla")} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", height:"56px", padding:"0 18px", borderRadius:"13px", border:"1px solid var(--line)", background:"var(--panel)", color:"var(--text)", fontFamily:"inherit", fontSize:"13.5px", fontWeight:700, cursor:"pointer" }}>
+        <button className="cb" onClick={() => navigateTo("qibla")} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", height:"56px", padding:"0 18px", borderRadius:"13px", border:"1px solid var(--line)", background:"var(--panel)", color:"var(--text)", fontFamily:"inherit", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700, cursor:"pointer" }}>
           <span style={{ display:"flex", alignItems:"center", gap:"12px" }}><span style={{ color:"var(--gold)", display:"flex" }}><DkIco d={DK_COMPASS} size={22}/></span>Open Qibla Direction</span>
           <span style={{ color:"var(--faint)", display:"flex" }}><DkIco d={DK_CHEV} size={18} sw={2}/></span>
         </button>
 
-        <div style={{ display:"flex", gap:"10px", padding:"12px 14px", borderRadius:"11px", border:"1px solid var(--lineSoft)", background:"var(--panel)", fontSize:"11.5px", lineHeight:1.55, fontWeight:600, color:"var(--faint)" }}>
+        <div style={{ display:"flex", gap:"10px", padding:"12px 14px", borderRadius:"11px", border:"1px solid var(--lineSoft)", background:"var(--panel)", fontSize:"calc(11.5px * var(--ts, 1))", lineHeight:1.55, fontWeight:600, color:"var(--faint)" }}>
           <span style={{ flex:"none", display:"flex" }}><DkIco d={DK_INFO} size={16}/></span>
           Browser alarms work best when the app is installed to your Home Screen.
         </div>
@@ -735,7 +770,7 @@ export default function PrayerTimesPage({
             {docked ? <><DkIco d={DK_PIN} size={16}/>Change city</> : "📍"}
           </button>
           <button className="nur-ph-back" onClick={onBack}
-            style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", padding:"4px", flexShrink:0 }}>
+            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", padding:"4px", flexShrink:0 }}>
             ←
           </button>
         </div>
@@ -796,7 +831,7 @@ export default function PrayerTimesPage({
 
               {/* Current prayer name row */}
               <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"14px" }}>
-                <span style={{ fontSize:"30px", lineHeight:1 }}>{currentPrayer?.icon || "🕌"}</span>
+                <span style={{ fontSize:"calc(30px * var(--ts, 1))", lineHeight:1 }}>{currentPrayer?.icon || "🕌"}</span>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
                     <span style={{ color:textClr, fontSize:`${21*textSize}px`, fontWeight:800 }}>
@@ -879,7 +914,7 @@ export default function PrayerTimesPage({
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 {prayerTimes.Sunrise && (
                   <div style={{ flex:1, display:"flex", alignItems:"center", gap:"10px", padding:"12px 14px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                    <span style={{ fontSize:"22px", flexShrink:0 }}>🌅</span>
+                    <span style={{ fontSize:"calc(22px * var(--ts, 1))", flexShrink:0 }}>🌅</span>
                     <div>
                       <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"2px" }}>Sunrise</div>
                       <div style={{ color:textClr, fontSize:`${15*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>
@@ -890,7 +925,7 @@ export default function PrayerTimesPage({
                 )}
                 {prayerTimes.Sunset && (
                   <div style={{ flex:1, display:"flex", alignItems:"center", gap:"10px", padding:"12px 14px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                    <span style={{ fontSize:"22px", flexShrink:0 }}>🌇</span>
+                    <span style={{ fontSize:"calc(22px * var(--ts, 1))", flexShrink:0 }}>🌇</span>
                     <div>
                       <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"2px" }}>Sunset</div>
                       <div style={{ color:textClr, fontSize:`${15*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>
@@ -909,7 +944,7 @@ export default function PrayerTimesPage({
               padding:"14px 16px", marginBottom:"16px",
             }}>
               <div style={{ display:"flex", gap:"10px", alignItems:"flex-start" }}>
-                <span style={{ fontSize:"22px", lineHeight:1, flexShrink:0, marginTop:"2px", color:gold }}>❝</span>
+                <span style={{ fontSize:"calc(22px * var(--ts, 1))", lineHeight:1, flexShrink:0, marginTop:"2px", color:gold }}>❝</span>
                 <div>
                   <div style={{ color:textClr, fontSize:`${13*textSize}px`, lineHeight:1.6, marginBottom:"6px" }}>
                     {insight.text}
@@ -970,10 +1005,10 @@ export default function PrayerTimesPage({
               cursor:"pointer", marginBottom:"12px",
             }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                <span style={{ fontSize:"20px" }}>🧭</span>
+                <span style={{ fontSize:"calc(20px * var(--ts, 1))" }}>🧭</span>
                 <span style={{ fontSize:`${14*textSize}px`, fontWeight:600, color:textClr }}>Open Qibla Compass</span>
               </div>
-              <span style={{ color:goldDim, fontSize:"18px", lineHeight:1 }}>›</span>
+              <span style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", lineHeight:1 }}>›</span>
             </button>
 
             {/* ── PWA hint ───────────────────────────────────────────────── */}
@@ -983,7 +1018,7 @@ export default function PrayerTimesPage({
               background: "var(--panel)",
               border:`1px solid ${goldBdr}`, borderRadius:"12px",
             }}>
-              <span style={{ fontSize:"14px", flexShrink:0, marginTop:"1px" }}>ℹ️</span>
+              <span style={{ fontSize:"calc(14px * var(--ts, 1))", flexShrink:0, marginTop:"1px" }}>ℹ️</span>
               <span style={{ color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.55 }}>
                 Browser alarms work best when the app is installed to your Home Screen.
               </span>
@@ -1020,7 +1055,7 @@ export default function PrayerTimesPage({
             {/* Prayer header */}
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"18px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`color-mix(in srgb,${gold} 13%,transparent)`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", flexShrink:0 }}>
+                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`color-mix(in srgb,${gold} 13%,transparent)`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(26px * var(--ts, 1))", flexShrink:0 }}>
                   {selectedPrayer.icon}
                 </div>
                 <div>

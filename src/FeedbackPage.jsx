@@ -85,7 +85,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
         <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
           <div className="nur-ph-title">
             <span>Feedback &amp; Support</span>
-            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>Found a bug? Have an idea? Tell us what you think.</span></span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>Found a bug? Have an idea? Tell us what you think.</span></span>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
@@ -189,7 +189,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Feedback & Support</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 48px" }}>
@@ -212,7 +212,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
                   border: `1px solid ${active ? gold : goldBdr}`,
                   color: active ? "var(--onGold)" : goldDim,
                   transition:"all 0.2s" }}>
-                <div style={{ fontSize:"18px", marginBottom:"4px" }}>{cat.icon}</div>
+                <div style={{ fontSize:"calc(18px * var(--ts, 1))", marginBottom:"4px" }}>{cat.icon}</div>
                 <div style={{ fontSize:`${12 * textSize}px`, fontWeight:700 }}>{cat.label}</div>
               </button>
             );
@@ -285,14 +285,14 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
 
         <a href="https://instagram.com/nur.islamic.ai" target="_blank" rel="noreferrer"
           style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", textDecoration:"none" }}>
-          <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", flexShrink:0 }}>
+          <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(20px * var(--ts, 1))", flexShrink:0 }}>
             📸
           </div>
           <div>
             <div style={{ color:textClr, fontSize:`${13 * textSize}px`, fontWeight:700 }}>Instagram</div>
             <div style={{ color:goldDim, fontSize:`${11*textSize}px` }}>@nur.islamic.ai · DM us anytime</div>
           </div>
-          <div style={{ color:goldDim, fontSize:"18px", marginLeft:"auto" }}>›</div>
+          <div style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", marginLeft:"auto" }}>›</div>
         </a>
 
         <div style={{ textAlign:"center", marginTop:"32px", color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.8 }}>

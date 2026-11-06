@@ -141,30 +141,30 @@ html.nur-light .hl{color:#8A5F0E}
 
 /* ── Page headers (restyled in place; markup/handlers unchanged) ─────────── */
 .nur-ph{background:var(--head)!important;border-bottom:1px solid var(--lineSoft)!important}
-.nur-ph-title{font-family:var(--font-head)!important;font-size:21px!important;font-weight:700!important;letter-spacing:.02em!important;color:var(--gold)!important}
+.nur-ph-title{font-family:var(--font-head)!important;font-size:calc(21px*var(--ts,1))!important;font-weight:700!important;letter-spacing:.02em!important;color:var(--gold)!important}
 .nur-docked .nur-ph{padding:30px 40px 6px!important;background:transparent!important;border-bottom:0!important;backdrop-filter:none!important;position:static!important}
 .nur-docked .nur-ph-menu,.nur-docked .nur-ph-back{display:none!important}
-.nur-docked .nur-ph-title{position:static!important;transform:none!important;flex:1!important;text-align:left!important;font-size:30px!important;line-height:1.1!important;letter-spacing:.012em!important}
+.nur-docked .nur-ph-title{position:static!important;transform:none!important;flex:1!important;text-align:left!important;font-size:calc(30px*var(--ts,1))!important;line-height:1.1!important;letter-spacing:.012em!important}
 .nur-docked .nur-page{padding:0 24px}
 /* Website view: pages sit on the shell gradient instead of painting their own solid block */
 .nur-docked .nur-page>div{background:transparent!important}
 
 /* ── Shared card/label classes ───────────────────────────────────────────── */
 .card{border:1px solid var(--lineSoft);background:var(--panel);border-radius:16px}
-.lbl{font-size:10.5px;font-weight:600;letter-spacing:1.6px;color:var(--faint);text-transform:uppercase}
-.h1{font-family:var(--font-head);font-weight:700;font-size:30px;line-height:1.1;color:var(--gold)}
+.lbl{font-size:calc(10.5px*var(--ts,1));font-weight:600;letter-spacing:1.6px;color:var(--faint);text-transform:uppercase}
+.h1{font-family:var(--font-head);font-weight:700;font-size:calc(30px*var(--ts,1));line-height:1.1;color:var(--gold)}
 .h2{font-family:var(--font-head);font-weight:700;color:var(--gold)}
 .pc{transition:background .15s,border-color .15s}
 .pc:hover{background:var(--hover)!important}
 
 /* ── Sidebar ─────────────────────────────────────────────────────────────── */
-.nb{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);font-family:var(--font-body);font-size:14px;font-weight:600;text-align:left;cursor:pointer;transition:background .15s}
+.nb{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:1px solid transparent;border-radius:12px;background:transparent;color:var(--text);font-family:var(--font-body);font-size:calc(14px*var(--ts,1));font-weight:600;text-align:left;cursor:pointer;transition:background .15s}
 .nb:hover{background:var(--hover)}
 .nb[aria-current="page"]{background:var(--active);border-color:var(--line)}
-.nb.sub{padding:8px 12px 8px 40px;font-size:13.5px;font-weight:500;color:var(--dim)}
+.nb.sub{padding:8px 12px 8px 40px;font-size:calc(13.5px*var(--ts,1));font-weight:500;color:var(--dim)}
 .nb.sub[aria-current="page"]{color:var(--text);font-weight:700}
 .nb .ico{width:18px;height:18px;flex:none;color:var(--gold)}
-.sg{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:14px;font-weight:700;text-align:left;cursor:pointer}
+.sg{display:flex;align-items:center;gap:12px;width:100%;padding:10px 12px;border:0;border-radius:12px;background:transparent;color:var(--text);font-size:calc(14px*var(--ts,1));font-weight:700;text-align:left;cursor:pointer}
 .sg:hover{background:var(--hover)}
 .sg .chev{margin-left:auto;transition:transform .2s;color:var(--faint)}
 .sg[aria-expanded="true"] .chev{transform:rotate(90deg)}
@@ -172,7 +172,7 @@ html.nur-light .hl{color:#8A5F0E}
 /* ── Tab strip (browser-style tabs fixed at the top of Home) ────────────── */
 .tabstrip{position:relative;display:flex;align-items:flex-end;gap:0;padding:10px 16px 0;min-height:52px;flex-shrink:0}
 .tabstrip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--lineSoft)}
-.tab{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;width:196px;height:42px;padding:0 16px;border:0;border-radius:12px 12px 0 0;background:transparent;color:var(--dim);font-family:var(--font-head);font-size:20px;font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:background .15s}
+.tab{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:10px;width:196px;height:42px;padding:0 16px;border:0;border-radius:12px 12px 0 0;background:transparent;color:var(--dim);font-family:var(--font-head);font-size:calc(20px*var(--ts,1));font-weight:700;letter-spacing:1.5px;cursor:pointer;transition:background .15s}
 .tab:hover{background:var(--hover)}
 .tab[aria-selected="true"]{background:var(--pane);color:var(--gold);box-shadow:0 -1px 0 var(--lineSoft) inset, 1px 0 0 var(--lineSoft) inset, -1px 0 0 var(--lineSoft) inset;z-index:2}
 .tab[aria-selected="true"]::before,.tab[aria-selected="true"]::after{content:"";position:absolute;bottom:0;width:12px;height:12px;pointer-events:none}
@@ -181,27 +181,37 @@ html.nur-light .hl{color:#8A5F0E}
 .tab svg{width:19px;height:19px}
 @media (max-width:1023px){
   .tabstrip{padding:8px 8px 0;min-height:48px}
-  .tab{flex:1;width:auto;height:40px;font-size:18px;gap:7px;letter-spacing:1px;padding:0 6px}
+  .tab{flex:1;width:auto;height:40px;font-size:calc(18px*var(--ts,1));gap:7px;letter-spacing:1px;padding:0 6px}
   .tab svg{width:16px;height:16px}
 }
 .nur-tabbody{flex:1;min-height:0;display:flex;flex-direction:column;position:relative;z-index:1;background:var(--pane)}
 
 /* ── Reading options (applied to Quran + Hadith text) ────────────────────── */
 .rd-card{margin-bottom:var(--rd-gap,18px)!important}
-.rd-ar{font-family:var(--rd-ar-font,'Amiri',serif)!important;font-size:var(--rd-ar-size,32px)!important;line-height:var(--rd-ar-lh,2.1)!important;color:var(--text)!important}
-.rd-tr{font-family:var(--rd-en-font,'Nunito',sans-serif)!important;font-size:var(--rd-en-size,16px)!important;line-height:var(--rd-en-lh,1.8)!important}
+.rd-ar{font-family:var(--rd-ar-font,'Amiri',serif)!important;font-size:calc(var(--rd-ar-size,32px)*var(--ts,1))!important;line-height:var(--rd-ar-lh,2.1)!important;color:var(--text)!important}
+.rd-tr{font-family:var(--rd-en-font,'Nunito',sans-serif)!important;font-size:calc(var(--rd-en-size,16px)*var(--ts,1))!important;line-height:var(--rd-en-lh,1.8)!important}
 .rd-wrap{max-width:var(--rd-width,760px);margin-left:auto;margin-right:auto;width:100%}
 .rd-hide-ar .rd-ar{display:none!important}
 .rd-hide-tr .rd-tr{display:none!important}
 .rd-hide-num .rd-num{display:none!important}
 @media (max-width:1023px){
-  .rd-ar{font-size:calc(var(--rd-ar-size,32px) * .72)!important}
-  .rd-tr{font-size:calc(var(--rd-en-size,16px) * .88)!important}
+  .rd-ar{font-size:calc(var(--rd-ar-size,32px) * .72 * var(--ts,1))!important}
+  .rd-tr{font-size:calc(var(--rd-en-size,16px) * .88 * var(--ts,1))!important}
 }
 .nur-ph-title>:first-child{font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;letter-spacing:inherit!important;color:inherit!important}
-.nur-ph-title>:not(:first-child){font-family:var(--font-body)!important;font-size:12px!important;font-weight:500!important;letter-spacing:0!important;color:var(--dim)!important}
+.nur-ph-title>:not(:first-child){font-family:var(--font-body)!important;font-size:calc(12px*var(--ts,1))!important;font-weight:500!important;letter-spacing:0!important;color:var(--dim)!important}
 :root{--mapBg:#08123A;--land:rgba(255,255,255,.1);--coast:rgba(255,255,255,.22);--ring:rgba(255,255,255,.24)}
 html.nur-light{--mapBg:#E4ECF7;--land:#FFFFFF;--coast:rgba(21,27,74,.3);--ring:rgba(21,27,74,.3)}
 @keyframes flow{to{stroke-dashoffset:-22}}
 .flow{stroke-dasharray:5 6;animation:flow 2.2s linear infinite}
 @media (prefers-reduced-motion:reduce){.flow{animation:none}}
+
+/* ── Text-size slider (sidebar) ─────────────────────────────────────────── */
+.ts-wrap{position:relative;flex:1;height:22px;display:flex;align-items:center}
+.ts-wrap::before{content:"";position:absolute;left:50%;top:3px;bottom:3px;width:2px;margin-left:-1px;border-radius:1px;background:var(--line)}
+.ts-range{-webkit-appearance:none;appearance:none;position:relative;width:100%;height:22px;margin:0;background:transparent;cursor:pointer}
+.ts-range:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+.ts-range::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--lineSoft)}
+.ts-range::-moz-range-track{height:4px;border-radius:2px;background:var(--lineSoft)}
+.ts-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--gold);border:2px solid var(--bgSolid,#0A0F33);box-shadow:0 0 0 1px var(--line)}
+.ts-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--bgSolid,#0A0F33);box-shadow:0 0 0 1px var(--line)}

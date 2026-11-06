@@ -13,7 +13,7 @@ function Loader({ label }) {
       <div style={{ display:"flex", gap:"6px" }}>
         {[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"var(--gold)", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}
       </div>
-      {label && <div style={{ color:"rgba(201,168,76,0.45)", fontSize:"12px", letterSpacing:"1px" }}>{label}</div>}
+      {label && <div style={{ color:"rgba(201,168,76,0.45)", fontSize:"calc(12px * var(--ts, 1))", letterSpacing:"1px" }}>{label}</div>}
     </div>
   );
 }
@@ -37,17 +37,17 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
       className="rd-card"
       style={{ marginBottom:"10px", background:isTarget ? `color-mix(in srgb,${gold} 8%,transparent)` : cardBg, border:`1px solid ${isTarget ? gold : goldBdr}`, borderRadius:"12px", overflow:"hidden", transition:"all 0.3s" }}>
       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 14px", borderBottom:`1px solid ${goldBdr}`, background:cardHdr }}>
-        <span className="rd-num" style={{ color:gold, fontSize:"12px", fontWeight:700 }}>{h.collectionLabel} · #{h.hadithnumber}</span>
+        <span className="rd-num" style={{ color:gold, fontSize:"calc(12px * var(--ts, 1))", fontWeight:700 }}>{h.collectionLabel} · #{h.hadithnumber}</span>
         <div style={{ display:"flex", alignItems:"center", gap:"4px" }}>
           <button
             onClick={() => onToggleBookmark(bmItem)}
-            style={{ background:"none", border:"none", fontSize:"15px", cursor:"pointer", lineHeight:1, padding:"2px 6px", opacity: saved ? 1 : 0.35, transition:"opacity 0.2s" }}
+            style={{ background:"none", border:"none", fontSize:"calc(15px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"2px 6px", opacity: saved ? 1 : 0.35, transition:"opacity 0.2s" }}
             onMouseEnter={e => e.currentTarget.style.opacity = "1"}
             onMouseLeave={e => e.currentTarget.style.opacity = saved ? "1" : "0.35"}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/></svg>
           </button>
           <button onClick={() => setExpanded(expanded === i ? null : i)}
-            style={{ background:"none", border:"none", color:goldDim, fontSize:"18px", cursor:"pointer", lineHeight:1 }}>
+            style={{ background:"none", border:"none", color:goldDim, fontSize:"calc(18px * var(--ts, 1))", cursor:"pointer", lineHeight:1 }}>
             {expanded === i ? "−" : "+"}
           </button>
         </div>
@@ -55,7 +55,7 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
       <div className="rd-tr" style={{ padding:"12px 14px", color:textClr }}>
         {expanded === i || h.text.length <= 200 ? h.text : `${h.text.slice(0, 200)}…`}
         {h.text.length > 200 && expanded !== i && (
-          <button onClick={() => setExpanded(i)} style={{ background:"none", border:"none", color:gold, fontSize:"12px", cursor:"pointer", padding:"0 0 0 6px", fontFamily:"Nunito,sans-serif" }}>Read more</button>
+          <button onClick={() => setExpanded(i)} style={{ background:"none", border:"none", color:gold, fontSize:"calc(12px * var(--ts, 1))", cursor:"pointer", padding:"0 0 0 6px", fontFamily:"Nunito,sans-serif" }}>Read more</button>
         )}
       </div>
     </div>
@@ -214,13 +214,13 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
       <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
         <SearchBar {...searchBarProps}/>
         <div style={{ flex:1, overflowY:"auto", padding:"12px 16px 20px" }}>
-          <div style={{ color:goldDim, fontSize:"10px", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"12px" }}>Collections</div>
+          <div style={{ color:goldDim, fontSize:"calc(10px * var(--ts, 1))", letterSpacing:"2px", textTransform:"uppercase", marginBottom:"12px" }}>Collections</div>
           {HADITH_COLLECTIONS.map(coll => (
             <button key={coll.id} onClick={() => openBook(coll)}
               style={{ display:"flex", alignItems:"center", gap:"14px", width:"100%", padding:"14px 16px", marginBottom:"8px", background:cardBg, border:`1px solid ${cardBdr}`, borderRadius:"14px", cursor:"pointer", textAlign:"left", transition:"all 0.15s" }}
               onMouseEnter={e => { e.currentTarget.style.background = "var(--chip)"; }}
               onMouseLeave={e => { e.currentTarget.style.background = cardBg; }}>
-              <div style={{ width:"42px", height:"42px", borderRadius:"12px", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:"20px" }}>
+              <div style={{ width:"42px", height:"42px", borderRadius:"12px", background:"var(--chip)", border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:"calc(20px * var(--ts, 1))" }}>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M12 6.5C10.5 5 8 4.5 4.5 4.5v13c3.5 0 6 .5 7.5 2 1.5-1.5 4-2 7.5-2v-13c-3.5 0-6 .5-7.5 2Z"/><path d="M12 6.5v13"/></svg>
               </div>
               <div style={{ flex:1 }}>
@@ -228,7 +228,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
                 <div style={{ color:gold, fontSize:`${12 * textSize}px`, fontFamily:"var(--font-ar)", marginTop:"2px" }}>{coll.arabic}</div>
                 <div style={{ color:textDim, fontSize:`${11 * textSize}px`, marginTop:"2px" }}>{coll.hadiths?.toLocaleString()} hadiths</div>
               </div>
-              <div style={{ color:goldDim, fontSize:"20px" }}>›</div>
+              <div style={{ color:goldDim, fontSize:"calc(20px * var(--ts, 1))" }}>›</div>
             </button>
           ))}
         </div>
@@ -244,7 +244,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
           <button onClick={() => setView("books")} style={{ background:"none", border:"none", color:gold, cursor:"pointer", padding:"2px" }}><BackIcon/></button>
           <div>
             <div style={{ color:gold, fontSize:`${14 * textSize}px`, fontWeight:700 }}>{activeBook?.label}</div>
-            <div style={{ color:goldDim, fontSize:"11px" }}>{total} hadiths</div>
+            <div style={{ color:goldDim, fontSize:"calc(11px * var(--ts, 1))" }}>{total} hadiths</div>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"12px 16px 20px" }}>

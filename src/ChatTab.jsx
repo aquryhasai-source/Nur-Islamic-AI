@@ -39,15 +39,15 @@ function RamadanBanner({ prayerTimes, hijriDay, onRequestCity }) {
   return (
     <div style={{ background:"linear-gradient(135deg,color-mix(in srgb,var(--gold) 12%,transparent),color-mix(in srgb,var(--gold) 4%,transparent))", borderBottom:"1px solid color-mix(in srgb,var(--gold) 20%,transparent)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-        <span style={{ fontSize:"18px" }}>☽</span>
+        <span style={{ fontSize:"calc(18px * var(--ts, 1))" }}>☽</span>
         <div>
-          <div style={{ color:"var(--gold)", fontSize:"12px", fontWeight:700 }}>Ramadan Mubarak · Day {hijriDay}</div>
+          <div style={{ color:"var(--gold)", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700 }}>Ramadan Mubarak · Day {hijriDay}</div>
           {prayerTimes
-            ? <div style={{ color:"color-mix(in srgb,var(--gold) 65%,transparent)", fontSize:"12px", marginTop:"2px" }}>{info.label} <strong style={{ color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{info.time}</strong></div>
-            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 55%,transparent)", fontSize:"11px", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"Nunito,sans-serif" }}>Add city for Iftar times</button>}
+            ? <div style={{ color:"color-mix(in srgb,var(--gold) 65%,transparent)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"2px" }}>{info.label} <strong style={{ color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{info.time}</strong></div>
+            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 55%,transparent)", fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"Nunito,sans-serif" }}>Add city for Iftar times</button>}
         </div>
       </div>
-      {prayerTimes && <div style={{ color:"color-mix(in srgb,var(--gold) 35%,transparent)", fontSize:"10px", textAlign:"right", lineHeight:1.8 }}>Suhoor: {prayerTimes.Fajr}<br/>Iftar: {prayerTimes.Maghrib}</div>}
+      {prayerTimes && <div style={{ color:"color-mix(in srgb,var(--gold) 35%,transparent)", fontSize:"calc(10px * var(--ts, 1))", textAlign:"right", lineHeight:1.8 }}>Suhoor: {prayerTimes.Fajr}<br/>Iftar: {prayerTimes.Maghrib}</div>}
     </div>
   );
 }
@@ -67,14 +67,14 @@ function CityModal({ onSubmit, onClose }) {
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
       <div style={{ background:"var(--pop)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"340px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
-          <span style={{ color:"var(--gold)", fontSize:"16px", fontWeight:700 }}>Your City</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"20px", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontSize:"calc(16px * var(--ts, 1))", fontWeight:700 }}>Your City</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
         </div>
         <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key==="Enter" && submit()} placeholder="e.g. Istanbul, Karachi, London"
-          style={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"15px", outline:"none", fontFamily:"Nunito,sans-serif", marginBottom:"12px", boxSizing:"border-box" }}/>
-        {err && <div style={{ color:"var(--warn)", fontSize:"13px", marginBottom:"10px" }}>{err}</div>}
+          style={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"calc(15px * var(--ts, 1))", outline:"none", fontFamily:"Nunito,sans-serif", marginBottom:"12px", boxSizing:"border-box" }}/>
+        {err && <div style={{ color:"var(--warn)", fontSize:"calc(13px * var(--ts, 1))", marginBottom:"10px" }}>{err}</div>}
         <button onClick={submit} disabled={!city.trim() || busy}
-          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"14px", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
+          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
           {busy ? "Finding times…" : "Get Prayer Times"}
         </button>
       </div>
@@ -86,8 +86,8 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
   const gold = "var(--gold)";
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"48px 28px", textAlign:"center", flex:1 }}>
-      <div style={{ fontSize:"28px", color:gold, fontFamily:"var(--font-ar)", marginBottom:"8px" }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
-      <div style={{ color:"var(--line)", fontSize:"11px", letterSpacing:"1.5px", marginBottom:"24px" }}>"Seeking knowledge is an obligation" — Ibn Mājah</div>
+      <div style={{ fontSize:"calc(28px * var(--ts, 1))", color:gold, fontFamily:"var(--font-ar)", marginBottom:"8px" }}>طَلَبُ الْعِلْمِ فَرِيضَةٌ</div>
+      <div style={{ color:"var(--line)", fontSize:"calc(11px * var(--ts, 1))", letterSpacing:"1.5px", marginBottom:"24px" }}>"Seeking knowledge is an obligation" — Ibn Mājah</div>
       <div style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, lineHeight:1.8, marginBottom:"28px" }}>
         You've used all your free reflections today.
       </div>
@@ -95,7 +95,7 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
         style={{ padding:"15px 40px", borderRadius:"50px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${16 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif", boxShadow:`0 6px 28px ${"var(--line)"}` }}>
         🌙 Get Pro
       </button>
-      <div style={{ color:"var(--dim)", fontSize:"12px", marginTop:"12px" }}>or wait — resets at midnight</div>
+      <div style={{ color:"var(--dim)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"12px" }}>or wait — resets at midnight</div>
       {SADAQAH_ENABLED && (
         <button onClick={() => navigateTo("support")}
           style={{ marginTop:"22px", background:"none", border:"none", cursor:"pointer", color:gold, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", textDecoration:"underline", opacity:0.85 }}>
@@ -382,7 +382,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
             {isEmpty && (
               <div style={{ textAlign:"center", paddingTop:"24px" }}>
                 <div className="ar" style={{ fontSize:`${34 * textSize}px`, color:"var(--gold)", marginBottom:"6px", lineHeight:1.6 }}>بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ</div>
-                <div style={{ color:"var(--faint)", fontSize:"11px", fontWeight:600, letterSpacing:"1.6px", marginBottom:"26px" }}>IN THE NAME OF ALLAH, THE MOST GRACIOUS, THE MOST MERCIFUL</div>
+                <div style={{ color:"var(--faint)", fontSize:"calc(11px * var(--ts, 1))", fontWeight:600, letterSpacing:"1.6px", marginBottom:"26px" }}>IN THE NAME OF ALLAH, THE MOST GRACIOUS, THE MOST MERCIFUL</div>
                 {profile.name && <div style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, marginBottom:"14px" }}>As-salamu alaykum, <strong style={{ color:gold }}>{profile.name}</strong></div>}
                 <h2 className="hd" style={{ color:"var(--text)", fontSize:`${30 * textSize}px`, lineHeight:1.2, marginBottom:"10px" }}>What would you like to understand today?</h2>
                 <p style={{ color:"var(--dim)", fontSize:`${14 * textSize}px`, marginBottom:"26px", lineHeight:1.7 }}>
@@ -439,7 +439,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
               </div>
-              <div style={{ textAlign:"center", marginTop:"9px", color:"var(--faint)", fontSize:"12px", fontWeight:600 }}>
+              <div style={{ textAlign:"center", marginTop:"9px", color:"var(--faint)", fontSize:"calc(12px * var(--ts, 1))", fontWeight:600 }}>
                 Tap any citation to open it in the Quran or Hadith tab · Allahu A'lam
               </div>
             </div>
@@ -453,19 +453,19 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
       <aside className="nur-rightpane" aria-label="Citations" style={{ width:"340px" }}>
         <div style={{ flex:"none", padding:"20px 20px 0" }}>
           <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:"12px" }}>
-            <span className="hd" style={{ fontSize:"22px", color:"var(--gold)" }}>Citations</span>
-            <span style={{ fontSize:"11px", fontWeight:700, letterSpacing:"1.6px", color:"var(--faint)" }}>{citations.length} IN THIS CHAT</span>
+            <span className="hd" style={{ fontSize:"calc(22px * var(--ts, 1))", color:"var(--gold)" }}>Citations</span>
+            <span style={{ fontSize:"calc(11px * var(--ts, 1))", fontWeight:700, letterSpacing:"1.6px", color:"var(--faint)" }}>{citations.length} IN THIS CHAT</span>
           </div>
           <div role="tablist" style={{ display:"flex", gap:"4px", padding:"4px", borderRadius:"14px", background:"var(--panel2)", border:"1px solid var(--lineSoft)" }}>
             {[["quran","Quran"],["hadith","Hadith"]].map(([k,l]) => (
               <button key={k} role="tab" aria-selected={citeKind===k} className="cb" onClick={() => setCiteKind(k)}
-                style={{ flex:1, height:"36px", borderRadius:"10px", border:0, background: citeKind===k ? "var(--active)" : "transparent", color: citeKind===k ? "var(--gold)" : "var(--dim)", fontFamily:"var(--font-head)", fontSize:"16px", fontWeight:700, letterSpacing:"1.5px", cursor:"pointer" }}>{l}</button>
+                style={{ flex:1, height:"36px", borderRadius:"10px", border:0, background: citeKind===k ? "var(--active)" : "transparent", color: citeKind===k ? "var(--gold)" : "var(--dim)", fontFamily:"var(--font-head)", fontSize:"calc(16px * var(--ts, 1))", fontWeight:700, letterSpacing:"1.5px", cursor:"pointer" }}>{l}</button>
             ))}
           </div>
         </div>
         <div style={{ flex:1, minHeight:0, overflowY:"auto", padding:"16px 20px 20px", display:"flex", flexDirection:"column", gap:"10px" }}>
           {shown.length === 0 && (
-            <div style={{ color:"var(--faint)", fontSize:"13.5px", lineHeight:1.7, padding:"8px 2px" }}>
+            <div style={{ color:"var(--faint)", fontSize:"calc(13.5px * var(--ts, 1))", lineHeight:1.7, padding:"8px 2px" }}>
               {citations.length === 0
                 ? "Sources mentioned in the answers will be collected here, so you can open any of them in one tap."
                 : `No ${citeKind === "quran" ? "Quran" : "Hadith"} citations in this chat yet.`}
@@ -474,8 +474,8 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
           {shown.map(c => (
             <button key={c.key} className="pc" onClick={() => openCitation(c)}
               style={{ display:"flex", alignItems:"center", gap:"12px", padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)", textAlign:"left", cursor:"pointer" }}>
-              <span style={{ flex:1, fontSize:"13.5px", fontWeight:700 }}>{c.raw}</span>
-              <span style={{ fontSize:"12px", fontWeight:700, color:"var(--gold)" }}>Open →</span>
+              <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>{c.raw}</span>
+              <span style={{ fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>Open →</span>
             </button>
           ))}
         </div>

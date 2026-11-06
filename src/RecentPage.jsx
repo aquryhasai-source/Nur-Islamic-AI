@@ -117,10 +117,10 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
     const rsErr = importState === "error";
     const hiddenFile = <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>;
     const backupCard = (
-      <section className="card" style={{ padding:"22px 26px" }}>
+      <section className="card" style={{ padding:"20px 22px" }}>
         <span className="lbl">Backup &amp; Restore</span>
         <div style={{ marginTop:"12px", fontSize:`${13*ts}px`, fontWeight:500, lineHeight:1.65, color:"var(--dim)" }}>Chats are stored only on this device. Back up to your Drive, iCloud, or email to keep them safe.</div>
-        <div style={{ marginTop:"16px", display:"grid", gridTemplateColumns:"minmax(0,1fr) minmax(0,1fr)", gap:"12px" }}>
+        <div style={{ marginTop:"16px", display:"flex", flexDirection:"column", gap:"10px" }}>
           <button className="pc" onClick={handleBackup} disabled={bkBusy} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", height:"42px", borderRadius:"12px", border:`1px solid ${bkDone ? greenClr : goldBdr}`, background: bkDone ? "color-mix(in srgb,var(--green) 12%,transparent)" : goldFaint, color: bkDone ? greenClr : gold, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
             {ico(<><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></>)}
             {bkBusy ? "Preparing…" : bkDone ? "Backup saved" : backupState === "error" ? "Failed — try again" : "Save backup"}
@@ -138,14 +138,14 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
         <div className="nur-ph" style={{ display:"flex", alignItems:"center", flexShrink:0 }}>
           <div className="nur-ph-title">
             <span>Chat History</span>
-            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"13.5px", fontWeight:500, color:"var(--dim)" }}>{count}</span></span>
+            <span style={{ display:"block" }}><span style={{ display:"block", marginTop:"8px", fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:500, color:"var(--dim)" }}>{count}</span></span>
           </div>
         </div>
         <div style={{ flex:1, overflowY:"auto", padding:"16px 40px 48px" }}>
           {sessions.length === 0 ? (
             <section className="card" style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"72px 24px", textAlign:"center" }}>
               <span style={{ display:"flex", alignItems:"center", justifyContent:"center", width:"56px", height:"56px", borderRadius:"16px", border:"1px solid var(--lineSoft)", background:"var(--chip)", color:"var(--gold)" }}>{ico(<><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></>, 24)}</span>
-              <h2 className="h2" style={{ marginTop:"18px", fontSize:"26px" }}>No History Yet</h2>
+              <h2 className="h2" style={{ marginTop:"18px", fontSize:"calc(26px * var(--ts, 1))" }}>No History Yet</h2>
               <div style={{ marginTop:"8px", maxWidth:"360px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.7, color:"var(--dim)" }}>Your conversations will appear here. Start chatting!</div>
               <button className="pc" onClick={() => fileRef.current?.click()} style={{ marginTop:"22px", display:"flex", alignItems:"center", gap:"8px", height:"40px", padding:"0 18px", borderRadius:"12px", border:`1px solid ${goldBdr}`, background:goldFaint, color:gold, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>
                 {ico(<><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 14v4.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V14"/></>)}
@@ -155,8 +155,12 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
               {importMsg && <div style={{ marginTop:"10px", fontSize:`${12*ts}px`, color: rsErr ? dangerClr : greenClr }}>{importMsg}</div>}
             </section>
           ) : (
-            <div className="nurh-grid" style={{ display:"grid", gridTemplateColumns:"380px minmax(0,1fr)", gap:"22px", alignItems:"start" }}>
-              <div style={{ display:"flex", flexDirection:"column", gap:"14px", minWidth:0 }}>
+            <div className="nurh-grid" style={{ display:"grid", gap:"20px", alignItems:"start" }}>
+              <style>{`
+                .nurh-grid{grid-template-columns:380px minmax(0,1fr) 320px}
+                @media (max-width:1599px){.nurh-grid{grid-template-columns:380px minmax(0,1fr)}.nurh-list{grid-row:span 2}.nurh-rail{grid-column:2}}
+              `}</style>
+              <div className="nurh-list" style={{ display:"flex", flexDirection:"column", gap:"14px", minWidth:0 }}>
                 <label style={{ display:"flex", alignItems:"center", gap:"10px", height:"44px", padding:"0 14px", borderRadius:"13px", border:"1px solid var(--line)", background:"var(--panel2)", color:"var(--faint)" }}>
                   {ico(<><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></>, 17)}
                   <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Search conversations…" aria-label="Search conversations" style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:`${13.5*ts}px`, fontWeight:600 }}/>
@@ -177,21 +181,6 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                 ) : (
                   <div className="card" style={{ padding:"36px 20px", textAlign:"center", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>No conversations match "{search}"</div>
                 )}
-                {!search && (
-                  <div style={{ textAlign:"center" }}>
-                    {confirmAll ? (
-                      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"12px", padding:"16px", borderRadius:"14px", border:"1px solid var(--warn)", background:"var(--panel)" }}>
-                        <span style={{ fontSize:`${13.5*ts}px`, fontWeight:700, color:dangerClr }}>Delete all conversations?</span>
-                        <div style={{ display:"flex", gap:"10px" }}>
-                          <button className="pc" onClick={() => setConfirmAll(false)} style={{ height:"36px", padding:"0 20px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Cancel</button>
-                          <button className="pc" onClick={handleClearAll} style={{ height:"36px", padding:"0 20px", borderRadius:"10px", border:"1px solid var(--warn)", background:"transparent", color:dangerClr, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Delete all</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button className="pc" onClick={() => setConfirmAll(true)} style={{ padding:"8px 12px", border:0, borderRadius:"8px", background:"transparent", color:"var(--faint)", fontFamily:"inherit", fontSize:`${12.5*ts}px`, fontWeight:600, textDecoration:"underline", cursor:"pointer" }}>Delete all conversations</button>
-                    )}
-                  </div>
-                )}
               </div>
 
               <div style={{ display:"flex", flexDirection:"column", gap:"20px", minWidth:0 }}>
@@ -199,7 +188,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                   <section className="card" style={{ overflow:"hidden" }}>
                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"20px", padding:"22px 26px 18px", borderBottom:"1px solid var(--lineSoft)" }}>
                       <div style={{ minWidth:0 }}>
-                        <h2 className="h2" style={{ fontSize:"25px", lineHeight:1.2 }}>{sel.title}</h2>
+                        <h2 className="h2" style={{ fontSize:"calc(25px * var(--ts, 1))", lineHeight:1.2 }}>{sel.title}</h2>
                         <div style={{ marginTop:"6px", fontSize:`${12.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>{timeAgo(sel.updatedAt)} · {msgCount(sel)}</div>
                       </div>
                       <div style={{ flex:"none", display:"flex", gap:"10px" }}>
@@ -228,7 +217,35 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                 ) : (
                   <section className="card" style={{ padding:"70px 24px", textAlign:"center", fontSize:`${13.5*ts}px`, fontWeight:500, color:"var(--faint)" }}>Select a conversation to preview it here.</section>
                 )}
+              </div>
+
+              <div className="nurh-rail" style={{ display:"flex", flexDirection:"column", gap:"16px", minWidth:0 }}>
+                {sel && (
+                  <section className="card" style={{ padding:"20px 22px" }}>
+                    <span className="lbl">Details</span>
+                    <div style={{ marginTop:"12px", display:"flex", flexDirection:"column", gap:"10px", fontSize:`${13*ts}px` }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", gap:"12px" }}><span style={{ color:"var(--dim)" }}>Last active</span><span style={{ fontWeight:600 }}>{timeAgo(sel.updatedAt)}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", gap:"12px" }}><span style={{ color:"var(--dim)" }}>Messages</span><span style={{ fontWeight:600 }}>{msgs.length}</span></div>
+                      <div style={{ display:"flex", justifyContent:"space-between", gap:"12px" }}><span style={{ color:"var(--dim)" }}>Stored</span><span style={{ fontWeight:600 }}>On this device</span></div>
+                    </div>
+                  </section>
+                )}
                 {backupCard}
+                <section className="card" style={{ padding:"20px 22px" }}>
+                  <span className="lbl">Danger zone</span>
+                  <div style={{ marginTop:"10px", fontSize:`${13*ts}px`, fontWeight:500, lineHeight:1.65, color:"var(--dim)" }}>Remove every conversation from this device. This cannot be undone.</div>
+                  {confirmAll ? (
+                    <div style={{ marginTop:"14px", display:"flex", flexDirection:"column", gap:"10px", padding:"14px", borderRadius:"12px", border:"1px solid var(--warn)", background:"var(--panel)" }}>
+                      <span style={{ fontSize:`${13.5*ts}px`, fontWeight:700, color:dangerClr }}>Delete all conversations?</span>
+                      <div style={{ display:"flex", gap:"10px" }}>
+                        <button className="pc" onClick={() => setConfirmAll(false)} style={{ flex:1, height:"36px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Cancel</button>
+                        <button className="pc" onClick={handleClearAll} style={{ flex:1, height:"36px", borderRadius:"10px", border:"1px solid var(--warn)", background:"transparent", color:dangerClr, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Delete all</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button className="pc" onClick={() => setConfirmAll(true)} style={{ marginTop:"14px", width:"100%", height:"40px", borderRadius:"11px", border:"1px solid var(--warn)", background:"transparent", color:dangerClr, fontFamily:"inherit", fontSize:`${13*ts}px`, fontWeight:700, cursor:"pointer" }}>Delete all conversations</button>
+                  )}
+                </section>
               </div>
             </div>
           )}
@@ -251,7 +268,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
           <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Chat History</span>
           {sessions.length > 0 && <span style={{ color:goldDim, fontSize:`${11*textSize}px`, marginLeft:"8px" }}>{sessions.length} saved</span>}
         </div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
       </div>
 
       {/* Search bar */}
@@ -266,7 +283,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
               style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif" }}
             />
             {search && (
-              <button onClick={() => setSearch("")} style={{ background:"none", border:"none", color:goldDim, fontSize:"16px", cursor:"pointer", lineHeight:1 }}>✕</button>
+              <button onClick={() => setSearch("")} style={{ background:"none", border:"none", color:goldDim, fontSize:"calc(16px * var(--ts, 1))", cursor:"pointer", lineHeight:1 }}>✕</button>
             )}
           </div>
         </div>
@@ -276,7 +293,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
 
         {sessions.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", textAlign:"center" }}>
-            <div style={{ fontSize:"32px", marginBottom:"12px", opacity:0.4 }}>🕐</div>
+            <div style={{ fontSize:"calc(32px * var(--ts, 1))", marginBottom:"12px", opacity:0.4 }}>🕐</div>
             <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontWeight:700, marginBottom:"8px" }}>No History Yet</div>
             <div style={{ color:textDim, fontSize:`${13 * textSize}px`, lineHeight:1.8, marginBottom:"24px" }}>
               Your conversations will appear here. Start chatting!
@@ -323,7 +340,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                     <span style={{ color:textDim, fontSize:`${10*textSize}px` }}>{msgCount(session)}</span>
                   </div>
                 </div>
-                <div style={{ color:goldDim, fontSize:"18px", lineHeight:1, flexShrink:0, marginTop:"2px", transition:"transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                <div style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", lineHeight:1, flexShrink:0, marginTop:"2px", transition:"transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
                   ⌄
                 </div>
               </button>

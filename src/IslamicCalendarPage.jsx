@@ -137,7 +137,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   const navBtn = {
     width:"32px", height:"32px", borderRadius:"50%",
     background:goldFaint, border:`1px solid ${goldBdr}`, color:gold,
-    cursor:"pointer", fontSize:"18px", display:"flex",
+    cursor:"pointer", fontSize:"calc(18px * var(--ts, 1))", display:"flex",
     alignItems:"center", justifyContent:"center", outline:"none", flexShrink:0,
   };
 
@@ -214,7 +214,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   };
 
   // ── Website view body (matches the approved desktop design) ─────────────────
-  const dkLbl  = { fontSize:"10.5px", fontWeight:600, letterSpacing:"1.6px", color:"var(--faint)", textTransform:"uppercase" };
+  const dkLbl  = { fontSize:"calc(10.5px * var(--ts, 1))", fontWeight:600, letterSpacing:"1.6px", color:"var(--faint)", textTransform:"uppercase" };
   const dkSel  = sheet || (nextEvent ? nextEvent : null);
   const dkMonthEvents = viewMonth
     ? Object.entries(ISLAMIC_EVENTS).filter(([k])=>k.startsWith(`${viewMonth.month}-`)).map(([k,name])=>{
@@ -225,7 +225,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   const dkUpcoming = showAll ? upcoming : upcoming.slice(0,3);
 
   const dockedBody = (
-    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 360px",gap:"24px",alignItems:"start"}}>
+    <div style={{display:"grid",gridTemplateColumns:"minmax(0,1fr) 380px",gap:"20px",alignItems:"start"}}>
 
       {/* ── Left column ── */}
       <div style={{display:"flex",flexDirection:"column",gap:"22px",minWidth:0}}>
@@ -233,18 +233,18 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"16px",marginBottom:"18px"}}>
             <button onClick={()=>navMonth(-1)} aria-label="Previous month" style={{width:"40px",height:"40px",borderRadius:"50%",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><DkIco d={DK_PREV} size={20} sw={2}/></button>
             <div style={{textAlign:"center"}}>
-              <div className="h2" style={{fontSize:"28px",lineHeight:1.1}}>{viewMonth ? `${viewMonth.monthEn} ${viewMonth.year} AH` : "—"}</div>
-              {gregLabel&&<div style={{marginTop:"3px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{gregLabel}</div>}
+              <div className="h2" style={{fontSize:"calc(28px * var(--ts, 1))",lineHeight:1.1}}>{viewMonth ? `${viewMonth.monthEn} ${viewMonth.year} AH` : "—"}</div>
+              {gregLabel&&<div style={{marginTop:"3px",fontSize:"calc(12.5px * var(--ts, 1))",fontWeight:600,color:textDim}}>{gregLabel}</div>}
             </div>
             <button onClick={()=>navMonth(+1)} aria-label="Next month" style={{width:"40px",height:"40px",borderRadius:"50%",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer"}}><DkIco d={DK_NEXT} size={20} sw={2}/></button>
           </div>
 
           {calLoading ? (
-            <div style={{textAlign:"center",color:goldDim,padding:"60px 0",fontSize:"13px"}}>Loading calendar…</div>
+            <div style={{textAlign:"center",color:goldDim,padding:"60px 0",fontSize:"calc(13px * var(--ts, 1))"}}>Loading calendar…</div>
           ) : viewCal ? (
             <>
               <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:"6px",marginBottom:"6px"}}>
-                {WDAY_S.map((d,i)=>(<div key={d} style={{textAlign:"center",fontSize:"10.5px",fontWeight:700,letterSpacing:"1.4px",color:i===5?gold:textDim}}>{d}</div>))}
+                {WDAY_S.map((d,i)=>(<div key={d} style={{textAlign:"center",fontSize:"calc(10.5px * var(--ts, 1))",fontWeight:700,letterSpacing:"1.4px",color:i===5?gold:textDim}}>{d}</div>))}
               </div>
               <div style={{display:"grid",gridTemplateColumns:"repeat(7,minmax(0,1fr))",gap:"6px"}}>
                 {Array(firstDow).fill(null).map((_,i)=><div key={`g${i}`}/>)}
@@ -257,13 +257,13 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                   return (
                     <Cell key={idx}
                       {...(hasEvt?{onClick:()=>setSheet({key:evKey,name:hasEvt,away:-1,hDateStr:`${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]} ${cell.hYear} AH`,hShort:`${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]}`}),"aria-label":`${hasEvt}, ${cell.hDay} ${HIJRI_MONTHS[cell.hMonth-1]}`}:{})}
-                      style={{position:"relative",height:"70px",padding:"8px 9px",borderRadius:"11px",
+                      style={{position:"relative",height:"clamp(70px, 5.4vw, 96px)",padding:"8px 9px",borderRadius:"11px",
                         border:isToday?`1px solid ${gold}`:hasEvt?`1px solid ${goldBdr}`:`1px solid ${cellBdr}`,
                         background:isToday?"var(--goldFill)":hasEvt?goldHl:cellBg,
                         color:text,fontFamily:"inherit",textAlign:"left",cursor:hasEvt?"pointer":"default"}}>
-                      <span style={{display:"block",fontFamily:"var(--font-head)",fontSize:"21px",fontWeight:700,lineHeight:1,color:isToday?"var(--onGold)":isFri?gold:text}}>{cell.hDay}</span>
-                      <span style={{position:"absolute",right:"9px",top:"9px",fontSize:"10.5px",fontWeight:600,color:isToday?"var(--onGold)":textDim}}>{cell.gDay}</span>
-                      {hasEvt&&(<span style={{position:"absolute",left:"9px",bottom:"8px",display:"flex",alignItems:"center",gap:"5px",fontSize:"10px",fontWeight:700,color:isToday?"var(--onGold)":gold}}><span style={{width:"7px",height:"7px",borderRadius:"50%",background:isToday?"var(--onGold)":gold}}/>Event</span>)}
+                      <span style={{display:"block",fontFamily:"var(--font-head)",fontSize:"calc(21px * var(--ts, 1))",fontWeight:700,lineHeight:1,color:isToday?"var(--onGold)":isFri?gold:text}}>{cell.hDay}</span>
+                      <span style={{position:"absolute",right:"9px",top:"9px",fontSize:"calc(10.5px * var(--ts, 1))",fontWeight:600,color:isToday?"var(--onGold)":textDim}}>{cell.gDay}</span>
+                      {hasEvt&&(<span style={{position:"absolute",left:"9px",bottom:"8px",display:"flex",alignItems:"center",gap:"5px",fontSize:"calc(10px * var(--ts, 1))",fontWeight:700,color:isToday?"var(--onGold)":gold}}><span style={{width:"7px",height:"7px",borderRadius:"50%",background:isToday?"var(--onGold)":gold}}/>Event</span>)}
                     </Cell>
                   );
                 })}
@@ -274,47 +274,69 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{marginTop:"16px",paddingTop:"14px",borderTop:`1px solid ${divider}`,display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
             <span style={dkLbl}>This month contains</span>
             {dkMonthEvents.length>0 ? dkMonthEvents.map(e=>(
-              <button key={e.key} className="cb" onClick={()=>setSheet(e)} style={{height:"30px",padding:"0 12px",borderRadius:"10px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"12px",fontWeight:700,cursor:"pointer"}}>{e.name} · {e.day}</button>
-            )) : (<span style={{fontSize:"12.5px",fontWeight:600,color:textDim}}>No major events this month</span>)}
+              <button key={e.key} className="cb" onClick={()=>setSheet(e)} style={{height:"30px",padding:"0 12px",borderRadius:"10px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"calc(12px * var(--ts, 1))",fontWeight:700,cursor:"pointer"}}>{e.name} · {e.day}</button>
+            )) : (<span style={{fontSize:"calc(12.5px * var(--ts, 1))",fontWeight:600,color:textDim}}>No major events this month</span>)}
           </div>
         </section>
 
+        {/* Coming up: the next four dates as cards */}
+        {upcoming.length>0&&(
+          <>
+            <div style={{display:"flex",alignItems:"baseline",justifyContent:"space-between",marginBottom:"-8px"}}>
+              <span style={dkLbl}>Coming up</span>
+              <span style={{fontSize:"calc(11.5px * var(--ts, 1))",color:"var(--faint)"}}>Dates can shift by a day with moon sighting</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(210px,1fr))",gap:"16px"}}>
+              {upcoming.slice(0,4).map(ev=>(
+                <button key={ev.key} className="pc card" onClick={()=>setSheet(ev)} style={{display:"flex",flexDirection:"column",gap:"8px",padding:"18px 20px",textAlign:"left",color:text,fontFamily:"inherit",cursor:"pointer"}}>
+                  <span style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:"8px"}}>
+                    <span style={dkLbl}>{ev.hShort}</span>
+                    <span style={{fontSize:"calc(11px * var(--ts, 1))",fontWeight:700,letterSpacing:".6px",color:gold}}>{ev.away===0?"Today!":`in ${ev.away} days`}</span>
+                  </span>
+                  <span className="h2" style={{fontSize:"calc(19px * var(--ts, 1))",lineHeight:1.2,color:text}}>{ev.name}</span>
+                  {EVENT_INFO[ev.key]?.desc&&<span style={{fontSize:"calc(12.5px * var(--ts, 1))",lineHeight:1.6,fontWeight:500,color:textDim,display:"-webkit-box",WebkitLineClamp:3,WebkitBoxOrient:"vertical",overflow:"hidden"}}>{EVENT_INFO[ev.key].desc}</span>}
+                  <span style={{marginTop:"auto",fontSize:"calc(11.5px * var(--ts, 1))",fontWeight:600,color:"var(--faint)"}}>{ev.hDateStr}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* ── Right column ── */}
+      <div style={{display:"flex",flexDirection:"column",gap:"16px",minWidth:0}}>
         {dkSel&&(
           <section className="card" aria-live="polite" style={{padding:"24px 26px 22px",background:"linear-gradient(160deg,var(--active),var(--panel))"}}>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:"16px",flexWrap:"wrap"}}>
               <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
                 <span style={{width:"50px",height:"50px",borderRadius:"11px",border:`1px solid ${goldBdr}`,background:goldFaint,display:"flex",alignItems:"center",justifyContent:"center",color:gold}}><DkIco d={DK_MOON} size={26}/></span>
                 <div>
-                  <div className="h2" style={{fontSize:"26px",lineHeight:1.1,color:text}}>{dkSel.name}</div>
-                  <div style={{marginTop:"2px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{dkSel.hDateStr}</div>
+                  <div className="h2" style={{fontSize:"calc(26px * var(--ts, 1))",lineHeight:1.1,color:text}}>{dkSel.name}</div>
+                  <div style={{marginTop:"2px",fontSize:"calc(12.5px * var(--ts, 1))",fontWeight:600,color:textDim}}>{dkSel.hDateStr}</div>
                 </div>
               </div>
-              {dkSel.away>=0&&(<span style={{fontSize:"11.5px",fontWeight:700,letterSpacing:".6px",padding:"5px 12px",borderRadius:"9px",color:"var(--onGold)",background:"var(--goldFill)"}}>{dkSel.away===0?"Today!":`In ${dkSel.away} days`}</span>)}
+              {dkSel.away>=0&&(<span style={{fontSize:"calc(11.5px * var(--ts, 1))",fontWeight:700,letterSpacing:".6px",padding:"5px 12px",borderRadius:"9px",color:"var(--onGold)",background:"var(--goldFill)"}}>{dkSel.away===0?"Today!":`In ${dkSel.away} days`}</span>)}
             </div>
-            {EVENT_INFO[dkSel.key]?.desc&&<p style={{margin:"16px 0 0",fontSize:"14px",lineHeight:1.8,fontWeight:500,color:textMid}}>{EVENT_INFO[dkSel.key].desc}</p>}
+            {EVENT_INFO[dkSel.key]?.desc&&<p style={{margin:"16px 0 0",fontSize:"calc(14px * var(--ts, 1))",lineHeight:1.8,fontWeight:500,color:textMid}}>{EVENT_INFO[dkSel.key].desc}</p>}
             {EVENT_INFO[dkSel.key]?.verse&&(
               <div style={{marginTop:"16px",padding:"16px 18px",borderRadius:"13px",border:`1px solid ${goldBdr}`,background:goldFaint}}>
-                <div style={{fontSize:"14px",lineHeight:1.75,fontWeight:600,fontStyle:"italic",color:text}}>“{EVENT_INFO[dkSel.key].verse}”</div>
-                <div style={{marginTop:"6px",fontSize:"12px",fontWeight:700,color:gold}}>— {EVENT_INFO[dkSel.key].verseRef}</div>
+                <div style={{fontSize:"calc(14px * var(--ts, 1))",lineHeight:1.75,fontWeight:600,fontStyle:"italic",color:text}}>“{EVENT_INFO[dkSel.key].verse}”</div>
+                <div style={{marginTop:"6px",fontSize:"calc(12px * var(--ts, 1))",fontWeight:700,color:gold}}>— {EVENT_INFO[dkSel.key].verseRef}</div>
               </div>
             )}
           </section>
         )}
-      </div>
-
-      {/* ── Right column ── */}
-      <div style={{display:"flex",flexDirection:"column",gap:"16px",minWidth:0}}>
         {nextEvent&&(
           <section className="card" style={{padding:"20px 22px",background:"var(--panel2)"}}>
             <div style={dkLbl}>Next important date</div>
             <div style={{marginTop:"10px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:"12px"}}>
               <div>
-                <div className="h2" style={{fontSize:"21px",lineHeight:1.15,color:text}}>{nextEvent.name}</div>
-                <div style={{marginTop:"3px",fontSize:"12.5px",fontWeight:600,color:textDim}}>{nextEvent.hDateStr}</div>
+                <div className="h2" style={{fontSize:"calc(21px * var(--ts, 1))",lineHeight:1.15,color:text}}>{nextEvent.name}</div>
+                <div style={{marginTop:"3px",fontSize:"calc(12.5px * var(--ts, 1))",fontWeight:600,color:textDim}}>{nextEvent.hDateStr}</div>
               </div>
               <div style={{textAlign:"center",flex:"none",padding:"8px 14px",borderRadius:"11px",border:`1px solid ${goldBdr}`,background:goldFaint}}>
-                <div style={{fontSize:"24px",fontWeight:600,lineHeight:1,color:gold,fontVariantNumeric:"tabular-nums"}}>{nextEvent.away}</div>
-                <div style={{marginTop:"3px",fontSize:"9.5px",fontWeight:700,letterSpacing:"1px",color:textDim}}>DAYS LEFT</div>
+                <div style={{fontSize:"calc(24px * var(--ts, 1))",fontWeight:600,lineHeight:1,color:gold,fontVariantNumeric:"tabular-nums"}}>{nextEvent.away}</div>
+                <div style={{marginTop:"3px",fontSize:"calc(9.5px * var(--ts, 1))",fontWeight:700,letterSpacing:"1px",color:textDim}}>DAYS LEFT</div>
               </div>
             </div>
           </section>
@@ -324,31 +346,11 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <MoonDisc age={moon.age}/>
           <div>
             <div style={dkLbl}>Moon phase</div>
-            <div className="h2" style={{marginTop:"3px",fontSize:"19px",color:text}}>{moon.name}</div>
-            <div style={{fontSize:"12px",fontWeight:600,color:textDim}}>{moon.age} days old</div>
+            <div className="h2" style={{marginTop:"3px",fontSize:"calc(19px * var(--ts, 1))",color:text}}>{moon.name}</div>
+            <div style={{fontSize:"calc(12px * var(--ts, 1))",fontWeight:600,color:textDim}}>{moon.age} days old</div>
           </div>
         </section>
 
-        <section className="card" style={{padding:"18px 20px 14px"}}>
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <span style={dkLbl}>Upcoming events</span>
-            {upcoming.length>3&&(<button className="cb" onClick={()=>setShowAll(v=>!v)} aria-expanded={showAll} style={{border:0,background:"transparent",padding:0,color:gold,fontFamily:"inherit",fontSize:"12px",fontWeight:700,cursor:"pointer"}}>{showAll?"Show less":"View all"}</button>)}
-          </div>
-          <div style={{marginTop:"8px",display:"flex",flexDirection:"column"}}>
-            {dkUpcoming.map((ev,i)=>(
-              <button key={ev.key} className="pc" onClick={()=>setSheet(ev)} style={{display:"flex",alignItems:"center",gap:"12px",width:"100%",padding:"12px 4px",border:0,borderTop:i===0?"0":`1px solid ${divider}`,background:"transparent",color:text,fontFamily:"inherit",textAlign:"left",cursor:"pointer"}}>
-                <span style={{width:"38px",height:"38px",borderRadius:"10px",border:`1px solid ${goldBdr}`,background:goldFaint,display:"flex",alignItems:"center",justifyContent:"center",color:gold,flex:"none"}}><DkIco d={DK_MOON} size={19}/></span>
-                <span style={{flex:1,minWidth:0}}>
-                  <span style={{display:"block",fontSize:"13.5px",fontWeight:700}}>{ev.name}</span>
-                  <span style={{display:"block",marginTop:"2px",fontSize:"11.5px",fontWeight:600,color:textDim}}>{ev.hDateStr}</span>
-                </span>
-                <span style={{textAlign:"right",flex:"none"}}>
-                  {ev.away===0?(<span style={{fontSize:"11px",fontWeight:700,color:gold}}>Today!</span>):(<><span style={{display:"block",fontSize:"16px",fontWeight:700,lineHeight:1,color:gold}}>{ev.away}</span><span style={{display:"block",marginTop:"2px",fontSize:"10px",fontWeight:600,color:textDim}}>days</span></>)}
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   );
@@ -367,8 +369,8 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{width:"18px",height:"2px",background:gold,borderRadius:"2px"}}/>
         </button>
         <span className="nur-ph-title" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>{docked ? (<><div>Islamic Calendar</div>{hijriToday&&<div>Today · {hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH · {gregToday.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>}</>) : "Islamic Calendar"}</span>
-        <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"20px",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
-        {docked&&<button onClick={goToToday} style={{display:"flex",alignItems:"center",gap:"8px",height:"40px",padding:"0 16px",borderRadius:"12px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"13px",fontWeight:700,cursor:"pointer",flexShrink:0}}><DkIco d={DK_CAL} size={16}/>Jump to today</button>}
+        <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"calc(20px * var(--ts, 1))",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
+        {docked&&<button onClick={goToToday} style={{display:"flex",alignItems:"center",gap:"8px",height:"40px",padding:"0 16px",borderRadius:"12px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"calc(13px * var(--ts, 1))",fontWeight:700,cursor:"pointer",flexShrink:0}}><DkIco d={DK_CAL} size={16}/>Jump to today</button>}
       </div>
 
       {/* SCROLL */}
@@ -403,12 +405,12 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                       <div style={{color:"#E4C173",fontSize:`${15*ts}px`,fontWeight:800}}>{nextEvent.name}</div>
                       <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.away===0?"Today!":`${nextEvent.away} days remaining`}</div>
                     </div>
-                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"16px"}}>⏳</div>
+                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(16px * var(--ts, 1))"}}>⏳</div>
                   </div>
                 </div>
               )}
             </div>
-            <div style={{fontSize:"58px",lineHeight:1,filter:"drop-shadow(0 0 18px rgba(201,168,76,0.55))",flexShrink:0,marginTop:"4px"}}>🌙</div>
+            <div style={{fontSize:"calc(58px * var(--ts, 1))",lineHeight:1,filter:"drop-shadow(0 0 18px rgba(201,168,76,0.55))",flexShrink:0,marginTop:"4px"}}>🌙</div>
           </div>
         </div>
 
@@ -497,7 +499,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         {nextEvent&&(
           <div style={{...card(),display:"flex",alignItems:"center",gap:"14px"}}>
             <ShineLayer delay="1s"/>
-            <div style={{width:"46px",height:"46px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",flexShrink:0,position:"relative",zIndex:2}}>🎯</div>
+            <div style={{width:"46px",height:"46px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(22px * var(--ts, 1))",flexShrink:0,position:"relative",zIndex:2}}>🎯</div>
             <div style={{flex:1,minWidth:0,position:"relative",zIndex:2}}>
               <div style={{...sLabel,marginBottom:"4px"}}>Next Important Date</div>
               <div style={{color:text,fontSize:`${14*ts}px`,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nextEvent.name}</div>
@@ -519,7 +521,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
               <div key={s.lbl} style={{flex:1,display:"flex"}}>
                 {i>0&&<div style={{width:"1px",background:divider,margin:"0 6px",flexShrink:0}}/>}
                 <div style={{flex:1,textAlign:"center",padding:"4px 0"}}>
-                  <div style={{fontSize:"20px",marginBottom:"7px"}}>{s.emoji}</div>
+                  <div style={{fontSize:"calc(20px * var(--ts, 1))",marginBottom:"7px"}}>{s.emoji}</div>
                   <div style={{color:text,fontSize:`${22*ts}px`,fontWeight:900,lineHeight:1}}>{s.val}</div>
                   <div style={{color:textDim,fontSize:`${10*ts}px`,marginTop:"5px",lineHeight:1.3}}>{s.lbl}</div>
                 </div>
@@ -539,7 +541,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
             {upcoming.slice(0,2).map((ev,i)=>(
               <div key={ev.key} onClick={()=>setSheet(ev)} style={{cursor:"pointer",paddingBottom:i===0?"10px":"0",marginBottom:i===0?"10px":"0",borderBottom:i===0?`1px solid ${divider}`:"none",position:"relative",zIndex:2}}>
                 <div style={{display:"flex",gap:"8px"}}>
-                  <span style={{fontSize:"13px",marginTop:"1px",flexShrink:0}}>🌙</span>
+                  <span style={{fontSize:"calc(13px * var(--ts, 1))",marginTop:"1px",flexShrink:0}}>🌙</span>
                   <div>
                     <div style={{color:text,fontSize:`${11*ts}px`,fontWeight:700,lineHeight:1.3}}>{ev.name}</div>
                     <div style={{color:textDim,fontSize:`${9*ts}px`,marginTop:"2px"}}>{ev.hShort}</div>
@@ -554,7 +556,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{background:cardBg,border:`1px solid ${goldBdr}`,borderRadius:"16px",padding:"14px",boxShadow:shadow,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>
             <ShineLayer delay="2.5s"/>
             <div style={{...sLabel,alignSelf:"flex-start",marginBottom:"10px",position:"relative",zIndex:2}}>Moon Phase</div>
-            <div style={{fontSize:"48px",lineHeight:1,marginBottom:"8px",position:"relative",zIndex:2}}>{moon.emoji}</div>
+            <div style={{fontSize:"calc(48px * var(--ts, 1))",lineHeight:1,marginBottom:"8px",position:"relative",zIndex:2}}>{moon.emoji}</div>
             <div style={{color:text,fontSize:`${11*ts}px`,fontWeight:700,textAlign:"center",lineHeight:1.4,position:"relative",zIndex:2}}>{moon.name}</div>
             <div style={{color:textDim,fontSize:`${10*ts}px`,marginTop:"4px",position:"relative",zIndex:2}}>{moon.age} days old</div>
           </div>
@@ -568,7 +570,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         <div onClick={()=>setShowAll(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"80%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 0"}}/>
-            <button onClick={()=>setShowAll(false)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"13px",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
+            <button onClick={()=>setShowAll(false)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
             {/* Sheet header */}
             <div style={{padding:"18px 0 14px"}}>
               <div style={{color:goldDim,fontSize:`${9*ts}px`,fontWeight:700,letterSpacing:"1.6px",textTransform:"uppercase",marginBottom:"4px"}}>All Upcoming Events</div>
@@ -585,7 +587,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                   cursor:"pointer",
                 }}>
                 {/* Icon circle */}
-                <div style={{width:"42px",height:"42px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",flexShrink:0}}>
+                <div style={{width:"42px",height:"42px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(20px * var(--ts, 1))",flexShrink:0}}>
                   {EVENT_INFO[ev.key]?.icon||"🌙"}
                 </div>
                 {/* Text */}
@@ -617,8 +619,8 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         <div onClick={()=>setSheet(null)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"74%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 18px"}}/>
-            <button onClick={()=>setSheet(null)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"13px",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
-            <div style={{width:"58px",height:"58px",borderRadius:"16px",background:`linear-gradient(135deg,${gold},rgba(201,168,76,0.45))`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"28px",marginBottom:"14px",border:`1px solid ${gold}`,boxShadow:`0 4px 18px rgba(201,168,76,0.28)`}}>{EVENT_INFO[sheet.key]?.icon||"☪️"}</div>
+            <button onClick={()=>setSheet(null)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
+            <div style={{width:"58px",height:"58px",borderRadius:"16px",background:`linear-gradient(135deg,${gold},rgba(201,168,76,0.45))`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(28px * var(--ts, 1))",marginBottom:"14px",border:`1px solid ${gold}`,boxShadow:`0 4px 18px rgba(201,168,76,0.28)`}}>{EVENT_INFO[sheet.key]?.icon||"☪️"}</div>
             <div style={{color:text,fontSize:`${20*ts}px`,fontWeight:800,marginBottom:"4px"}}>{sheet.name}</div>
             <div style={{color:textDim,fontSize:`${12*ts}px`,marginBottom:"12px"}}>{sheet.hDateStr}</div>
             {sheet.away>=0&&(
@@ -629,7 +631,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
             {EVENT_INFO[sheet.key]?.desc&&<div style={{color:textMid,fontSize:`${13*ts}px`,lineHeight:1.75,marginBottom:"16px"}}>{EVENT_INFO[sheet.key].desc}</div>}
             {EVENT_INFO[sheet.key]?.verse&&(
               <div style={{background:goldFaint,border:`1px solid ${goldBdr}`,borderRadius:"14px",padding:"16px",borderLeft:`3px solid ${gold}`,borderTopLeftRadius:"0",borderBottomLeftRadius:"0"}}>
-                <div style={{color:gold,fontSize:"24px",lineHeight:1,marginBottom:"6px",fontFamily:"var(--font-ar)"}}>"</div>
+                <div style={{color:gold,fontSize:"calc(24px * var(--ts, 1))",lineHeight:1,marginBottom:"6px",fontFamily:"var(--font-ar)"}}>"</div>
                 <div style={{color:textMid,fontSize:`${12*ts}px`,lineHeight:1.8,fontStyle:"italic",marginBottom:"10px"}}>{EVENT_INFO[sheet.key].verse}</div>
                 <div style={{color:gold,fontSize:`${11*ts}px`,fontWeight:700}}>— {EVENT_INFO[sheet.key].verseRef}</div>
               </div>

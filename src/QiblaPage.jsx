@@ -1346,10 +1346,10 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 <span style={{ position:"absolute", width:"1px", height:"1px", overflow:"hidden", clip:"rect(0 0 0 0)" }}>Search a city or address</span>
                 <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key === "Enter" && lookupCity()}
                   placeholder="Search a city or address…"
-                  style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"13px", fontWeight:500 }}/>
+                  style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"calc(13px * var(--ts, 1))", fontWeight:500 }}/>
               </label>
               <button className="cb" onClick={useMyLocation}
-                style={{ display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:"12.5px", fontWeight:600, cursor:"pointer" }}>
+                style={{ display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:"calc(12.5px * var(--ts, 1))", fontWeight:600, cursor:"pointer" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
                 Use my location
               </button>
@@ -1362,14 +1362,14 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               border:`1px solid ${showCity ? gold : goldBdr}`,
               borderRadius:"8px", padding:"5px 10px",
               color: showCity ? gold : goldDim,
-              fontSize:"11px", cursor:"pointer", fontFamily:"Nunito, sans-serif",
+              fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", fontFamily:"Nunito, sans-serif",
               transition:"all 0.2s", fontWeight: showCity ? 700 : 400,
             }}
           >
             📍
           </button>}
           <button className="nur-ph-back" onClick={onBack}
-            style={{ background:"none", border:"none", color:gold, fontSize:"20px", cursor:"pointer", lineHeight:1, padding:"4px 4px" }}>
+            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 4px" }}>
             ←
           </button>
         </div>
@@ -1391,7 +1391,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 flex:1, background:inputBg,
                 border:`1px solid ${goldBdr}`, borderRadius:"10px",
                 padding:"9px 12px", color:textClr,
-                fontSize:"13px", outline:"none", fontFamily:"Nunito, sans-serif",
+                fontSize:"calc(13px * var(--ts, 1))", outline:"none", fontFamily:"Nunito, sans-serif",
               }}
             />
             <button onClick={lookupCity}
@@ -1399,7 +1399,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 padding:"9px 18px", borderRadius:"10px",
                 background:"var(--goldFill)",
                 border:"none", color:"var(--onGold)",
-                fontSize:"13px", fontWeight:700, cursor:"pointer",
+                fontSize:"calc(13px * var(--ts, 1))", fontWeight:700, cursor:"pointer",
                 fontFamily:"Nunito, sans-serif",
               }}>
               Go
@@ -1440,7 +1440,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   transition:"background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease",
                 }}>
                   <span style={{
-                    fontSize:"20px", color:status.color,
+                    fontSize:"calc(20px * var(--ts, 1))", color:status.color,
                     fontWeight:800, lineHeight:1,
                     fontFamily:"var(--font-ar)",
                   }}>
@@ -1541,7 +1541,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                     padding:"12px 20px", textAlign:"center", minWidth:"76px",
                   }}>
                     <div style={{
-                      color:goldDim, fontSize:"9px", letterSpacing:"1.8px",
+                      color:goldDim, fontSize:"calc(9px * var(--ts, 1))", letterSpacing:"1.8px",
                       textTransform:"uppercase", marginBottom:"3px",
                     }}>
                       {label}
@@ -1554,7 +1554,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                     }}>
                       {value}
                     </div>
-                    <div style={{ color:textDim, fontSize:"9px", marginTop:"2px" }}>
+                    <div style={{ color:textDim, fontSize:"calc(9px * var(--ts, 1))", marginTop:"2px" }}>
                       {sub}
                     </div>
                   </div>
@@ -1583,7 +1583,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           <div style={{ textAlign:"center", padding:"16px", margin:"auto 0" }}>
             {locError ? (
               <>
-                <div style={{ fontSize:"40px", marginBottom:"18px", opacity:0.55 }}>📍</div>
+                <div style={{ fontSize:"calc(40px * var(--ts, 1))", marginBottom:"18px", opacity:0.55 }}>📍</div>
                 <div style={{
                   color:gold, fontSize:`${16 * textSize}px`,
                   fontWeight:700, marginBottom:"10px",
@@ -1610,7 +1610,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               </>
             ) : (
               <>
-                <div style={{ fontSize:"38px", marginBottom:"18px", opacity:0.45 }}>🧭</div>
+                <div style={{ fontSize:"calc(38px * var(--ts, 1))", marginBottom:"18px", opacity:0.45 }}>🧭</div>
                 <div style={{ color:goldDim, fontSize:`${13 * textSize}px`, lineHeight:1.8 }}>
                   Finding your location…
                 </div>

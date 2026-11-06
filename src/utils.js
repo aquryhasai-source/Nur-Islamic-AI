@@ -148,6 +148,29 @@ export async function getPrayerTimesByCity(cityInput) {
   return data.data.timings;
 }
 
+// Next 7 days of timings (today first) for the website "Week ahead" table.
+// loc is { lat, lon } or { city }. Returns [{ date: Date, timings }]; failed days are skipped.
+export async function getWeekTimes(loc, days = 7) {
+  const out = await Promise.all(Array.from({ length: days }, async (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() + i);
+    try {
+      let url;
+      if (loc.city !== undefined) {
+        const raw = (loc.city || "").trim(), c = raw.indexOf(",");
+        const params = new URLSearchParams({ city: c > 0 ? raw.slice(0, c).trim() : raw, method: "1", school: "1" });
+        if (c > 0) params.set("country", raw.slice(c + 1).trim());
+        const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0");
+        url = `https://api.aladhan.com/v1/timingsByCity/${dd}-${mm}-${d.getFullYear()}?${params}`;
+      } else {
+        url = `https://api.aladhan.com/v1/timings/${Math.floor(d.getTime() / 1000)}?latitude=${loc.lat}&longitude=${loc.lon}&method=1&school=1`;
+      }
+      const data = await (await fetch(url)).json();
+      return data.code === 200 ? { date: d, timings: data.data.timings } : null;
+    } catch { return null; }
+  }));
+  return out.filter(Boolean);
+}
+
 export const QURAN_TRANSLATIONS = [
   { code: "en.sahih",      label: "English",    lang: "en" },
   { code: "ur.maududi",    label: "Urdu",       lang: "ur" },
