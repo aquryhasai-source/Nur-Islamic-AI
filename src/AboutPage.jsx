@@ -83,7 +83,7 @@ export default function AboutPage({ onBack, onOpenSidebar, lightMode, textSize =
 
         {/* Logo */}
         <div style={{ textAlign:"center", marginBottom:"32px" }}>
-          <div style={{ fontSize:`${52*textSize}px`, color:gold, fontWeight:900, letterSpacing:"8px", marginBottom:"6px" }}>NŪR</div>
+          <div style={{ fontFamily:"var(--font-head)", fontSize:`${56*textSize}px`, color:gold, fontWeight:700, letterSpacing:"9px", paddingLeft:"9px", lineHeight:1.05, marginBottom:"8px" }}>NŪR</div>
           <div style={{ color:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"4px", textTransform:"uppercase" }}>Islamic Knowledge Assistant</div>
           <div style={{ width:"40px", height:"1px", background:`linear-gradient(90deg,transparent,${gold},transparent)`, margin:"18px auto" }}/>
           <div style={{ color:gold, fontSize:`${22 * textSize}px`, fontFamily:"var(--font-ar)", marginBottom:"6px" }}>
