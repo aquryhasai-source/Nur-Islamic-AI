@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, lazy, Suspense } from "react";
 import { getAnonymousId, getCachedRemaining, getProfile, getBookmarks, toggleBookmark, KEYS,
          getSessions, getSession, createNewSession, saveSession, updateSessionMessages, deleteSession } from "./utils.js";
 import { trackEvent, trackError } from "./analytics.js";
@@ -7,20 +7,20 @@ import QuranTab           from "./QuranTab.jsx";
 import HadithTab          from "./HadithTab.jsx";
 import Sidebar, { snapTextSize } from "./Sidebar.jsx";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
-import GetProPage         from "./GetProPage.jsx";
-import SupportPage        from "./SupportPage.jsx";
+const GetProPage = lazy(() => import("./GetProPage.jsx"));
+const SupportPage = lazy(() => import("./SupportPage.jsx"));
 import FridayCard         from "./FridayCard.jsx";
 import { shouldShowFridayCard } from "./sadaqah.js";
-import ProfilePage        from "./ProfilePage.jsx";
-import BookmarksPage      from "./BookmarksPage.jsx";
-import QiblaPage          from "./QiblaPage.jsx";
-import IslamicCalendarPage from "./IslamicCalendarPage.jsx";
-import RecentPage         from "./RecentPage.jsx";
-import AboutPage          from "./AboutPage.jsx";
-import PrayerTimesPage    from "./PrayerTimesPage.jsx";
-import FeedbackPage       from "./FeedbackPage.jsx";
-import PrivacyPage        from "./PrivacyPage.jsx";
-import TermsPage          from "./TermsPage.jsx";
+const ProfilePage = lazy(() => import("./ProfilePage.jsx"));
+const BookmarksPage = lazy(() => import("./BookmarksPage.jsx"));
+const QiblaPage = lazy(() => import("./QiblaPage.jsx"));
+const IslamicCalendarPage = lazy(() => import("./IslamicCalendarPage.jsx"));
+const RecentPage = lazy(() => import("./RecentPage.jsx"));
+const AboutPage = lazy(() => import("./AboutPage.jsx"));
+const PrayerTimesPage = lazy(() => import("./PrayerTimesPage.jsx"));
+const FeedbackPage = lazy(() => import("./FeedbackPage.jsx"));
+const PrivacyPage = lazy(() => import("./PrivacyPage.jsx"));
+const TermsPage = lazy(() => import("./TermsPage.jsx"));
 import AdBanner           from "./AdBanner.jsx";
 import NotificationPrompt from "./NotificationPrompt.jsx";
 
@@ -67,8 +67,19 @@ const InstallModal = ({ onClose, isIOS }) => {
 const TABS = ["chat", "quran", "hadith"];
 const TAB_LABELS = { chat:"Chat", quran:"Quran", hadith:"Hadith" };
 
+// Warm the page chunks once the chat is up, so opening a page never waits on a download.
+const PREFETCH = [
+  () => import("./PrayerTimesPage.jsx"), () => import("./QiblaPage.jsx"), () => import("./IslamicCalendarPage.jsx"),
+  () => import("./QiblaWeb.jsx"), () => import("./BookmarksPage.jsx"), () => import("./RecentPage.jsx"), () => import("./ProfilePage.jsx"),
+];
+function prefetchPages() {
+  const run = () => PREFETCH.forEach((f, i) => setTimeout(() => f().catch(() => {}), i * 400));
+  (window.requestIdleCallback || (cb => setTimeout(cb, 1500)))(run);
+}
+
 export default function NurApp() {
   const deviceId = useRef(getAnonymousId());
+  useEffect(() => { prefetchPages(); }, []);
 
   const [tab,          setTab]          = useState("chat");
   const [activePage,   setActivePage]   = useState(() => {
@@ -416,6 +427,7 @@ export default function NurApp() {
             onTouchEnd={onPageTouchEnd}
           >
             <div className="nur-page" style={{ width:"100%", maxWidth: docked ? (activePage === "bookmarks" ? "2000px" : ["prayers","qibla","calendar","recent","getpro"].includes(activePage) ? "1560px" : "1280px") : "none", margin:"0 auto", flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
+              <Suspense fallback={<div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }} aria-label="Loading">{[0,1,2].map(d => <div key={d} style={{ width:"8px", height:"8px", borderRadius:"50%", background:"var(--gold)", animation:"pulse 1.4s ease-in-out infinite", animationDelay:`${d*0.2}s`, opacity:0.7 }}/>)}</div>}>
               {activePage === "profile"  && <ProfilePage   {...pageProps} profile={profile} setProfile={setProfile} remaining={remaining}/>}
               {activePage === "bookmarks"&& <BookmarksPage {...pageProps} bookmarks={bookmarks} onToggle={handleToggleBookmark}/>}
               {activePage === "qibla"    && <QiblaPage     {...pageProps}/>}
@@ -428,6 +440,7 @@ export default function NurApp() {
               {activePage === "feedback" && <FeedbackPage  {...pageProps}/>}
               {activePage === "privacy"  && <PrivacyPage   {...pageProps}/>}
               {activePage === "terms"    && <TermsPage     {...pageProps}/>}
+              </Suspense>
             </div>
           </div>
         )}

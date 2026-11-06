@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo, getWeekTimes, getHijriToday, HIJRI_MONTHS } from "./utils.js";
+import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo, getWeekTimes, getHijriToday, HIJRI_MONTHS,
+  getLastLocation, saveLastLocation, getCachedPrayerTimes, getDevicePosition, distanceKm } from "./utils.js";
+import CityBox from "./CityBox.jsx";
+import { resolveCity } from "./cities.js";
 import { syncPrayerLocation, subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
@@ -239,48 +242,54 @@ export default function PrayerTimesPage({
   const pageBg    = "var(--bgSolid)";
 
   // ── Load prayer times ─────────────────────────────────────────────────────────
+  // Paint from the last known place at once (today's times are cached), then check the device position
+  // in the background. A city the person chose themselves is never overridden by GPS.
   useEffect(() => {
-    const loadByCity = async (cityName) => {
-      try {
-        const times = await getPrayerTimesByCity(cityName);
-        setPrayerTimes(times);
-        setLocationName(cityName);
-        setLocCoords({ city: cityName });
-        syncPrayerLocation({ city: cityName });
-      } catch {
-        setLocError("Could not load times. Enter your city.");
-        setShowCityInput(true);
-      }
-      setLoading(false);
+    let live = true;
+    const show = (times, loc, name, sync = true) => {
+      setPrayerTimes(times); setLocationName(name); setLocCoords(loc); setLoading(false); setLocError(null);
+      if (sync) syncPrayerLocation(loc);
     };
+    const askForCity = msg => { setLocError(msg); setShowCityInput(true); setLoading(false); };
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async ({ coords }) => {
-          try {
-            const times = await getPrayerTimes(coords.latitude, coords.longitude);
-            setPrayerTimes(times);
-            setLocationName("Current Location");
-            setLocCoords({ lat: coords.latitude, lon: coords.longitude });
-            syncPrayerLocation({ lat: coords.latitude, lon: coords.longitude });
-          } catch {
-            const saved = localStorage.getItem(KEYS.CITY);
-            if (saved) await loadByCity(saved);
-            else { setLocError("Could not get location. Enter your city."); setShowCityInput(true); }
-          }
-          setLoading(false);
-        },
-        async () => {
-          const saved = localStorage.getItem(KEYS.CITY);
-          if (saved) await loadByCity(saved);
-          else { setLocError("Location denied. Enter your city."); setShowCityInput(true); setLoading(false); }
-        }
-      );
-    } else {
-      const saved = localStorage.getItem(KEYS.CITY);
-      if (saved) loadByCity(saved);
-      else { setLocError("Enter your city to load prayer times."); setShowCityInput(true); setLoading(false); }
-    }
+    (async () => {
+      const last = getLastLocation();
+      const legacy = localStorage.getItem(KEYS.CITY);
+      let shown = false;
+
+      if (last) {
+        const cached = getCachedPrayerTimes(last);
+        try {
+          const times = cached || await getPrayerTimes(last.lat, last.lon);
+          if (!live) return;
+          show(times, { lat: last.lat, lon: last.lon }, last.name || "Current Location", !cached);
+          shown = true;
+        } catch {}
+        if (shown && last.manual) return;
+      } else if (legacy) {
+        try {
+          const times = await getPrayerTimesByCity(legacy);
+          if (!live) return;
+          show(times, { city: legacy }, legacy); shown = true;
+        } catch {}
+      }
+
+      try {
+        const pos = await getDevicePosition();
+        if (!live) return;
+        const same = last && distanceKm(last, pos) < 5;
+        if (shown && same) return;
+        const times = await getPrayerTimes(pos.lat, pos.lon);
+        if (!live) return;
+        const name = same && last.name ? last.name : "Current Location";
+        saveLastLocation({ ...pos, name, manual: false });
+        show(times, pos, name);
+      } catch {
+        if (!live || shown) return;
+        askForCity(legacy ? "Could not load times. Enter your city." : "Location is off. Search for your city instead.");
+      }
+    })();
+    return () => { live = false; };
   }, []);
 
   // Website view only: the next 7 days for the "Week ahead" table
@@ -367,18 +376,37 @@ export default function PrayerTimesPage({
   };
 
   // ── City lookup ───────────────────────────────────────────────────────────────
-  const lookupCity = async () => {
-    if (!city.trim()) return;
+  const pickCity = async (p) => {
     setLoading(true); setLocError(null);
     try {
-      const times = await getPrayerTimesByCity(city.trim());
+      const times = await getPrayerTimes(p.lat, p.lon);
       setPrayerTimes(times);
-      setLocationName(city.trim());
-      localStorage.setItem(KEYS.CITY, city.trim());
-      setLocCoords({ city: city.trim() });
-      syncPrayerLocation({ city: city.trim() });
+      setLocationName(p.label);
+      setLocCoords({ lat: p.lat, lon: p.lon });
+      setCity(p.label);
+      localStorage.setItem(KEYS.CITY, p.country ? `${p.name}, ${p.country}` : p.name);
+      saveLastLocation({ lat: p.lat, lon: p.lon, name: p.label, manual: true });
+      syncPrayerLocation({ lat: p.lat, lon: p.lon });
       setShowCityInput(false);
-    } catch { setLocError("City not found. Try a nearby major city."); }
+    } catch { setLocError("Could not load prayer times for that city. Check your connection and try again."); }
+    finally { setLoading(false); }
+  };
+  const lookupCity = async (text = city) => {
+    if (!text.trim()) return;
+    setLoading(true); setLocError(null);
+    const p = await resolveCity(text);
+    if (!p) { setLoading(false); setLocError("No city matches that. Pick one from the suggestions, or try a nearby larger city."); return; }
+    await pickCity(p);
+  };
+  const useMyLocation = async () => {
+    setLoading(true); setLocError(null);
+    try {
+      const pos = await getDevicePosition({ maxAge: 0, timeout: 10000 });
+      const times = await getPrayerTimes(pos.lat, pos.lon);
+      saveLastLocation({ ...pos, name: "Current Location", manual: false });
+      setPrayerTimes(times); setLocationName("Current Location"); setLocCoords(pos);
+      syncPrayerLocation(pos); setShowCityInput(false);
+    } catch { setLocError("Could not read your location. Search for your city instead."); }
     finally { setLoading(false); }
   };
 
@@ -782,17 +810,18 @@ export default function PrayerTimesPage({
       {showCityInput && (
         <div style={{ padding: docked ? "4px 40px 16px" : "10px 16px", borderBottom: docked ? "none" : `1px solid ${goldBdr}`, background: docked ? "transparent" : headerBg, flexShrink:0, maxWidth: docked ? "600px" : "none" }}>
           <div style={{ display:"flex", gap:"8px" }}>
-            <input
-              value={city}
-              onChange={e => setCity(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && lookupCity()}
-              placeholder="e.g. Hyderabad, India · London, UK"
-              style={{ flex:1, background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"Nunito,sans-serif" }}
+            <CityBox
+              value={city} onChange={setCity} onPick={pickCity} onSubmit={lookupCity} autoFocus
+              placeholder="Search a city, e.g. Karachi, Hyderabad, London"
+              inputStyle={{ width:"100%", boxSizing:"border-box", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"Nunito,sans-serif" }}
             />
-            <button onClick={lookupCity} style={{ padding:"9px 18px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            <button onClick={() => lookupCity()} style={{ padding:"9px 18px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
               Go
             </button>
           </div>
+          <button onClick={useMyLocation} style={{ marginTop:"8px", background:"none", border:"none", padding:0, color:gold, fontSize:`${12*textSize}px`, fontWeight:600, cursor:"pointer", fontFamily:"Nunito,sans-serif", textDecoration:"underline" }}>
+            Use my current location
+          </button>
           {locError && (
             <div style={{ color:"var(--warn)", fontSize:`${12*textSize}px`, marginTop:"8px" }}>{locError}</div>
           )}

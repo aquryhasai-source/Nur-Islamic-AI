@@ -1,7 +1,10 @@
-import QiblaWeb from "./QiblaWeb.jsx";
+import { lazy, Suspense } from "react";
+import CityBox from "./CityBox.jsx";
+import { resolveCity } from "./cities.js";
+const QiblaWeb = lazy(() => import("./QiblaWeb.jsx"));
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import { useState, useEffect, useRef } from "react";
-import { calculateQibla } from "./utils.js";
+import { calculateQibla, getLastLocation, saveLastLocation, getDevicePosition, distanceKm } from "./utils.js";
 
 // ─── Subtle Islamic geometric background ─────────────────────────────────────
 const GeoBg = ({ lightMode }) => (
@@ -1124,69 +1127,73 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     };
   }, []);
 
-  // ── Geolocation + reverse geocode ──────────────────────────────────────────
+  // ── Location ────────────────────────────────────────────────────────────────
+  // The bearing is plain maths, so show it from the last known place straight away and let the device
+  // position and the place name catch up in the background. A city the person picked is kept.
+  const applyPlace = (lat, lon, name) => {
+    setQiblaAngle(calculateQibla(lat, lon));
+    setUserPos({ lat, lon });
+    setLocationName(name);
+    setLocError(null);
+  };
+
   useEffect(() => {
-    if (!navigator.geolocation) {
-      setLocError("Geolocation not supported");
-      setShowCity(true);
-      return;
-    }
-    navigator.geolocation.getCurrentPosition(
-      async ({ coords }) => {
-        setQiblaAngle(calculateQibla(coords.latitude, coords.longitude));
-        setUserPos({ lat: coords.latitude, lon: coords.longitude });
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`,
-            { headers: { "Accept-Language": "en", "User-Agent": "NUR-Islamic-PWA/2.0" } }
-          );
-          const d = await res.json();
-          const a = d.address || {};
-          const name = a.city || a.town || a.village || a.county || a.state || "Your Location";
-          const country = a.country || "";
-          setLocationName(country ? `${name}, ${country}` : name);
-        } catch {
-          setLocationName("Current Location");
+    let live = true;
+    const last = getLastLocation();
+    if (last) applyPlace(last.lat, last.lon, last.name || "Current Location");
+    if (last?.manual) return;
+
+    getDevicePosition({ timeout: 8000 }).then(async pos => {
+      if (!live) return;
+      const same = last && distanceKm(last, pos) < 1;
+      let name = same && last.name && last.name !== "Current Location" ? last.name : null;
+      if (!same || !last) applyPlace(pos.lat, pos.lon, name || "Current Location");
+      saveLastLocation({ ...pos, name: name || "Current Location", manual: false });
+      if (name) return;
+      // Name the spot (not needed for the bearing, so it never blocks it)
+      try {
+        const ac = new AbortController(); const t = setTimeout(() => ac.abort(), 5000);
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${pos.lat}&lon=${pos.lon}&format=json&zoom=10`,
+          { headers: { "Accept-Language": "en" }, signal: ac.signal }
+        );
+        clearTimeout(t);
+        const a = (await res.json()).address || {};
+        const nm = a.city || a.town || a.village || a.county || a.state;
+        if (nm && live) {
+          const full = a.country ? `${nm}, ${a.country}` : nm;
+          setLocationName(full);
+          saveLastLocation({ ...pos, name: full, manual: false });
         }
-      },
-      () => { setLocError("Location access denied"); setShowCity(true); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+      } catch {}
+    }).catch(() => {
+      if (!live) return;
+      if (!last) { setLocError("Location is off"); setShowCity(true); }
+    });
+    return () => { live = false; };
   }, []);
 
   // ── City lookup ─────────────────────────────────────────────────────────────
-  const lookupCity = async () => {
-    if (!city.trim()) return;
-    try {
-      const res = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(city.trim())}&count=1`
-      );
-      const d = await res.json();
-      if (d.results?.[0]) {
-        const { latitude, longitude, name, country } = d.results[0];
-        setQiblaAngle(calculateQibla(latitude, longitude));
-        setUserPos({ lat: latitude, lon: longitude });
-        setLocationName(country ? `${name}, ${country}` : name);
-        setLocError(null);
-        setShowCity(false);
-      }
-    } catch {}
+  const pickCity = (p) => {
+    applyPlace(p.lat, p.lon, p.label);
+    saveLastLocation({ lat: p.lat, lon: p.lon, name: p.label, manual: true });
+    setCity(p.label);
+    setShowCity(false);
+  };
+  const lookupCity = async (text = city) => {
+    if (!text.trim()) return;
+    const p = await resolveCity(text);
+    if (p) pickCity(p);
+    else setLocError("No city matches that");
   };
 
   // ── Re-read the device location (website view button) ──────────────────────
   const useMyLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setQiblaAngle(calculateQibla(coords.latitude, coords.longitude));
-        setUserPos({ lat: coords.latitude, lon: coords.longitude });
-        setLocationName("Current Location");
-        setLocError(null);
-        setShowCity(false);
-      },
-      () => { setLocError("Location access denied"); },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
+    getDevicePosition({ maxAge: 0, timeout: 10000, high: true }).then(pos => {
+      applyPlace(pos.lat, pos.lon, "Current Location");
+      saveLastLocation({ ...pos, name: "Current Location", manual: false });
+      setShowCity(false);
+    }).catch(() => setLocError("Location access denied"));
   };
 
   // ── Alignment calculation ───────────────────────────────────────────────────
@@ -1341,13 +1348,12 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         <div style={{ display:"flex", alignItems:"center", gap:"6px", flexShrink:0 }}>
           {docked && (
             <>
-              <label style={{ display:"flex", alignItems:"center", gap:"8px", width:"270px", boxSizing:"border-box", height:"36px", padding:"0 12px", borderRadius:"10px", border:"1px solid var(--lineSoft)", background:"var(--panel2)", color:"var(--faint)" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM9.6 10a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0"/></svg>
-                <span style={{ position:"absolute", width:"1px", height:"1px", overflow:"hidden", clip:"rect(0 0 0 0)" }}>Search a city or address</span>
-                <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key === "Enter" && lookupCity()}
-                  placeholder="Search a city or address…"
-                  style={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"calc(13px * var(--ts, 1))", fontWeight:500 }}/>
-              </label>
+              <CityBox
+                value={city} onChange={setCity} onPick={pickCity} onSubmit={lookupCity}
+                placeholder="Search a city…" ariaLabel="Search a city"
+                wrapStyle={{ flex:"none", display:"flex", alignItems:"center", gap:"8px", width:"270px", boxSizing:"border-box", height:"36px", padding:"0 12px", borderRadius:"10px", border:"1px solid var(--lineSoft)", background:"var(--panel2)", color:"var(--faint)" }}
+                leading={<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11ZM9.6 10a2.4 2.4 0 1 0 4.8 0 2.4 2.4 0 1 0-4.8 0"/></svg>}
+                inputStyle={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"calc(13px * var(--ts, 1))", fontWeight:500 }}/>
               <button className="cb" onClick={useMyLocation}
                 style={{ display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:"calc(12.5px * var(--ts, 1))", fontWeight:600, cursor:"pointer" }}>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
@@ -1383,18 +1389,17 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           animation:"qStatusIn 0.2s ease",
         }}>
           <div style={{ display:"flex", gap:"8px" }}>
-            <input
-              value={city} onChange={e => setCity(e.target.value)}
-              onKeyDown={e => e.key === "Enter" && lookupCity()}
-              placeholder="e.g. London, Cairo, Karachi…"
-              style={{
-                flex:1, background:inputBg,
+            <CityBox
+              value={city} onChange={setCity} onPick={pickCity} onSubmit={lookupCity} autoFocus
+              placeholder="Search a city, e.g. London, Cairo, Karachi"
+              inputStyle={{
+                width:"100%", boxSizing:"border-box", background:inputBg,
                 border:`1px solid ${goldBdr}`, borderRadius:"10px",
                 padding:"9px 12px", color:textClr,
                 fontSize:"calc(13px * var(--ts, 1))", outline:"none", fontFamily:"Nunito, sans-serif",
               }}
             />
-            <button onClick={lookupCity}
+            <button onClick={() => lookupCity()}
               style={{
                 padding:"9px 18px", borderRadius:"10px",
                 background:"var(--goldFill)",
@@ -1405,6 +1410,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               Go
             </button>
           </div>
+          {locError === "No city matches that" && <div style={{ color:"var(--warn)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"8px" }}>No city matches that. Pick one from the suggestions, or try a nearby larger city.</div>}
         </div>
       )}
 
@@ -1422,7 +1428,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         {qiblaAngle !== null ? (
           <>
             {docked && userPos ? (
-              <QiblaWeb userPos={userPos} locationName={locationName} textSize={textSize}/>
+              <Suspense fallback={<div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", color:"var(--dim)", fontSize:"calc(13px * var(--ts, 1))" }}>Loading map…</div>}><QiblaWeb userPos={userPos} locationName={locationName} textSize={textSize}/></Suspense>
             ) : (
             <>
             {/* ── Alignment status pill ─────────────────────── */}
@@ -1594,7 +1600,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   color:textDim, fontSize:`${13 * textSize}px`,
                   lineHeight:1.85, marginBottom:"26px", maxWidth:"240px",
                 }}>
-                  {locError}. Enter your city to find your Qibla direction.
+                  {locError.replace(/\.$/, "")}. Enter your city to find your Qibla direction.
                 </div>
                 <button onClick={() => setShowCity(true)}
                   style={{

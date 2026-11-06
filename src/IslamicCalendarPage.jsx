@@ -153,18 +153,26 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   useEffect(()=>{
     if(!viewMonth)return;
     (async()=>{
+      const ck=`nur_hcal_${viewMonth.year}_${viewMonth.month}`;
+      let cached=null;
+      try{cached=JSON.parse(localStorage.getItem(ck)||"null");}catch{}
+      if(cached){setViewCal(cached);setCalLoading(false);return;}   // a Hijri month's dates never change
       setCalLoading(true); setViewCal(null);
       try{
-        const r=await fetch(`https://api.aladhan.com/v1/hToGCalendar/${viewMonth.month}/${viewMonth.year}`);
+        const ac=new AbortController(); const to=setTimeout(()=>ac.abort(),10000);
+        const r=await fetch(`https://api.aladhan.com/v1/hToGCalendar/${viewMonth.month}/${viewMonth.year}`,{signal:ac.signal});
+        clearTimeout(to);
         const d=await r.json();
         if(d.code===200){
-          setViewCal(d.data.map(e=>({
+          const rows=d.data.map(e=>({
             hDay:+e.hijri.day, hMonth:e.hijri.month.number, hYear:+e.hijri.year,
             gDay:+e.gregorian.day,
             gMonth:e.gregorian.month?.number||parseInt(e.gregorian.date?.split("-")[1])||1,
             gYear:+e.gregorian.year,
             wday:WDAY_MAP[e.gregorian.weekday?.en]??0,
-          })));
+          }));
+          setViewCal(rows);
+          try{localStorage.setItem(ck,JSON.stringify(rows));}catch{}
         }
       }catch(e){console.warn(e);}
       finally{setCalLoading(false);}

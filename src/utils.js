@@ -120,21 +120,81 @@ export async function checkIfRamadan() {
   return { isRamadan: h.month.number === 9, hijriDay: h.day, hijriMonth: HIJRI_MONTHS[h.month.number - 1], hijriYear: h.year };
 }
 
+// ── Location + prayer-time caching ────────────────────────────────────────────
+// One saved location shared by Prayer Times, Qibla and the Ramadan banner, so pages can paint at
+// once from what we already know and refresh the device position quietly in the background.
+const LOC_KEY = "nur_last_loc";
+export function getLastLocation() {
+  try { const l = JSON.parse(localStorage.getItem(LOC_KEY) || "null"); return l && typeof l.lat === "number" && typeof l.lon === "number" ? l : null; }
+  catch { return null; }
+}
+// loc: { lat, lon, name, manual } — manual=true means the person chose it, so GPS must not override it.
+export function saveLastLocation(loc) {
+  try { localStorage.setItem(LOC_KEY, JSON.stringify({ ...loc, ts: Date.now() })); } catch {}
+}
+export function distanceKm(a, b) {
+  const R = 6371, rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLon = rad(b.lon - a.lon);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+// Device position without the long wait: a recent fix is fine, and coarse accuracy is plenty for prayer times.
+export function getDevicePosition({ timeout = 8000, maxAge = 10 * 60 * 1000, high = false } = {}) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) return reject(new Error("unsupported"));
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => resolve({ lat: coords.latitude, lon: coords.longitude }),
+      reject,
+      { enableHighAccuracy: high, timeout, maximumAge: maxAge }
+    );
+  });
+}
+
+const todayKey = () => new Date().toLocaleDateString("en-CA");
+const PT_CACHE = "nur_pt_cache";
+const ptKey = loc => loc.city ? `c:${loc.city.toLowerCase()}` : `g:${(+loc.lat).toFixed(2)},${(+loc.lon).toFixed(2)}`;
+export function getCachedPrayerTimes(loc) {
+  try {
+    const c = JSON.parse(localStorage.getItem(PT_CACHE) || "null");
+    return c && c.date === todayKey() ? (c.items[ptKey(loc)] || null) : null;
+  } catch { return null; }
+}
+function cachePrayerTimes(loc, timings) {
+  try {
+    let c = JSON.parse(localStorage.getItem(PT_CACHE) || "null");
+    if (!c || c.date !== todayKey()) c = { date: todayKey(), items: {} };
+    const keys = Object.keys(c.items);
+    if (keys.length > 6) delete c.items[keys[0]];
+    c.items[ptKey(loc)] = timings;
+    localStorage.setItem(PT_CACHE, JSON.stringify(c));
+  } catch {}
+}
+async function fetchJson(url, ms = 9000) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  try { return await (await fetch(url, { signal: ac.signal })).json(); }
+  finally { clearTimeout(t); }
+}
+
 export async function getPrayerTimes(lat, lon) {
+  const hit = getCachedPrayerTimes({ lat, lon });
+  if (hit) return hit;
   const ts  = Math.floor(Date.now() / 1000);
   // method=1  → University of Islamic Sciences, Karachi (standard for South Asia & most Muslim countries)
   // school=1  → Hanafi Asr (shadow factor 2, used in India/Pakistan/Turkey/Central Asia)
-  const res = await fetch(
+  const data = await fetchJson(
     `https://api.aladhan.com/v1/timings/${ts}?latitude=${lat}&longitude=${lon}&method=1&school=1`
   );
-  const data = await res.json();
   if (data.code !== 200) throw new Error("Could not get prayer times");
+  cachePrayerTimes({ lat, lon }, data.data.timings);
   return data.data.timings;
 }
 
 export async function getPrayerTimesByCity(cityInput) {
   // Support "City, Country" format (e.g. "Hyderabad, India" or "London, UK")
   const raw         = (cityInput || "").trim();
+  const hit = getCachedPrayerTimes({ city: raw });
+  if (hit) return hit;
   const commaIdx    = raw.indexOf(",");
   const city        = commaIdx > 0 ? raw.slice(0, commaIdx).trim() : raw;
   const country     = commaIdx > 0 ? raw.slice(commaIdx + 1).trim() : "";
@@ -142,33 +202,40 @@ export async function getPrayerTimesByCity(cityInput) {
   const params = new URLSearchParams({ city, method: "1", school: "1" });
   if (country) params.set("country", country);
 
-  const res  = await fetch(`https://api.aladhan.com/v1/timingsByCity?${params}`);
-  const data = await res.json();
+  const data = await fetchJson(`https://api.aladhan.com/v1/timingsByCity?${params}`);
   if (data.code !== 200) throw new Error("City not found");
+  cachePrayerTimes({ city: raw }, data.data.timings);
   return data.data.timings;
 }
 
 // Next 7 days of timings (today first) for the website "Week ahead" table.
 // loc is { lat, lon } or { city }. Returns [{ date: Date, timings }]; failed days are skipped.
 export async function getWeekTimes(loc, days = 7) {
-  const out = await Promise.all(Array.from({ length: days }, async (_, i) => {
-    const d = new Date(); d.setDate(d.getDate() + i);
+  // One monthly-calendar request per month touched (usually one) instead of one request per day.
+  const dates = Array.from({ length: days }, (_, i) => { const d = new Date(); d.setDate(d.getDate() + i); return d; });
+  const months = [...new Set(dates.map(d => `${d.getFullYear()}-${d.getMonth() + 1}`))];
+  const tables = {};
+  await Promise.all(months.map(async ym => {
+    const [y, m] = ym.split("-");
     try {
       let url;
       if (loc.city !== undefined) {
         const raw = (loc.city || "").trim(), c = raw.indexOf(",");
-        const params = new URLSearchParams({ city: c > 0 ? raw.slice(0, c).trim() : raw, method: "1", school: "1" });
+        const params = new URLSearchParams({ city: c > 0 ? raw.slice(0, c).trim() : raw, month: m, year: y, method: "1", school: "1" });
         if (c > 0) params.set("country", raw.slice(c + 1).trim());
-        const dd = String(d.getDate()).padStart(2, "0"), mm = String(d.getMonth() + 1).padStart(2, "0");
-        url = `https://api.aladhan.com/v1/timingsByCity/${dd}-${mm}-${d.getFullYear()}?${params}`;
+        url = `https://api.aladhan.com/v1/calendarByCity?${params}`;
       } else {
-        url = `https://api.aladhan.com/v1/timings/${Math.floor(d.getTime() / 1000)}?latitude=${loc.lat}&longitude=${loc.lon}&method=1&school=1`;
+        url = `https://api.aladhan.com/v1/calendar?latitude=${loc.lat}&longitude=${loc.lon}&month=${m}&year=${y}&method=1&school=1`;
       }
-      const data = await (await fetch(url)).json();
-      return data.code === 200 ? { date: d, timings: data.data.timings } : null;
-    } catch { return null; }
+      const data = await fetchJson(url, 12000);
+      if (data.code === 200) tables[ym] = data.data;
+    } catch {}
   }));
-  return out.filter(Boolean);
+  return dates.map(d => {
+    const t = tables[`${d.getFullYear()}-${d.getMonth() + 1}`];
+    const row = t && t[d.getDate() - 1];
+    return row ? { date: d, timings: row.timings } : null;
+  }).filter(Boolean);
 }
 
 export const QURAN_TRANSLATIONS = [

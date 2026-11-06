@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import {
   PROXY_URL, deviceHeaders, DAILY_LIMIT, KEYS, getAgePrefix, getCachedRemaining, getLocalDate,
   setCachedRemaining, checkIfRamadan, getPrayerTimes,
-  getPrayerTimesByCity, getCountdownTo,
+  getPrayerTimesByCity, getCountdownTo, getLastLocation, saveLastLocation, getDevicePosition,
 } from "./utils.js";
+import CityBox from "./CityBox.jsx";
+import { resolveCity } from "./cities.js";
 import { SADAQAH_ENABLED } from "./sadaqah.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
@@ -53,27 +55,39 @@ function RamadanBanner({ prayerTimes, hijriDay, onRequestCity }) {
 }
 
 function CityModal({ onSubmit, onClose }) {
-  const [city, setCity] = useState(localStorage.getItem(KEYS.CITY) || "");
+  const [city, setCity] = useState("");
   const [err,  setErr]  = useState("");
   const [busy, setBusy] = useState(false);
-  const submit = async () => {
-    if (!city.trim()) return;
+  const pick = async (p) => {
     setBusy(true); setErr("");
-    try { const t = await getPrayerTimesByCity(city.trim()); localStorage.setItem(KEYS.CITY, city.trim()); onSubmit(t); }
-    catch { setErr("City not found. Try a nearby major city."); }
+    try {
+      const t = await getPrayerTimes(p.lat, p.lon);
+      localStorage.setItem(KEYS.CITY, p.country ? `${p.name}, ${p.country}` : p.name);
+      saveLastLocation({ lat: p.lat, lon: p.lon, name: p.label, manual: true });
+      onSubmit(t);
+    } catch { setErr("Could not load times. Check your connection and try again."); }
     finally { setBusy(false); }
+  };
+  const submit = async (text = city) => {
+    if (!text.trim()) return;
+    setBusy(true); setErr("");
+    const p = await resolveCity(text);
+    if (!p) { setBusy(false); setErr("No city matches that. Pick one from the suggestions, or try a nearby larger city."); return; }
+    await pick(p);
   };
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
       <div style={{ background:"var(--pop)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"340px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
           <span style={{ color:"var(--gold)", fontSize:"calc(16px * var(--ts, 1))", fontWeight:700 }}>Your City</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
+          <button onClick={onClose} aria-label="Close" style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
         </div>
-        <input value={city} onChange={e => setCity(e.target.value)} onKeyDown={e => e.key==="Enter" && submit()} placeholder="e.g. Istanbul, Karachi, London"
-          style={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"calc(15px * var(--ts, 1))", outline:"none", fontFamily:"Nunito,sans-serif", marginBottom:"12px", boxSizing:"border-box" }}/>
+        <CityBox value={city} onChange={setCity} onPick={pick} onSubmit={submit} autoFocus
+          placeholder="Search a city, e.g. Istanbul, Karachi"
+          wrapStyle={{ flex:"none", marginBottom:"12px" }}
+          inputStyle={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"calc(15px * var(--ts, 1))", outline:"none", fontFamily:"Nunito,sans-serif", boxSizing:"border-box" }}/>
         {err && <div style={{ color:"var(--warn)", fontSize:"calc(13px * var(--ts, 1))", marginBottom:"10px" }}>{err}</div>}
-        <button onClick={submit} disabled={!city.trim() || busy}
+        <button onClick={() => submit()} disabled={!city.trim() || busy}
           style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
           {busy ? "Finding times…" : "Get Prayer Times"}
         </button>
@@ -185,14 +199,10 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
           if (city) getPrayerTimesByCity(city).then(setPrayerTimes).catch(() => {});
         };
 
-        if (navigator.geolocation) {
-          navigator.geolocation.getCurrentPosition(
-            async ({ coords }) => { try { setPrayerTimes(await getPrayerTimes(coords.latitude, coords.longitude)); } catch {} },
-            loadFallback
-          );
-        } else {
-          loadFallback();
-        }
+        const last = getLastLocation();
+        if (last) { try { setPrayerTimes(await getPrayerTimes(last.lat, last.lon)); return; } catch {} }
+        try { const pos = await getDevicePosition(); setPrayerTimes(await getPrayerTimes(pos.lat, pos.lon)); }
+        catch { loadFallback(); }
       } catch {}
     })();
   }, []);

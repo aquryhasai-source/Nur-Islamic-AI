@@ -215,3 +215,11 @@ html.nur-light{--mapBg:#E4ECF7;--land:#FFFFFF;--coast:rgba(21,27,74,.3);--ring:r
 .ts-range::-moz-range-track{height:4px;border-radius:2px;background:var(--lineSoft)}
 .ts-range::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-7px;border-radius:50%;background:var(--gold);border:2px solid var(--bgSolid,#0A0F33);box-shadow:0 0 0 1px var(--line)}
 .ts-range::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--gold);border:2px solid var(--bgSolid,#0A0F33);box-shadow:0 0 0 1px var(--line)}
+
+/* ── City suggestions dropdown ── */
+.city-list{position:absolute;top:calc(100% + 6px);left:0;right:0;min-width:260px;max-height:min(320px,50vh);overflow-y:auto;margin:0;padding:6px;list-style:none;background:var(--pop);border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 40px rgba(0,0,0,.35);z-index:60;text-align:left}
+.city-opt{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--faint);font-size:calc(13px * var(--ts,1))}
+.city-opt.on{background:var(--chip);color:var(--gold)}
+.city-nm{color:var(--text);font-weight:700;white-space:nowrap}
+.city-sub{color:var(--dim);font-size:.92em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.city-empty{padding:10px;color:var(--dim);font-size:calc(12.5px * var(--ts,1))}
