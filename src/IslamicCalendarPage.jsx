@@ -1,12 +1,8 @@
 import { useState, useEffect } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { HIJRI_MONTHS, getHijriToday } from "./utils.js";
 
 // ── Inline data ──────────────────────────────────────────────────────────────
-const HIJRI_MONTHS = [
-  "Muharram","Safar","Rabi al-Awwal","Rabi al-Thani",
-  "Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban",
-  "Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah",
-];
 const ISLAMIC_EVENTS = {
   "1-1":"Islamic New Year","1-10":"Day of Ashura","3-12":"Mawlid an-Nabi",
   "7-27":"Isra and Mi'raj","8-15":"Shab-e-Barat","9-1":"Start of Ramadan",
@@ -145,13 +141,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
   useEffect(()=>{
     (async()=>{
       try{
-        const now=new Date();
-        const dd=String(now.getDate()).padStart(2,"0");
-        const mm=String(now.getMonth()+1).padStart(2,"0");
-        const r=await fetch(`https://api.aladhan.com/v1/gToH?date=${dd}-${mm}-${now.getFullYear()}`);
-        const d=await r.json();
-        const h=d.data.hijri;
-        const ht={day:+h.day,month:h.month.number,year:+h.year,monthEn:h.month.en};
+        const ht=await getHijriToday();
         setHijriToday(ht);
         setViewMonth({month:ht.month,year:ht.year,monthEn:ht.monthEn});
       }catch(e){console.warn(e);}

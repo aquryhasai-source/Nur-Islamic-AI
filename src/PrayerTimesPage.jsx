@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo, getWeekTimes } from "./utils.js";
+import { KEYS, getPrayerTimes, getPrayerTimesByCity, getCountdownTo, getWeekTimes, getHijriToday, HIJRI_MONTHS } from "./utils.js";
 import { syncPrayerLocation, subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 
@@ -106,7 +106,7 @@ function getCurrentPrayerKey(prayerTimes) {
   return current?.key;
 }
 
-// ── Hijri date (algorithmic approximation) ────────────────────────────────────
+// ── Hijri date: only a fallback when Aladhan can't be reached (same source as the Calendar page otherwise) ────────────────────────────────────
 function getHijriDate() {
   const now = new Date();
   const D = now.getDate(), M = now.getMonth() + 1, Y = now.getFullYear();
@@ -124,12 +124,7 @@ function getHijriDate() {
   const hMonth = Math.floor((24 * l2) / 709);
   const hDay   = l2 - Math.floor((709 * hMonth) / 24);
   const hYear  = 30 * n + j - 30;
-  const months = [
-    "Muharram","Safar","Rabi al-Awwal","Rabi al-Thani",
-    "Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban",
-    "Ramadan","Shawwal","Dhul Qi'dah","Dhul Hijjah",
-  ];
-  return `${hDay} ${months[hMonth - 1]} ${hYear} AH`;
+  return `${hDay} ${HIJRI_MONTHS[hMonth - 1]} ${hYear} AH`;
 }
 
 // ── Prayer window progress (0–100) ────────────────────────────────────────────
@@ -389,7 +384,14 @@ export default function PrayerTimesPage({
 
   // ── Derived values ────────────────────────────────────────────────────────────
   const today           = new Date();
-  const hijriDate       = getHijriDate();
+  const [hijriDate, setHijriDate] = useState("");
+  useEffect(() => {
+    let live = true;
+    getHijriToday()
+      .then(h => { if (live) setHijriDate(`${h.day} ${h.monthEn} ${h.year} AH`); })
+      .catch(() => { if (live) setHijriDate(getHijriDate()); });
+    return () => { live = false; };
+  }, []);
   const insight         = INSIGHTS[today.getDate() % INSIGHTS.length];
   const currentPrayer   = PRAYER_LIST.find(p => p.key === currentKey);
   const nextPrayer      = PRAYER_LIST.find(p => p.key === nextKey);
@@ -760,7 +762,7 @@ export default function PrayerTimesPage({
           {locationName && (
             <div style={{ color:goldDim, fontSize:`${11*textSize}px`, display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
               <span style={{ display:"inline-flex", alignItems:"center", gap:"6px" }}>{docked ? <DkIco d={DK_PIN} size={15}/> : "📍"} {locationName}</span>
-              {docked && <><span>{todayStr}</span><span aria-hidden="true">·</span><span>{hijriDate}</span></>}
+              {docked && <><span>{todayStr}</span>{hijriDate && <><span aria-hidden="true">·</span><span>{hijriDate}</span></>}</>}
             </div>
           )}
         </div>
@@ -905,7 +907,7 @@ export default function PrayerTimesPage({
 
               {/* Gregorian + Hijri date */}
               <div style={{ color:textDim, fontSize:`${11*textSize}px`, textAlign:"center" }}>
-                {todayStr} · {hijriDate}
+                {todayStr}{hijriDate ? ` · ${hijriDate}` : ""}
               </div>
             </div>
 

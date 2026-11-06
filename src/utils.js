@@ -117,7 +117,7 @@ export async function checkIfRamadan() {
   const res   = await fetch(`https://api.aladhan.com/v1/gToH?date=${dd}-${mm}-${yyyy}`);
   const data  = await res.json();
   const h     = data.data.hijri;
-  return { isRamadan: h.month.number === 9, hijriDay: h.day, hijriMonth: h.month.en, hijriYear: h.year };
+  return { isRamadan: h.month.number === 9, hijriDay: h.day, hijriMonth: HIJRI_MONTHS[h.month.number - 1], hijriYear: h.year };
 }
 
 export async function getPrayerTimes(lat, lon) {
@@ -324,8 +324,27 @@ export function calculateQibla(lat, lon) {
 export const HIJRI_MONTHS = [
   "Muharram","Safar","Rabi al-Awwal","Rabi al-Thani",
   "Jumada al-Awwal","Jumada al-Thani","Rajab","Sha'ban",
-  "Ramadan","Shawwal","Dhul Qa'dah","Dhul Hijjah",
+  "Ramadan","Shawwal","Dhu al-Qi'dah","Dhu al-Hijjah",
 ];
+
+// Today's Hijri date from Aladhan, cached per Gregorian day so every page shows the same date.
+// Month names always come from HIJRI_MONTHS above (never the API's own spelling).
+let _hijriCache = { key: "", promise: null };
+export function getHijriToday() {
+  const now = new Date();
+  const dd = String(now.getDate()).padStart(2, "0"), mm = String(now.getMonth() + 1).padStart(2, "0");
+  const key = `${dd}-${mm}-${now.getFullYear()}`;
+  if (_hijriCache.key === key && _hijriCache.promise) return _hijriCache.promise;
+  const promise = fetch(`https://api.aladhan.com/v1/gToH?date=${key}`)
+    .then(r => r.json())
+    .then(d => {
+      const h = d.data.hijri, month = +h.month.number;
+      return { day: +h.day, month, year: +h.year, monthEn: HIJRI_MONTHS[month - 1] };
+    })
+    .catch(err => { _hijriCache = { key: "", promise: null }; throw err; });
+  _hijriCache = { key, promise };
+  return promise;
+}
 
 export const ISLAMIC_EVENTS = {
   "1-1":  "Islamic New Year",
