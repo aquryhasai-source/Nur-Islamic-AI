@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { KEYS } from "./utils.js";
 
 // ─── Public homepage (served at "/"). Ad-free. The app itself lives at /app. ───
@@ -37,7 +37,10 @@ export default function Landing() {
     try { localStorage.setItem(KEYS.THEME, light ? "light" : "dark"); } catch {}
   }, [light]);
 
-  const goApp = (e) => { e && e.preventDefault && e.preventDefault(); window.location.assign("/app"); };
+  // The typed question travels to the app in the URL (?q=) and is placed in the chat box there.
+  const askRef = useRef(null);
+  const appUrl = (q) => { const t = (q || "").trim().slice(0, 500); return t ? `/app?q=${encodeURIComponent(t)}` : "/app"; };
+  const goApp = (e) => { e && e.preventDefault && e.preventDefault(); window.location.assign(appUrl(askRef.current?.value)); };
   const chip = { padding:"8px 16px", borderRadius:"20px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--dim)", fontSize:"13.5px", fontWeight:600, textDecoration:"none" };
 
   return (
@@ -92,14 +95,14 @@ export default function Landing() {
         <form onSubmit={goApp} style={{ margin:"36px auto 0", maxWidth:"640px" }}>
           <label style={{ display:"flex", alignItems:"center", gap:"10px", background:"var(--panel2)", border:"1px solid var(--line)", borderRadius:"18px", padding:"8px 8px 8px 20px", textAlign:"left" }}>
             <span style={{ position:"absolute", width:"1px", height:"1px", overflow:"hidden", clip:"rect(0 0 0 0)" }}>Ask a question</span>
-            <input type="text" placeholder="Ask a question…" style={{ flex:1, minWidth:0, height:"44px", border:0, outline:0, background:"transparent", color:"var(--text)", fontSize:"16px", fontWeight:600 }}/>
+            <input ref={askRef} type="text" maxLength={500} enterKeyHint="send" autoComplete="off" placeholder="Ask a question…" style={{ flex:1, minWidth:0, height:"44px", border:0, outline:0, background:"transparent", color:"var(--text)", fontSize:"16px", fontWeight:600 }}/>
             <button type="submit" aria-label="Ask in the app" style={{ flex:"none", width:"46px", height:"46px", border:0, cursor:"pointer", borderRadius:"13px", background:"var(--goldFill)", color:"var(--onGold)", display:"flex", alignItems:"center", justifyContent:"center" }}>
               <Ico size={20} sw={2.2}><path d="M5 12h14M13 6l6 6-6 6"/></Ico>
             </button>
           </label>
         </form>
         <div style={{ margin:"18px auto 0", maxWidth:"700px", display:"flex", flexWrap:"wrap", justifyContent:"center", gap:"10px" }}>
-          {["What does the Quran say about patience?","How do I perform wudu?","Hadith on kindness to parents"].map(q => <a key={q} className="cb" href="/app" style={chip}>{q}</a>)}
+          {["What does the Quran say about patience?","How do I perform wudu?","Hadith on kindness to parents"].map(q => <a key={q} className="cb" href={appUrl(q)} style={chip}>{q}</a>)}
         </div>
       </section>
 

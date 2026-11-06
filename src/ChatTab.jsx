@@ -5,6 +5,7 @@ import {
   getPrayerTimesByCity, getCountdownTo, getLastLocation, saveLastLocation, getDevicePosition,
 } from "./utils.js";
 import CityBox from "./CityBox.jsx";
+import { getCitationText } from "./citeText.js";
 import { resolveCity } from "./cities.js";
 import { SADAQAH_ENABLED } from "./sadaqah.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
@@ -158,6 +159,40 @@ function collectCitations(messages) {
     }
   });
   return out;
+}
+
+// One entry in the Citations panel: the reference, the passage itself, and a button to open it in full.
+function CiteCard({ c, onOpen }) {
+  const [d, setD] = useState(null);
+  const [state, setState] = useState("loading");
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    let live = true; setState("loading");
+    getCitationText(c).then(r => { if (live) { setD(r); setState("ok"); } }).catch(() => { if (live) setState("err"); });
+    return () => { live = false; };
+  }, [c.key]);
+  const LIM = 260;
+  const long = d && d.text.length > LIM;
+  return (
+    <div style={{ padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+        <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>{c.raw}</span>
+        <button className="cb" onClick={() => onOpen(c)} style={{ background:"none", border:0, padding:0, cursor:"pointer", fontFamily:"inherit", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>Open →</button>
+      </div>
+      {state === "loading" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Loading text…</div>}
+      {state === "err" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Text unavailable right now. Use Open to read it.</div>}
+      {state === "ok" && d && (
+        <div style={{ marginTop:"10px", borderTop:"1px solid var(--lineSoft)", paddingTop:"10px" }}>
+          {d.arabic && <div dir="rtl" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(20px * var(--ts, 1))", lineHeight:2, color:"var(--gold)", marginBottom:"6px" }}>{d.arabic}</div>}
+          <div style={{ fontSize:"calc(13px * var(--ts, 1))", lineHeight:1.7, color:"var(--dim)" }}>
+            {long && !more ? `${d.text.slice(0, LIM).trim()}…` : d.text}
+            {long && <button className="cb" onClick={() => setMore(m => !m)} style={{ background:"none", border:0, padding:"0 0 0 6px", cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:700, color:"var(--gold)" }}>{more ? "Less" : "More"}</button>}
+          </div>
+          {d.grade && <div style={{ marginTop:"6px", fontSize:"calc(11px * var(--ts, 1))", fontWeight:700, letterSpacing:"1px", color:"var(--faint)" }}>{d.grade.toUpperCase()}</div>}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining, setRemaining, unlocked, setUnlocked, profile, deviceId, lightMode, textSize = 1, navigateTo, onSwitchTab, onQuranSurah, onHadithNav }) {
@@ -352,6 +387,19 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
     return <div style={{ lineHeight:1.75, fontSize:`${14.5 * textSize}px` }}>{lines}</div>;
   };
 
+  // A question typed on the homepage arrives as /app?q=… — put it in the box (not sent, so the person can edit it first)
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const q = (url.searchParams.get("q") || "").trim().slice(0, 500);
+      if (!q) return;
+      setInput(q);
+      url.searchParams.delete("q");
+      window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+      setTimeout(() => { const el = textareaRef.current; if (el) { el.focus(); el.setSelectionRange(q.length, q.length); el.style.height = Math.min(el.scrollHeight, 140) + "px"; } }, 150);
+    } catch {}
+  }, []);
+
   const isEmpty  = messages.length === 0;
   const isLocked = !unlocked && remaining <= 0;
   const citations = collectCitations(messages);
@@ -481,13 +529,7 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
                 : `No ${citeKind === "quran" ? "Quran" : "Hadith"} citations in this chat yet.`}
             </div>
           )}
-          {shown.map(c => (
-            <button key={c.key} className="pc" onClick={() => openCitation(c)}
-              style={{ display:"flex", alignItems:"center", gap:"12px", padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)", textAlign:"left", cursor:"pointer" }}>
-              <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>{c.raw}</span>
-              <span style={{ fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>Open →</span>
-            </button>
-          ))}
+          {shown.map(c => <CiteCard key={c.key} c={c} onOpen={openCitation}/>)}
         </div>
       </aside>
     )}
