@@ -84,8 +84,8 @@ export default function SupportPage({ onBack, onOpenSidebar, lightMode, textSize
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 48px", textAlign:"center" }}>
-        <div style={{ fontSize:`${40*textSize}px`, marginBottom:"8px" }}>💛</div>
-        <div style={{ color:gold, fontSize:`${20*textSize}px`, fontWeight:800, marginBottom:"6px" }}>Sadaqah Jariyah</div>
+        <div style={{ color:gold, marginBottom:"10px", display:"flex", justifyContent:"center" }}><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.5 15.4 12 20 12 20Z"/></svg></div>
+        <div style={{ fontFamily:"var(--font-head)", color:gold, fontSize:`${28*textSize}px`, fontWeight:700, lineHeight:1.1, marginBottom:"6px" }}>Sadaqah Jariyah</div>
         <div style={{ width:"40px", height:"1px", background:`linear-gradient(90deg,transparent,${gold},transparent)`, margin:"14px auto 18px" }}/>
 
         <div style={{ color:textClr, fontSize:`${14*textSize}px`, lineHeight:1.8, maxWidth:"320px", margin:"0 auto 22px" }}>

@@ -5,11 +5,16 @@ import { useMedia, DOCK_QUERY } from "./useMedia.js";
 const LS_URL = "https://yasirhaquecreativelabs.lemonsqueezy.com/checkout/buy/c19a2e49-4416-4cf7-b9b5-2f8140da3962";
 const RZ_URL = "https://rzp.io/rzp/RxurFTj";
 
+const PIco = ({ d, size = 18, sw = 1.8 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d}/></svg>
+);
+const MOON = "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z";
+
 const PRO_FEATURES = [
-  { icon: "🚫", svg: "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17ZM6 6l12 12", label: "Remove all ads — clean experience forever" },
-  { icon: "✦",  svg: "M12 12c-1.5-2.2-3-3.5-4.8-3.5a3.5 3.5 0 1 0 0 7c1.8 0 3.3-1.3 4.8-3.5Zm0 0c1.5 2.2 3 3.5 4.8 3.5a3.5 3.5 0 1 0 0-7c-1.8 0-3.3 1.3-4.8 3.5Z", label: "Unlimited AI reflections daily" },
-  { icon: "⭐", svg: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z", label: "Support NŪR's ongoing development" },
-  { icon: "🌙", svg: "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z", label: "Priority access to new features" },
+  { svg: "M12 3.5a8.5 8.5 0 1 0 0 17 8.5 8.5 0 1 0 0-17ZM6 6l12 12", label: "Remove all ads — clean experience forever" },
+  { svg: "M12 12c-1.5-2.2-3-3.5-4.8-3.5a3.5 3.5 0 1 0 0 7c1.8 0 3.3-1.3 4.8-3.5Zm0 0c1.5 2.2 3 3.5 4.8 3.5a3.5 3.5 0 1 0 0-7c-1.8 0-3.3 1.3-4.8 3.5Z", label: "Unlimited AI reflections daily" },
+  { svg: "M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.4A4 4 0 0 1 19 10c0 5.6-7 10-7 10Z", label: "Support NŪR's ongoing development" },
+  { svg: "M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5Z", label: "Priority access to new features" },
 ];
 
 export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnlocked, setRemaining, deviceId, lightMode, textSize = 1 }) {
@@ -189,7 +194,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
 
         {/* Hero */}
         <div style={{ padding:"32px 24px 28px", textAlign:"center", borderBottom:`1px solid ${goldBdr}` }}>
-          <div style={{ fontSize:`${44*textSize}px`, color:gold, fontWeight:900, letterSpacing:"6px", marginBottom:"4px" }}>NŪR</div>
+          <div style={{ fontFamily:"var(--font-head)", fontSize:`${52*textSize}px`, color:gold, fontWeight:700, letterSpacing:"8px", paddingLeft:"8px", lineHeight:1.05, marginBottom:"6px" }}>NŪR</div>
           <div style={{ color:goldDim, fontSize:`${11*textSize}px`, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"20px" }}>Ad‑Free · Unlimited</div>
 
           <div style={{ fontSize:`${18*textSize}px`, color:gold, fontFamily:"var(--font-ar)", marginBottom:"6px" }}>
@@ -204,7 +209,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
 
           <a href={payUrl} target="_blank" rel="noreferrer"
             style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"6px", width:"100%", maxWidth:"300px", background:"var(--goldFill)", borderRadius:"18px", color:"var(--onGold)", padding:"18px 24px", fontSize:`${18*textSize}px`, fontWeight:800, textDecoration:"none", margin:"0 auto", boxShadow:`0 6px 28px ${"var(--line)"}`, fontFamily:"Nunito,sans-serif" }}>
-            <span>🌙 Go Ad‑Free — {price}</span>
+            <span style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"9px" }}><PIco d={MOON} size={19}/>Go Ad‑Free — {price}</span>
             <span style={{ fontSize:`${11*textSize}px`, fontWeight:400, opacity:0.8 }}>{payNote}</span>
           </a>
           <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginTop:"10px" }}>One-time payment · Yours forever</div>
@@ -216,8 +221,8 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
             {PRO_FEATURES.map((f, i) => (
               <div key={i} style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(18px * var(--ts, 1))", flexShrink:0 }}>
-                  {f.icon}
+                <div style={{ width:"36px", height:"36px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", color:gold, flexShrink:0 }}>
+                  <PIco d={f.svg} size={18}/>
                 </div>
                 <span style={{ color:textClr, fontSize:`${14*textSize}px`, fontWeight:600 }}>{f.label}</span>
               </div>
@@ -240,7 +245,7 @@ export default function GetProPage({ onBack, onOpenSidebar, onUnlocked, setUnloc
           />
           {unlockError && <div style={{ color:"var(--warn)", fontSize:`${12*textSize}px`, marginBottom:"10px" }}>{unlockError}</div>}
           {unlockStatus === "success"
-            ? <div style={{ textAlign:"center", color:"var(--green)", fontSize:`${15*textSize}px`, fontWeight:700, padding:"12px" }}>✦ Unlocked! Jazakallahu Khairan 🌙</div>
+            ? <div style={{ textAlign:"center", color:"var(--green)", fontSize:`${15*textSize}px`, fontWeight:700, padding:"12px" }}>Unlocked! Jazakallahu Khairan</div>
             : (
               <button onClick={redeem} disabled={!unlockCode.trim() || unlockStatus==="loading"}
                 style={{ width:"100%", padding:"13px", borderRadius:"12px", background:unlockCode.trim()?"var(--goldFill)":"transparent", border:`1px solid ${goldBdr}`, color:unlockCode.trim()?"var(--onGold)":goldDim, fontSize:`${14*textSize}px`, fontWeight:700, cursor:unlockCode.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
