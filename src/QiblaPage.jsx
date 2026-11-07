@@ -1268,6 +1268,8 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden", position:"relative" }}>
       {/* ── Global animations ── */}
       <style>{`
+        /* Short or low-resolution screens: sections keep their height and the page scrolls, instead of squashing the cards to a line */
+        .q-scroll > * { flex-shrink: 0; }
         @keyframes qAlignRing {
           0%, 100% { opacity: 0.22; }
           50% { opacity: 0.55; }
@@ -1416,7 +1418,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
       {/* ══════════════════════════════════════════════════════
           MAIN CONTENT
           ══════════════════════════════════════════════════════ */}
-      <div style={{
+      <div className="q-scroll" style={{
         flex:1, display:"flex", flexDirection:"column",
         alignItems:"center", justifyContent:"flex-start",
         padding: docked ? "14px 40px 32px" : "14px 24px 32px",
