@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { Icon, IconG } from "./Icons.jsx";
 import CityBox from "./CityBox.jsx";
 import { resolveCity } from "./cities.js";
 const QiblaWeb = lazy(() => import("./QiblaWeb.jsx"));
@@ -173,7 +174,7 @@ function FaceTray({ t, face, lightMode, onPick }) {
           <button key={key} role="option" aria-selected={on} onClick={() => onPick(key)} style={{
             background: "none", border: "none", cursor: "pointer", padding: "2px", flex: "0 0 auto",
             display: "flex", flexDirection: "column", alignItems: "center", gap: "4px",
-            fontFamily: "Nunito, sans-serif",
+            fontFamily:"inherit",
           }}>
             <span style={{
               display: "block", borderRadius: "50%", padding: "2px", lineHeight: 0,
@@ -437,21 +438,18 @@ const CompassSVG = ({ bearing, qibla, size, aligned, lightMode, face = "classic"
           fill={GOLD} opacity="0.2"
         />
 
-        {/* Kaaba emoji at needle tip */}
-        <text
-          x={cx} y={TIP + 8}
-          textAnchor="middle" dominantBaseline="central"
-          fontSize={aligned ? "22" : "20"}
-          filter={aligned ? "url(#qKaabaGlow)" : undefined}
+        {/* Kaaba icon at needle tip */}
+        <g
           style={{
-            transition: "font-size 0.4s ease",
+            transition: "transform 0.4s ease",
             filter: aligned
               ? "drop-shadow(0 0 10px rgba(201,168,76,0.95)) drop-shadow(0 0 22px rgba(201,168,76,0.55))"
               : "drop-shadow(0 2px 6px rgba(201,168,76,0.5))",
           }}
         >
-          🕋
-        </text>
+          <circle cx={cx} cy={TIP + 8} r={aligned ? 13 : 12} fill={FC.cap} stroke={GOLD} strokeWidth="1.5"/>
+          <IconG n="kaaba" x={cx - (aligned ? 8 : 7.5)} y={TIP + 8 - (aligned ? 8 : 7.5)} size={aligned ? 16 : 15} color={GOLD}/>
+        </g>
       </g>
 
       {/* ── Center cap (always on top) ── */}
@@ -702,7 +700,7 @@ function QiblaRoute({ t, textSize, userName, distanceKm, qiblaAngle }) {
       <circle cx="40" cy="70" r="1.8" fill="#091610"/>
       {/* Makkah */}
       <circle cx="260" cy="70" r="12" fill="#091610" stroke={t.gold} strokeWidth="1.4"/>
-      <text x="260" y="71" textAnchor="middle" dominantBaseline="central" fontSize="13">🕋</text>
+      <IconG n="kaaba" x={253} y={64} size={14} color={t.gold}/>
       {/* labels */}
       {!atKaaba && (
         <>
@@ -844,15 +842,16 @@ function HeadingTape({ t, live, qiblaAngle, size }) {
         <g>
           <line x1={xq} y1={cy - 92} x2={xq} y2={cy + 92} stroke={gold} strokeWidth="2.6" strokeLinecap="round"
             opacity={aligned ? 1 : 0.85} style={{ filter: aligned ? glow : "none", transition: "filter 0.4s ease" }}/>
-          <text x={xq} y={cy - 112} textAnchor="middle" dominantBaseline="central" fontSize={aligned ? 32 : 30}
-            style={{ filter: kaabaGlow, transition: "font-size 0.3s ease" }}>🕋</text>
+          <g style={{ filter: kaabaGlow }}>
+            <IconG n="kaaba" x={xq - (aligned ? 16 : 15)} y={cy - 112 - (aligned ? 16 : 15)} size={aligned ? 32 : 30} color={gold}/>
+          </g>
           <text x={xq} y={cy + 112} textAnchor="middle" fill={gold} fontSize="11" opacity="0.85">
             {Math.round(qiblaAngle)}°
           </text>
         </g>
       ) : (
         <g transform={`translate(${dq > 0 ? size - 30 : 30} ${cy})`}>
-          <text textAnchor="middle" dominantBaseline="central" fontSize="24" style={{ filter: kaabaGlow }}>🕋</text>
+          <g style={{ filter: kaabaGlow }}><IconG n="kaaba" x={-12} y={-12} size={24} color={gold}/></g>
           <path d={dq > 0 ? "M20,-8 L28,0 L20,8" : "M-20,-8 L-28,0 L-20,8"} fill="none" stroke={gold}
             strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ filter: glow }}/>
         </g>
@@ -889,7 +888,7 @@ function ViewModeButton({ t, bg, mode, onCycle, inset = 2 }) {
       borderRadius: "16px", cursor: "pointer", background: bg, border: `1px solid ${t.goldBdr}`,
       backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)", color: t.gold,
       fontSize: "9.5px", fontWeight: 700, letterSpacing: "1.4px", textTransform: "uppercase",
-      fontFamily: "Nunito, sans-serif", display: "flex", alignItems: "center", gap: "6px",
+      fontFamily:"inherit", display: "flex", alignItems: "center", gap: "6px",
     }}>
       <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
         {mode === "tape"
@@ -940,7 +939,7 @@ function QiblaExtras({ t, textSize, health, distanceKm, qiblaAngle, locationName
         <StatCol first big t={t} textSize={textSize} label="Compass" value={cValue} sub={cSub} color={cColor}
           lead={<Dot color={cColor}/>}/>
         <StatCol big stack t={t} textSize={textSize} label="Level"
-          value={!hasTilt ? "—" : isLevel ? "Phone level ✓" : "Hold your phone level"}
+          value={!hasTilt ? "—" : isLevel ? <span style={{ display:"inline-flex", alignItems:"center", gap:"4px" }}>Phone level <Icon n="check" size={13}/></span> : "Hold your phone level"}
           sub={!hasTilt ? "no tilt data" : null} color={lvlColor}
           lead={hasTilt ? <LevelBubble beta={health.beta} gamma={health.gamma} color={lvlColor} t={t} size={44}/> : null}/>
       </div>
@@ -1230,7 +1229,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
   const status = diff !== null
     ? aligned
       ? {
-          icon: "✓",
+          icon: "check",
           text: "Facing Qibla",
           sub: "Allahu Akbar · You are aligned with the Qibla",
           color: "var(--green)",
@@ -1240,13 +1239,13 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
         }
       : diff > 0
         ? {
-            icon: "↻",
+            icon: "refresh",
             text: `Turn Right ${absDiff}°`,
             sub: "Rotate clockwise to face the Qibla",
             color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
           }
         : {
-            icon: "↺",
+            icon: "undo",
             text: `Turn Left ${absDiff}°`,
             sub: "Rotate counter-clockwise to face the Qibla",
             color: gold, bg: goldFaint, bdr: goldBdr, shadow: "rgba(0,0,0,0.06)",
@@ -1322,7 +1321,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
 
         {/* Centered title + location */}
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", minWidth:0 }}>
-          <div style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>
+          <div style={{ color:gold, fontSize:`${18.5*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>
             Qibla Direction
           </div>
           {locationName && (
@@ -1339,7 +1338,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   <span aria-hidden="true">·</span>
                   <span>Shortest route to the Kaaba, measured from True North</span>
                 </span>
-              ) : <>📍 {locationName}</>}
+              ) : <span style={{ display:"inline-flex", alignItems:"center", gap:"4px" }}><Icon n="pin" size={12}/> {locationName}</span>}
             </div>
           )}
         </div>
@@ -1368,15 +1367,15 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               border:`1px solid ${showCity ? gold : goldBdr}`,
               borderRadius:"8px", padding:"5px 10px",
               color: showCity ? gold : goldDim,
-              fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", fontFamily:"Nunito, sans-serif",
+              fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", fontFamily:"inherit",
               transition:"all 0.2s", fontWeight: showCity ? 700 : 400,
             }}
           >
-            📍
+            <Icon n="pin" size={16}/>
           </button>}
           <button className="nur-ph-back" onClick={onBack}
-            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 4px" }}>
-            ←
+            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 4px", display:"flex", alignItems:"center" }}>
+            <Icon n="back" size={20}/>
           </button>
         </div>
       </div>
@@ -1396,7 +1395,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 width:"100%", boxSizing:"border-box", background:inputBg,
                 border:`1px solid ${goldBdr}`, borderRadius:"10px",
                 padding:"9px 12px", color:textClr,
-                fontSize:"calc(13px * var(--ts, 1))", outline:"none", fontFamily:"Nunito, sans-serif",
+                fontSize:"calc(13px * var(--ts, 1))", outline:"none", fontFamily:"inherit",
               }}
             />
             <button onClick={() => lookupCity()}
@@ -1405,7 +1404,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 background:"var(--goldFill)",
                 border:"none", color:"var(--onGold)",
                 fontSize:"calc(13px * var(--ts, 1))", fontWeight:700, cursor:"pointer",
-                fontFamily:"Nunito, sans-serif",
+                fontFamily:"inherit",
               }}>
               Go
             </button>
@@ -1446,11 +1445,9 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                   transition:"background 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease",
                 }}>
                   <span style={{
-                    fontSize:"calc(20px * var(--ts, 1))", color:status.color,
-                    fontWeight:800, lineHeight:1,
-                    fontFamily:"var(--font-ar)",
+                    display:"inline-flex", color:status.color, lineHeight:1,
                   }}>
-                    {status.icon}
+                    <Icon n={status.icon} size={20}/>
                   </span>
                   <span style={{
                     color:status.color,
@@ -1589,9 +1586,9 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
           <div style={{ textAlign:"center", padding:"16px", margin:"auto 0" }}>
             {locError ? (
               <>
-                <div style={{ fontSize:"calc(40px * var(--ts, 1))", marginBottom:"18px", opacity:0.55 }}>📍</div>
+                <div style={{ marginBottom:"18px", opacity:0.55, color:gold, display:"flex", justifyContent:"center" }}><Icon n="pin" size={40}/></div>
                 <div style={{
-                  color:gold, fontSize:`${16 * textSize}px`,
+                  color:gold, fontFamily:"var(--font-head)", fontSize:`${18.5 * textSize}px`,
                   fontWeight:700, marginBottom:"10px",
                 }}>
                   Location Required
@@ -1608,7 +1605,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                     background:"var(--goldFill)",
                     border:"none", color:"var(--onGold)",
                     fontSize:`${14 * textSize}px`, fontWeight:800,
-                    cursor:"pointer", fontFamily:"Nunito, sans-serif",
+                    cursor:"pointer", fontFamily:"inherit",
                     boxShadow:`0 6px 24px ${"var(--line)"}`,
                   }}>
                   Enter Your City
@@ -1616,7 +1613,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               </>
             ) : (
               <>
-                <div style={{ fontSize:"calc(38px * var(--ts, 1))", marginBottom:"18px", opacity:0.45 }}>🧭</div>
+                <div style={{ marginBottom:"18px", opacity:0.45, color:gold, display:"flex", justifyContent:"center" }}><Icon n="compass" size={38}/></div>
                 <div style={{ color:goldDim, fontSize:`${13 * textSize}px`, lineHeight:1.8 }}>
                   Finding your location…
                 </div>

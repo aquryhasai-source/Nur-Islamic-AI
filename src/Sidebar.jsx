@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SADAQAH_ENABLED } from "./sadaqah.js";
 import AdBanner from "./AdBanner.jsx";
+import { Icon } from "./Icons.jsx";
 
 // ─── Icons (stroke style, inherit colour) ────────────────────────────────────
 const Svg = ({ d, size = 18, sw = 1.8, children }) => (
@@ -86,7 +87,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17Z" fill="currentColor"/></svg>
           {lightMode ? "Dark" : "Light"}
         </button>
-        {!docked && <button onClick={onClose} aria-label="Close menu" style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"20px", cursor:"pointer", lineHeight:1 }}>✕</button>}
+        {!docked && <button onClick={onClose} aria-label="Close menu" style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"20px", cursor:"pointer", lineHeight:1, display:"inline-flex" }}><Icon n="close" size={20}/></button>}
       </div>
     </div>
   );
@@ -103,7 +104,7 @@ export default function Sidebar({ isOpen, onClose, unlocked, lightMode, setLight
         <IconBox>{I.pro}</IconBox><span style={{ flex:1 }}>Get Pro</span>
         {!unlocked
           ? <span style={{ background:"var(--goldFill)", color:"var(--onGold)", fontSize:fs(9.5), fontWeight:700, letterSpacing:"1px", padding:"3px 8px", borderRadius:"10px" }}>AD‑FREE</span>
-          : <span style={{ color:"var(--green)", fontSize:fs(11) }}>✦</span>}
+          : <span style={{ color:"var(--green)", display:"inline-flex" }}><Icon n="spark" size={12}/></span>}
       </button>
 
       {GROUPS.slice(2).filter(g => !g.support || SADAQAH_ENABLED || true).map(g => (

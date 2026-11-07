@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 
 const SEND_FEEDBACK_URL = "https://dvcuisgpptxhjgiasqlp.supabase.co/functions/v1/send-feedback";
 
 const CATEGORIES = [
-  { key:"bug",     icon:"🐛", label:"Bug Report"       },
-  { key:"feature", icon:"💡", label:"Feature Request"  },
-  { key:"content", icon:"📖", label:"Content Issue"    },
-  { key:"general", icon:"💬", label:"General Feedback" },
+  { key:"bug",     icon:"bug", label:"Bug Report"       },
+  { key:"feature", icon:"bulb", label:"Feature Request"  },
+  { key:"content", icon:"book", label:"Content Issue"    },
+  { key:"general", icon:"chat", label:"General Feedback" },
 ];
 
 export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
@@ -45,7 +46,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          category:   `${cat.icon} ${cat.label}`,
+          category:   cat.label,
           message:    message.trim(),
           email:      skipEmail ? "" : email.trim(),
           skip_email: skipEmail,
@@ -189,13 +190,13 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Feedback & Support</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 48px" }}>
 
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"14px 16px", marginBottom:"28px" }}>
-          <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:700, marginBottom:"5px" }}>Help us improve NŪR</div>
+          <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${15 * textSize}px`, fontWeight:700, marginBottom:"5px" }}>Help us improve NŪR</div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
             Found a bug? Have an idea? Something feel off? We read every message. JazakAllahu Khairan for helping us build a better product for the Ummah.
           </div>
@@ -207,12 +208,12 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
             const active = category === cat.key;
             return (
               <button key={cat.key} onClick={() => setCategory(cat.key)}
-                style={{ padding:"12px 10px", borderRadius:"12px", textAlign:"left", cursor:"pointer", fontFamily:"Nunito,sans-serif",
+                style={{ padding:"12px 10px", borderRadius:"12px", textAlign:"left", cursor:"pointer", fontFamily:"inherit",
                   background: active ? "var(--goldFill)" : goldFaint,
                   border: `1px solid ${active ? gold : goldBdr}`,
                   color: active ? "var(--onGold)" : goldDim,
                   transition:"all 0.2s" }}>
-                <div style={{ fontSize:"calc(18px * var(--ts, 1))", marginBottom:"4px" }}>{cat.icon}</div>
+                <div style={{ marginBottom:"4px", display:"flex" }}><Icon n={cat.icon} size={22}/></div>
                 <div style={{ fontSize:`${12 * textSize}px`, fontWeight:700 }}>{cat.label}</div>
               </button>
             );
@@ -226,7 +227,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
           placeholder="Describe the issue or share your idea…"
           rows={6}
           disabled={loading}
-          style={{ width:"100%", background:inputBg, border:`1px solid ${error ? "color-mix(in srgb,var(--warn) 60%,transparent)" : goldBdr}`, borderRadius:"14px", padding:"14px 16px", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.7, marginBottom:"14px", opacity:loading?0.6:1 }}
+          style={{ width:"100%", background:inputBg, border:`1px solid ${error ? "color-mix(in srgb,var(--warn) 60%,transparent)" : goldBdr}`, borderRadius:"14px", padding:"14px 16px", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"inherit", outline:"none", resize:"none", boxSizing:"border-box", lineHeight:1.7, marginBottom:"14px", opacity:loading?0.6:1 }}
         />
 
         <span style={labelStyle}>Your Email {!skipEmail && <span style={{ color: gold }}>*</span>}{skipEmail && <span style={{ color: textDim, textTransform:"none", letterSpacing:"0" }}> (skipped)</span>}</span>
@@ -236,7 +237,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
           onChange={e => { setEmail(e.target.value); setError(""); }}
           placeholder="you@example.com"
           disabled={loading || skipEmail}
-          style={{ width:"100%", background:inputBg, border:`1px solid ${error && !skipEmail && !emailValid ? "color-mix(in srgb,var(--warn) 60%,transparent)" : goldBdr}`, borderRadius:"14px", padding:"14px 16px", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", outline:"none", boxSizing:"border-box", marginBottom:"10px", opacity:(loading || skipEmail)?0.45:1 }}
+          style={{ width:"100%", background:inputBg, border:`1px solid ${error && !skipEmail && !emailValid ? "color-mix(in srgb,var(--warn) 60%,transparent)" : goldBdr}`, borderRadius:"14px", padding:"14px 16px", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:"10px", opacity:(loading || skipEmail)?0.45:1 }}
         />
 
         <label style={{ display:"flex", alignItems:"center", gap:"9px", marginBottom:"6px", cursor: loading ? "default" : "pointer" }}>
@@ -263,8 +264,8 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
         )}
 
         {sent ? (
-          <div style={{ textAlign:"center", padding:"14px", background:"color-mix(in srgb,var(--green) 10%,transparent)", border:"1px solid color-mix(in srgb,var(--green) 30%,transparent)", borderRadius:"12px", color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:700 }}>
-            ✦ JazakAllahu Khairan! Your feedback is on its way 🌙
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", textAlign:"center", padding:"14px", background:"color-mix(in srgb,var(--green) 10%,transparent)", border:"1px solid color-mix(in srgb,var(--green) 30%,transparent)", borderRadius:"12px", color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:700 }}>
+            <Icon n="spark" size={14}/><span>JazakAllahu Khairan! Your feedback is on its way</span><Icon n="moon" size={14}/>
           </div>
         ) : (
           <button onClick={submit} disabled={!canSubmit}
@@ -274,7 +275,7 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
               color: canSubmit ? "var(--onGold)" : goldDim,
               fontSize:`${15 * textSize}px`, fontWeight:800,
               cursor: canSubmit ? "pointer" : "not-allowed",
-              fontFamily:"Nunito,sans-serif", transition:"all 0.2s" }}>
+              fontFamily:"inherit", transition:"all 0.2s" }}>
             {loading ? "Sending…" : "Send Feedback"}
           </button>
         )}
@@ -285,14 +286,14 @@ export default function FeedbackPage({ onBack, onOpenSidebar, lightMode, textSiz
 
         <a href="https://instagram.com/nur.islamic.ai" target="_blank" rel="noreferrer"
           style={{ display:"flex", alignItems:"center", gap:"14px", padding:"14px 16px", background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", textDecoration:"none" }}>
-          <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(20px * var(--ts, 1))", flexShrink:0 }}>
-            📸
+          <div style={{ width:"38px", height:"38px", borderRadius:"10px", background:"linear-gradient(135deg,#833ab4,#fd1d1d,#fcb045)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", flexShrink:0 }}>
+            <Icon n="camera" size={20}/>
           </div>
           <div>
             <div style={{ color:textClr, fontSize:`${13 * textSize}px`, fontWeight:700 }}>Instagram</div>
             <div style={{ color:goldDim, fontSize:`${11*textSize}px` }}>@nur.islamic.ai · DM us anytime</div>
           </div>
-          <div style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", marginLeft:"auto" }}>›</div>
+          <div style={{ color:goldDim, marginLeft:"auto", display:"flex" }}><Icon n="chevronRight" size={18}/></div>
         </a>
 
         <div style={{ textAlign:"center", marginTop:"32px", color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.8 }}>

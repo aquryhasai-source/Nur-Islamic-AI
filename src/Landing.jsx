@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { KEYS } from "./utils.js";
+import { Icon } from "./Icons.jsx";
 
 // ─── Public homepage (served at "/"). Ad-free. The app itself lives at /app. ───
 const Ico = ({ children, size = 22, sw = 1.7, stroke = "currentColor" }) => (
@@ -122,7 +123,7 @@ export default function Landing() {
           <div lang="ar" dir="rtl" className="ar" style={{ marginTop:"10px", fontSize:"26px", lineHeight:2, textAlign:"right" }}>يَا أَيُّهَا الَّذِينَ آمَنُوا اسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ ۚ إِنَّ اللَّهَ مَعَ الصَّابِرِينَ</div>
           <div style={{ height:"1px", background:"var(--lineSoft)", margin:"14px 0" }}/>
           <div style={{ fontSize:"14px", lineHeight:1.7, color:"var(--dim)" }}>O you who have believed, seek help through patience and prayer. Indeed, Allah is with the patient.</div>
-          <div style={{ marginTop:"14px", fontSize:"12.5px", fontWeight:700, color:"var(--gold)" }}>Tap a citation to open it →</div>
+          <div style={{ marginTop:"14px", fontSize:"12.5px", fontWeight:700, color:"var(--gold)", display:"flex", alignItems:"center", gap:"5px" }}>Tap a citation to open it <Icon n="forward" size={13}/></div>
         </div>
       </section>
 

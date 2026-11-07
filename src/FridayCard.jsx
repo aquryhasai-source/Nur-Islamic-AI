@@ -1,5 +1,6 @@
 import { SADAQAH_ENABLED, useSadaqahLink } from "./sadaqah.js";
 import { trackEvent } from "./analytics.js";
+import { Icon } from "./Icons.jsx";
 
 // Jumu'ah card — shown once per user on Fridays (see shouldShowFridayCard).
 export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 1, name }) {
@@ -23,25 +24,25 @@ export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 
     <div onClick={onClose}
       style={{ position:"fixed", inset:0, zIndex:900, background:"rgba(0,0,0,0.62)", backdropFilter:"blur(5px)", display:"flex", alignItems:"center", justifyContent:"center", padding:"16px" }}>
       <div onClick={e => e.stopPropagation()}
-        style={{ width:"100%", maxWidth:"380px", maxHeight:"90vh", overflowY:"auto", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"22px", padding:"26px 20px 20px", boxShadow:"0 20px 60px rgba(0,0,0,0.45)", fontFamily:"Nunito,sans-serif" }}>
+        style={{ width:"100%", maxWidth:"380px", maxHeight:"90vh", overflowY:"auto", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"22px", padding:"26px 20px 20px", boxShadow:"0 20px 60px rgba(0,0,0,0.45)", fontFamily:"inherit" }}>
 
         {/* Greeting */}
         <div style={{ textAlign:"center", marginBottom:"18px" }}>
           <div style={{ color:gold, fontSize:`${28*textSize}px`, fontFamily:"var(--font-ar)", marginBottom:"4px" }}>جُمُعَة مُبَارَكَة</div>
-          <div style={{ color:textClr, fontSize:`${18*textSize}px`, fontWeight:800 }}>Jumu'ah Mubarak 🌙</div>
+          <div style={{ color:textClr, fontFamily:"var(--font-head)", fontSize:`${21*textSize}px`, fontWeight:700, display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>Jumu'ah Mubarak <Icon n="moon" size={19}/></div>
           {name && <div style={{ color:textDim, fontSize:`${12.5*textSize}px`, marginTop:"4px" }}>As-salamu alaykum, {name}</div>}
         </div>
 
         {/* Surah */}
         <div style={block}>
           <div style={label}>Recite today</div>
-          <div style={{ color:textClr, fontSize:`${15*textSize}px`, fontWeight:700, marginBottom:"4px" }}>Surah Al-Kahf (18)</div>
+          <div style={{ color:textClr, fontFamily:"var(--font-head)", fontSize:`${17.5*textSize}px`, fontWeight:700, marginBottom:"4px" }}>Surah Al-Kahf (18)</div>
           <div style={body}>
             It is reported that whoever recites it on Friday is given a light that shines between the two Fridays. (al-Ḥākim, al-Bayhaqī)
           </div>
           <button onClick={onReadKahf}
-            style={{ marginTop:"10px", padding:"9px 18px", borderRadius:"20px", background:"transparent", border:`1px solid ${gold}`, color:gold, fontSize:`${12.5*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-            Read Al-Kahf →
+            style={{ marginTop:"10px", padding:"9px 18px", borderRadius:"20px", background:"transparent", border:`1px solid ${gold}`, color:gold, fontSize:`${12.5*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"inline-flex", alignItems:"center", gap:"6px" }}>
+            Read Al-Kahf <Icon n="forward" size={14}/>
           </button>
         </div>
 
@@ -71,14 +72,14 @@ export default function FridayCard({ onClose, onReadKahf, lightMode, textSize = 
             </div>
             <a href={sadaqahUrl} target="_blank" rel="noreferrer"
               onClick={() => trackEvent("sadaqah_click", { source:"friday_card" })}
-              style={{ display:"block", padding:"13px", borderRadius:"50px", background:btnBg, color:btnText, fontSize:`${15*textSize}px`, fontWeight:800, textDecoration:"none" }}>
-              💛 Give sadaqah
+              style={{ padding:"13px", borderRadius:"50px", background:btnBg, color:btnText, fontSize:`${15*textSize}px`, fontWeight:800, textDecoration:"none", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              <Icon n="heart" size={16}/> Give sadaqah
             </a>
           </div>
         )}
 
         <button onClick={onClose}
-          style={{ display:"block", margin:"6px auto 0", background:"none", border:"none", color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", padding:"8px 16px" }}>
+          style={{ display:"block", margin:"6px auto 0", background:"none", border:"none", color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer", fontFamily:"inherit", padding:"8px 16px" }}>
           Close
         </button>
       </div>

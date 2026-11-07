@@ -87,7 +87,7 @@ export default function AdBanner({ unlocked, lightMode, variant = "strip" }) {
       <div style={{
         position:"absolute", top:"4px", right:"8px",
         color: "var(--line)",
-        fontSize:"9px", letterSpacing:"1px", fontFamily:"Nunito,sans-serif",
+        fontSize:"9px", letterSpacing:"1px", fontFamily:"inherit",
       }}>AD</div>
 
       {/* Adsterra injects the iframe into this div */}

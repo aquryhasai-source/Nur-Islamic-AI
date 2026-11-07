@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import { HIJRI_MONTHS, getHijriToday } from "./utils.js";
+import { Icon, MoonPhase } from "./Icons.jsx";
 
 // ── Inline data ──────────────────────────────────────────────────────────────
 const ISLAMIC_EVENTS = {
@@ -9,15 +10,15 @@ const ISLAMIC_EVENTS = {
   "9-27":"Laylat al-Qadr","10-1":"Eid al-Fitr","12-10":"Eid al-Adha",
 };
 const EVENT_INFO = {
-  "1-1": {icon:"🌙",desc:"The Islamic New Year marks the beginning of the Hijri calendar, commemorating the Hijra — Prophet Muhammad's ﷺ migration from Mecca to Medina in 622 CE.",verse:"Indeed, the number of months with Allah is twelve lunar months in the register of Allah from the day He created the heavens and the earth.",verseRef:"Qur'an 9:36"},
-  "1-10":{icon:"🌙",desc:"The Day of Ashura falls on the 10th of Muharram — a day of deep historical and spiritual significance, observed through fasting and remembrance of Allah's mercy.",verse:"This is a great day — Allah saved Musa and his people, and drowned Pharaoh and his people on this day.",verseRef:"Sahih al-Bukhari 2004"},
-  "3-12":{icon:"☪️",desc:"Mawlid an-Nabi commemorates the birth of our beloved Prophet Muhammad ﷺ. It is a day of joy, gratitude, and renewed love for the Messenger of Allah.",verse:"And We have not sent you, [O Muhammad], except as a mercy to the worlds.",verseRef:"Qur'an 21:107"},
-  "7-27":{icon:"✨",desc:"Isra and Mi'raj marks the miraculous night journey of Prophet Muhammad ﷺ from Masjid al-Haram to Masjid al-Aqsa, and his ascension through the heavens.",verse:"Exalted is He who took His Servant by night from al-Masjid al-Haram to al-Masjid al-Aqsa, whose surroundings We have blessed.",verseRef:"Qur'an 17:1"},
-  "8-15":{icon:"🌙",desc:"Shab-e-Barat, the Night of Forgiveness, falls on the 15th of Sha'ban. Muslims spend this night in prayer, seeking Allah's forgiveness before Ramadan.",verse:"Allah descends to the lowest heaven and asks: 'Who is supplicating to Me, so that I may respond?'",verseRef:"Sahih al-Bukhari 1145"},
-  "9-1": {icon:"🌙",desc:"The blessed month of Ramadan begins — a time of fasting, prayer, and spiritual renewal. The Qur'an was first revealed in this sacred month.",verse:"The month of Ramadhan is that in which was revealed the Qur'an, a guidance for the people and clear proofs of guidance and criterion.",verseRef:"Qur'an 2:185"},
-  "9-27":{icon:"✨",desc:"Laylat al-Qadr, the Night of Power, falls in the last ten odd nights of Ramadan. Worship on this night is better than a thousand months.",verse:"The Night of Decree is better than a thousand months. The angels and the Spirit descend therein by permission of their Lord.",verseRef:"Qur'an 97:3–4"},
-  "10-1":{icon:"🎉",desc:"Eid al-Fitr marks the joyful end of Ramadan. Muslims celebrate with special prayers, feasting, family gatherings, and the giving of Zakat al-Fitr.",verse:"And complete the period and glorify Allah for that to which He has guided you; perhaps you will be grateful.",verseRef:"Qur'an 2:185"},
-  "12-10":{icon:"🐑",desc:"Eid al-Adha commemorates Ibrahim's (AS) willingness to sacrifice his son in obedience to Allah. Muslims offer sacrifice and distribute the meat among family and the poor.",verse:"Their meat will not reach Allah, nor will their blood, but what reaches Him is piety from you.",verseRef:"Qur'an 22:37"},
+  "1-1": {icon:"moon",desc:"The Islamic New Year marks the beginning of the Hijri calendar, commemorating the Hijra — Prophet Muhammad's ﷺ migration from Mecca to Medina in 622 CE.",verse:"Indeed, the number of months with Allah is twelve lunar months in the register of Allah from the day He created the heavens and the earth.",verseRef:"Qur'an 9:36"},
+  "1-10":{icon:"spark",desc:"The Day of Ashura falls on the 10th of Muharram — a day of deep historical and spiritual significance, observed through fasting and remembrance of Allah's mercy.",verse:"This is a great day — Allah saved Musa and his people, and drowned Pharaoh and his people on this day.",verseRef:"Sahih al-Bukhari 2004"},
+  "3-12":{icon:"crescentStar",desc:"Mawlid an-Nabi commemorates the birth of our beloved Prophet Muhammad ﷺ. It is a day of joy, gratitude, and renewed love for the Messenger of Allah.",verse:"And We have not sent you, [O Muhammad], except as a mercy to the worlds.",verseRef:"Qur'an 21:107"},
+  "7-27":{icon:"spark",desc:"Isra and Mi'raj marks the miraculous night journey of Prophet Muhammad ﷺ from Masjid al-Haram to Masjid al-Aqsa, and his ascension through the heavens.",verse:"Exalted is He who took His Servant by night from al-Masjid al-Haram to al-Masjid al-Aqsa, whose surroundings We have blessed.",verseRef:"Qur'an 17:1"},
+  "8-15":{icon:"moon",desc:"Shab-e-Barat, the Night of Forgiveness, falls on the 15th of Sha'ban. Muslims spend this night in prayer, seeking Allah's forgiveness before Ramadan.",verse:"Allah descends to the lowest heaven and asks: 'Who is supplicating to Me, so that I may respond?'",verseRef:"Sahih al-Bukhari 1145"},
+  "9-1": {icon:"moon",desc:"The blessed month of Ramadan begins — a time of fasting, prayer, and spiritual renewal. The Qur'an was first revealed in this sacred month.",verse:"The month of Ramadhan is that in which was revealed the Qur'an, a guidance for the people and clear proofs of guidance and criterion.",verseRef:"Qur'an 2:185"},
+  "9-27":{icon:"spark",desc:"Laylat al-Qadr, the Night of Power, falls in the last ten odd nights of Ramadan. Worship on this night is better than a thousand months.",verse:"The Night of Decree is better than a thousand months. The angels and the Spirit descend therein by permission of their Lord.",verseRef:"Qur'an 97:3–4"},
+  "10-1":{icon:"gift",desc:"Eid al-Fitr marks the joyful end of Ramadan. Muslims celebrate with special prayers, feasting, family gatherings, and the giving of Zakat al-Fitr.",verse:"And complete the period and glorify Allah for that to which He has guided you; perhaps you will be grateful.",verseRef:"Qur'an 2:185"},
+  "12-10":{icon:"heart",desc:"Eid al-Adha commemorates Ibrahim's (AS) willingness to sacrifice his son in obedience to Allah. Muslims offer sacrifice and distribute the meat among family and the poor.",verse:"Their meat will not reach Allah, nor will their blood, but what reaches Him is piety from you.",verseRef:"Qur'an 22:37"},
 };
 
 // ── Moon phase ───────────────────────────────────────────────────────────────
@@ -26,10 +27,10 @@ function getMoonPhase() {
   const cycle    = 29.53058867 * 86400000;
   const age      = (((Date.now()-knownNew)%cycle)+cycle)%cycle/86400000;
   const phases   = [
-    {max:1.85,name:"New Moon",emoji:"🌑"},{max:7.38,name:"Waxing Crescent",emoji:"🌒"},
-    {max:9.22,name:"First Quarter",emoji:"🌓"},{max:14.77,name:"Waxing Gibbous",emoji:"🌔"},
-    {max:16.61,name:"Full Moon",emoji:"🌕"},{max:22.15,name:"Waning Gibbous",emoji:"🌖"},
-    {max:23.99,name:"Last Quarter",emoji:"🌗"},{max:29.53,name:"Waning Crescent",emoji:"🌘"},
+    {max:1.85,name:"New Moon",i:0},{max:7.38,name:"Waxing Crescent",i:1},
+    {max:9.22,name:"First Quarter",i:2},{max:14.77,name:"Waxing Gibbous",i:3},
+    {max:16.61,name:"Full Moon",i:4},{max:22.15,name:"Waning Gibbous",i:5},
+    {max:23.99,name:"Last Quarter",i:6},{max:29.53,name:"Waning Crescent",i:7},
   ];
   return {...(phases.find(p=>age<p.max)||phases[7]),age:Math.round(age)};
 }
@@ -355,7 +356,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:bg,fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",position:"relative"}}>
+    <div style={{display:"flex",flexDirection:"column",height:"100%",overflow:"hidden",background:bg,fontFamily:"inherit",position:"relative"}}>
       <style>{`@keyframes cardShine{0%{left:-100%}60%,100%{left:200%}}`}</style>
 
       {/* HEADER */}
@@ -367,7 +368,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{width:"18px",height:"2px",background:gold,borderRadius:"2px"}}/>
         </button>
         <span className="nur-ph-title" style={{position:"absolute",left:"50%",transform:"translateX(-50%)",color:gold,fontSize:`${16*ts}px`,fontWeight:700,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>{docked ? (<><div>Islamic Calendar</div>{hijriToday&&<div>Today · {hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH · {gregToday.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}</div>}</>) : "Islamic Calendar"}</span>
-        <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"calc(20px * var(--ts, 1))",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{background:"none",border:"none",color:gold,fontSize:"calc(20px * var(--ts, 1))",cursor:"pointer",padding:"4px 6px",lineHeight:1,position:"relative",zIndex:1}}><Icon n="back" size={20}/></button>
         {docked&&<button onClick={goToToday} style={{display:"flex",alignItems:"center",gap:"8px",height:"40px",padding:"0 16px",borderRadius:"12px",border:`1px solid ${goldBdr}`,background:goldFaint,color:gold,fontFamily:"inherit",fontSize:"calc(13px * var(--ts, 1))",fontWeight:700,cursor:"pointer",flexShrink:0}}><DkIco d={DK_CAL} size={16}/>Jump to today</button>}
       </div>
 
@@ -388,7 +389,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                 <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${13*ts}px`,paddingBottom:"8px"}}>Loading…</div>
               ):hijriToday?(
                 <>
-                  <div style={{color:"#f0d78c",fontSize:`${25*ts}px`,fontWeight:900,lineHeight:1.15,marginBottom:"7px"}}>{hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH</div>
+                  <div style={{color:"#f0d78c",fontFamily:"var(--font-head)",fontSize:`${29*ts}px`,fontWeight:700,lineHeight:1.15,marginBottom:"7px"}}>{hijriToday.day} {hijriToday.monthEn} {hijriToday.year} AH</div>
                   <div style={{color:"rgba(240,215,140,0.6)",fontSize:`${12*ts}px`,marginBottom:"2px"}}>{G_DAY_S[gregToday.getDay()]}, {gregToday.getDate()} {G_MON_S[gregToday.getMonth()]} {gregToday.getFullYear()}</div>
                   <div style={{color:"rgba(240,215,140,0.62)",fontSize:`${11*ts}px`}}>{gregToday.toLocaleDateString("en-US",{weekday:"long"})}</div>
                 </>
@@ -400,15 +401,15 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                   <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${9*ts}px`,letterSpacing:"1.5px",textTransform:"uppercase",marginBottom:"5px"}}>Next Event</div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <div>
-                      <div style={{color:"#E4C173",fontSize:`${15*ts}px`,fontWeight:800}}>{nextEvent.name}</div>
+                      <div style={{color:"#E4C173",fontFamily:"var(--font-head)",fontSize:`${17*ts}px`,fontWeight:700}}>{nextEvent.name}</div>
                       <div style={{color:"rgba(228,193,115,0.72)",fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.away===0?"Today!":`${nextEvent.away} days remaining`}</div>
                     </div>
-                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(16px * var(--ts, 1))"}}>⏳</div>
+                    <div style={{width:"34px",height:"34px",borderRadius:"10px",background:"rgba(201,168,76,0.14)",border:"1px solid rgba(201,168,76,0.28)",display:"flex",alignItems:"center",justifyContent:"center",color:"#E4C173",fontSize:"calc(16px * var(--ts, 1))"}}><Icon n="hourglass" size={16}/></div>
                   </div>
                 </div>
               )}
             </div>
-            <div style={{fontSize:"calc(58px * var(--ts, 1))",lineHeight:1,filter:"drop-shadow(0 0 18px rgba(201,168,76,0.55))",flexShrink:0,marginTop:"4px"}}>🌙</div>
+            <div style={{color:"#E4C173",fontSize:"calc(58px * var(--ts, 1))",lineHeight:1,filter:"drop-shadow(0 0 18px rgba(201,168,76,0.55))",flexShrink:0,marginTop:"4px"}}><Icon n="moon" size={Math.round(58*ts)}/></div>
           </div>
         </div>
 
@@ -417,9 +418,9 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={card()}>
             <ShineLayer delay="2s"/>
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px",position:"relative",zIndex:2}}>
-              <button style={navBtn} onClick={()=>navMonth(-1)}>‹</button>
-              <span style={{color:text,fontSize:`${14*ts}px`,fontWeight:700}}>{viewMonth.monthEn} {viewMonth.year} AH</span>
-              <button style={navBtn} onClick={()=>navMonth(+1)}>›</button>
+              <button style={navBtn} onClick={()=>navMonth(-1)} aria-label="Previous month"><DkIco d={DK_PREV} size={18} sw={2}/></button>
+              <span style={{color:text,fontFamily:"var(--font-head)",fontSize:`${17*ts}px`,fontWeight:700}}>{viewMonth.monthEn} {viewMonth.year} AH</span>
+              <button style={navBtn} onClick={()=>navMonth(+1)} aria-label="Next month"><DkIco d={DK_NEXT} size={18} sw={2}/></button>
             </div>
             <div style={{height:"5px",borderRadius:"3px",background:progBg,overflow:"hidden",marginBottom:"8px",position:"relative",zIndex:2}}>
               <div style={{width:`${progress}%`,height:"100%",borderRadius:"3px",background:`linear-gradient(90deg,${gold},rgba(201,168,76,0.45))`,transition:"width 0.5s ease"}}/>
@@ -437,7 +438,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           {/* Month name bar inside calendar */}
           {viewMonth&&(
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",paddingBottom:"10px",borderBottom:`1px solid ${divider}`,position:"relative",zIndex:2}}>
-              <span style={{color:gold,fontSize:`${12*ts}px`,fontWeight:700}}>{viewMonth.monthEn} {viewMonth.year} AH</span>
+              <span style={{color:gold,fontFamily:"var(--font-head)",fontSize:`${14*ts}px`,fontWeight:700}}>{viewMonth.monthEn} {viewMonth.year} AH</span>
               {gregLabel&&<span style={{color:textDim,fontSize:`${10*ts}px`}}>{gregLabel}</span>}
             </div>
           )}
@@ -473,7 +474,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                       <span style={{color:isToday?"var(--onGold)":isFri?gold:text,fontSize:`${13*ts}px`,fontWeight:isToday||hasEvt?700:500,lineHeight:1}}>{cell.hDay}</span>
                       <span style={{color:isToday?"var(--onGold)":textDim,fontSize:`${9*ts}px`,lineHeight:1,marginTop:"2px"}}>{cell.gDay}</span>
                       {hasEvt&&!isToday&&<div style={{position:"absolute",top:"3px",right:"3px",width:"5px",height:"5px",borderRadius:"50%",background:gold}}/>}
-                      {isToday&&<div style={{position:"absolute",bottom:"2px",color:"var(--onGold)",fontSize:`${7*ts}px`}}>★</div>}
+                      {isToday&&<div style={{position:"absolute",bottom:"2px",color:"var(--onGold)",lineHeight:0}}><Icon n="star" size={Math.round(8*ts)}/></div>}
                     </div>
                   );
                 })}
@@ -485,9 +486,9 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                   border:`1px solid ${!isCurrMonth?goldBdr:"rgba(255,255,255,0.08)"}`,
                   color:!isCurrMonth?gold:textDim,
                   borderRadius:"20px",padding:"7px 22px",fontSize:`${11*ts}px`,fontWeight:600,
-                  cursor:!isCurrMonth?"pointer":"default",letterSpacing:"0.5px",outline:"none",
+                  cursor:!isCurrMonth?"pointer":"default",letterSpacing:"0.5px",outline:"none",display:"inline-flex",alignItems:"center",gap:"7px",
                   opacity:isCurrMonth?0.45:1,transition:"all 0.2s",
-                }}>● Go to Today</button>
+                }}><span style={{display:"inline-block",width:"8px",height:"8px",borderRadius:"50%",background:"currentColor",flexShrink:0}}/>Go to Today</button>
               </div>
             </div>
           ):null}
@@ -497,10 +498,10 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         {nextEvent&&(
           <div style={{...card(),display:"flex",alignItems:"center",gap:"14px"}}>
             <ShineLayer delay="1s"/>
-            <div style={{width:"46px",height:"46px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(22px * var(--ts, 1))",flexShrink:0,position:"relative",zIndex:2}}>🎯</div>
+            <div style={{width:"46px",height:"46px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",color:gold,fontSize:"calc(22px * var(--ts, 1))",flexShrink:0,position:"relative",zIndex:2}}><Icon n="target" size={22}/></div>
             <div style={{flex:1,minWidth:0,position:"relative",zIndex:2}}>
               <div style={{...sLabel,marginBottom:"4px"}}>Next Important Date</div>
-              <div style={{color:text,fontSize:`${14*ts}px`,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nextEvent.name}</div>
+              <div style={{color:text,fontFamily:"var(--font-head)",fontSize:`${16*ts}px`,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{nextEvent.name}</div>
               <div style={{color:textDim,fontSize:`${11*ts}px`,marginTop:"2px"}}>{nextEvent.hDateStr}</div>
             </div>
             <div style={{textAlign:"right",flexShrink:0,position:"relative",zIndex:2}}>
@@ -515,11 +516,11 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <ShineLayer delay="3s"/>
           <div style={{...sLabel,position:"relative",zIndex:2}}>This Month Contains</div>
           <div style={{display:"flex",alignItems:"stretch",position:"relative",zIndex:2}}>
-            {[{emoji:"📅",val:evtCount,lbl:"Events"},{emoji:"🌙",val:totalDays,lbl:"Days"},{emoji:"⏳",val:Math.max(0,remDays),lbl:"Days Remaining"}].map((s,i)=>(
+            {[{ic:"calendar",val:evtCount,lbl:"Events"},{ic:"moon",val:totalDays,lbl:"Days"},{ic:"hourglass",val:Math.max(0,remDays),lbl:"Days Remaining"}].map((s,i)=>(
               <div key={s.lbl} style={{flex:1,display:"flex"}}>
                 {i>0&&<div style={{width:"1px",background:divider,margin:"0 6px",flexShrink:0}}/>}
                 <div style={{flex:1,textAlign:"center",padding:"4px 0"}}>
-                  <div style={{fontSize:"calc(20px * var(--ts, 1))",marginBottom:"7px"}}>{s.emoji}</div>
+                  <div style={{color:gold,fontSize:"calc(20px * var(--ts, 1))",lineHeight:1,marginBottom:"7px"}}><Icon n={s.ic} size={20}/></div>
                   <div style={{color:text,fontSize:`${22*ts}px`,fontWeight:900,lineHeight:1}}>{s.val}</div>
                   <div style={{color:textDim,fontSize:`${10*ts}px`,marginTop:"5px",lineHeight:1.3}}>{s.lbl}</div>
                 </div>
@@ -539,7 +540,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
             {upcoming.slice(0,2).map((ev,i)=>(
               <div key={ev.key} onClick={()=>setSheet(ev)} style={{cursor:"pointer",paddingBottom:i===0?"10px":"0",marginBottom:i===0?"10px":"0",borderBottom:i===0?`1px solid ${divider}`:"none",position:"relative",zIndex:2}}>
                 <div style={{display:"flex",gap:"8px"}}>
-                  <span style={{fontSize:"calc(13px * var(--ts, 1))",marginTop:"1px",flexShrink:0}}>🌙</span>
+                  <span style={{color:gold,fontSize:"calc(13px * var(--ts, 1))",lineHeight:1,marginTop:"1px",flexShrink:0}}><Icon n={EVENT_INFO[ev.key]?.icon||"moon"} size={13}/></span>
                   <div>
                     <div style={{color:text,fontSize:`${11*ts}px`,fontWeight:700,lineHeight:1.3}}>{ev.name}</div>
                     <div style={{color:textDim,fontSize:`${9*ts}px`,marginTop:"2px"}}>{ev.hShort}</div>
@@ -554,7 +555,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
           <div style={{background:cardBg,border:`1px solid ${goldBdr}`,borderRadius:"16px",padding:"14px",boxShadow:shadow,display:"flex",flexDirection:"column",alignItems:"center",position:"relative",overflow:"hidden",isolation:"isolate"}}>
             <ShineLayer delay="2.5s"/>
             <div style={{...sLabel,alignSelf:"flex-start",marginBottom:"10px",position:"relative",zIndex:2}}>Moon Phase</div>
-            <div style={{fontSize:"calc(48px * var(--ts, 1))",lineHeight:1,marginBottom:"8px",position:"relative",zIndex:2}}>{moon.emoji}</div>
+            <div style={{color:gold,fontSize:"calc(48px * var(--ts, 1))",lineHeight:1,marginBottom:"8px",position:"relative",zIndex:2}}><MoonPhase i={moon.i} size={Math.round(48*ts)}/></div>
             <div style={{color:text,fontSize:`${11*ts}px`,fontWeight:700,textAlign:"center",lineHeight:1.4,position:"relative",zIndex:2}}>{moon.name}</div>
             <div style={{color:textDim,fontSize:`${10*ts}px`,marginTop:"4px",position:"relative",zIndex:2}}>{moon.age} days old</div>
           </div>
@@ -568,7 +569,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         <div onClick={()=>setShowAll(false)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"80%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 0"}}/>
-            <button onClick={()=>setShowAll(false)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
+            <button onClick={()=>setShowAll(false)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}><Icon n="close" size={13}/></button>
             {/* Sheet header */}
             <div style={{padding:"18px 0 14px"}}>
               <div style={{color:goldDim,fontSize:`${9*ts}px`,fontWeight:700,letterSpacing:"1.6px",textTransform:"uppercase",marginBottom:"4px"}}>All Upcoming Events</div>
@@ -585,8 +586,8 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
                   cursor:"pointer",
                 }}>
                 {/* Icon circle */}
-                <div style={{width:"42px",height:"42px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(20px * var(--ts, 1))",flexShrink:0}}>
-                  {EVENT_INFO[ev.key]?.icon||"🌙"}
+                <div style={{width:"42px",height:"42px",borderRadius:"50%",background:goldFaint,border:`1px solid ${goldBdr}`,display:"flex",alignItems:"center",justifyContent:"center",color:gold,fontSize:"calc(20px * var(--ts, 1))",flexShrink:0}}>
+                  <Icon n={EVENT_INFO[ev.key]?.icon||"moon"} size={20}/>
                 </div>
                 {/* Text */}
                 <div style={{flex:1,minWidth:0}}>
@@ -617,9 +618,9 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
         <div onClick={()=>setSheet(null)} style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.65)",zIndex:50,display:"flex",flexDirection:"column",justifyContent:"flex-end"}}>
           <div onClick={e=>e.stopPropagation()} style={{background:sheetBg,borderRadius:"24px 24px 0 0",padding:"8px 18px 44px",maxHeight:"74%",overflowY:"auto",border:`1px solid ${goldBdr}`,position:"relative"}}>
             <div style={{width:"40px",height:"4px",borderRadius:"2px",background:divider,margin:"10px auto 18px"}}/>
-            <button onClick={()=>setSheet(null)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}>✕</button>
-            <div style={{width:"58px",height:"58px",borderRadius:"16px",background:`linear-gradient(135deg,${gold},rgba(201,168,76,0.45))`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"calc(28px * var(--ts, 1))",marginBottom:"14px",border:`1px solid ${gold}`,boxShadow:`0 4px 18px rgba(201,168,76,0.28)`}}>{EVENT_INFO[sheet.key]?.icon||"☪️"}</div>
-            <div style={{color:text,fontSize:`${20*ts}px`,fontWeight:800,marginBottom:"4px"}}>{sheet.name}</div>
+            <button onClick={()=>setSheet(null)} style={{position:"absolute",top:"14px",right:"15px",background:goldFaint,border:`1px solid ${goldBdr}`,color:textDim,width:"28px",height:"28px",borderRadius:"50%",cursor:"pointer",fontSize:"calc(13px * var(--ts, 1))",display:"flex",alignItems:"center",justifyContent:"center",outline:"none"}}><Icon n="close" size={13}/></button>
+            <div style={{width:"58px",height:"58px",borderRadius:"16px",background:`linear-gradient(135deg,${gold},rgba(201,168,76,0.45))`,display:"flex",alignItems:"center",justifyContent:"center",color:"var(--onGold)",fontSize:"calc(28px * var(--ts, 1))",marginBottom:"14px",border:`1px solid ${gold}`,boxShadow:`0 4px 18px rgba(201,168,76,0.28)`}}><Icon n={EVENT_INFO[sheet.key]?.icon||"crescentStar"} size={28}/></div>
+            <div style={{color:text,fontFamily:"var(--font-head)",fontSize:`${23*ts}px`,fontWeight:700,marginBottom:"4px"}}>{sheet.name}</div>
             <div style={{color:textDim,fontSize:`${12*ts}px`,marginBottom:"12px"}}>{sheet.hDateStr}</div>
             {sheet.away>=0&&(
               <div style={{display:"inline-flex",background:goldFaint,border:`1px solid ${goldBdr}`,borderRadius:"20px",padding:"4px 14px",marginBottom:"16px"}}>
@@ -629,7 +630,7 @@ export default function IslamicCalendarPage({ onBack = ()=>{}, onOpenSidebar = (
             {EVENT_INFO[sheet.key]?.desc&&<div style={{color:textMid,fontSize:`${13*ts}px`,lineHeight:1.75,marginBottom:"16px"}}>{EVENT_INFO[sheet.key].desc}</div>}
             {EVENT_INFO[sheet.key]?.verse&&(
               <div style={{background:goldFaint,border:`1px solid ${goldBdr}`,borderRadius:"14px",padding:"16px",borderLeft:`3px solid ${gold}`,borderTopLeftRadius:"0",borderBottomLeftRadius:"0"}}>
-                <div style={{color:gold,fontSize:"calc(24px * var(--ts, 1))",lineHeight:1,marginBottom:"6px",fontFamily:"var(--font-ar)"}}>"</div>
+                <div style={{color:gold,lineHeight:1,marginBottom:"6px"}}><Icon n="quote" size={24}/></div>
                 <div style={{color:textMid,fontSize:`${12*ts}px`,lineHeight:1.8,fontStyle:"italic",marginBottom:"10px"}}>{EVENT_INFO[sheet.key].verse}</div>
                 <div style={{color:gold,fontSize:`${11*ts}px`,fontWeight:700}}>— {EVENT_INFO[sheet.key].verseRef}</div>
               </div>

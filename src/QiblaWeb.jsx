@@ -82,7 +82,7 @@ function QiblaMap({ lat, lon, name }) {
     return { b, km, land: gp(LAND) || "", borders: gp(BORDERS) || "", mk, rings, arcD: `M${CX} ${CY - ar} A${ar} ${ar} 0 ${b > 180 ? 1 : 0} 1 ${ex.toFixed(1)} ${ey.toFixed(1)}`, lx: CX + 66 * Math.sin(mid), ly: CY - 66 * Math.cos(mid) + 4 };
   }, [lat, lon]);
   const halo = { paintOrder:"stroke", stroke:"var(--mapBg)", strokeWidth:"4px", strokeLinejoin:"round" };
-  const t = { fontFamily:"Nunito, sans-serif" };
+  const t = { fontFamily:"inherit" };
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label={`Map centred on ${name}. A straight line runs ${Math.round(m.b)} degrees from North to the Kaaba in Makkah, ${fmt(m.km)} kilometres away.`} style={{ display:"block" }}>
       <rect width={W} height={H} fill="var(--mapBg)"/>

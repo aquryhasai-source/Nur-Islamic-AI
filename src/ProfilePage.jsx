@@ -3,6 +3,7 @@ import { saveProfile, DAILY_LIMIT } from "./utils.js";
 import { subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { trackEvent, trackError } from "./analytics.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 
 export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile, remaining, unlocked, textSize, lightMode }) {
   const docked = useMedia(DOCK_QUERY);
@@ -58,13 +59,13 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
 
   const age = yearOfBirth ? new Date().getFullYear() - parseInt(yearOfBirth, 10) : null;
   const ageLabel = age && age > 0 && age < 120
-    ? age < 13 ? "🌱 Child mode active" : age < 18 ? "📖 Teen mode active" : "✦ Standard mode"
+    ? age < 13 ? { icon:"sprout", text:"Child mode active" } : age < 18 ? { icon:"book", text:"Teen mode active" } : { icon:"spark", text:"Standard mode" }
     : null;
 
   const inputStyle = {
     width:"100%", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"12px",
     padding:"12px 14px", color:textClr, fontSize:`${14 * textSize}px`,
-    outline:"none", fontFamily:"Nunito,sans-serif", boxSizing:"border-box",
+    outline:"none", fontFamily:"inherit", boxSizing:"border-box",
   };
   const labelStyle = {
     color:goldDim, fontSize:`${10*textSize}px`, letterSpacing:"2px",
@@ -202,7 +203,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Profile</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 40px" }}>
@@ -211,7 +212,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         <span style={labelStyle}>Today's Usage</span>
         <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"8px" }}>
           {unlocked ? (
-            <div style={{ color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Lifetime Access — Unlimited</div>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px", color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}><Icon n="spark" size={14}/>Lifetime Access — Unlimited</div>
           ) : (
             <>
               <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"10px" }}>
@@ -241,7 +242,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
           placeholder="e.g. 2005" type="number" min="1900" max={new Date().getFullYear()}
           style={inputStyle}/>
         {ageLabel && (
-          <div style={{ color:goldDim, fontSize:`${12*textSize}px`, marginTop:"8px" }}>{ageLabel}</div>
+          <div style={{ display:"flex", alignItems:"center", gap:"6px", color:goldDim, fontSize:`${12*textSize}px`, marginTop:"8px" }}><Icon n={ageLabel.icon} size={12}/>{ageLabel.text}</div>
         )}
 
 
@@ -252,7 +253,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         <span style={labelStyle}>Daily Reminders</span>
         <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px" }}>
           {pushStatus === "granted" ? (
-            <div style={{ color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}>✦ Notifications enabled</div>
+            <div style={{ display:"flex", alignItems:"center", gap:"8px", color:"var(--green)", fontSize:`${14 * textSize}px`, fontWeight:600 }}><Icon n="spark" size={14}/>Notifications enabled</div>
           ) : pushStatus === "denied" ? (
             <div style={{ color:textDim, fontSize:`${13 * textSize}px` }}>
               Blocked in your browser settings. Enable them there to get the daily Hadith and prayer reminders.
@@ -271,7 +272,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                   background:"var(--goldFill)",
                   border:"none", color: "var(--onGold)", fontWeight:700,
                   cursor: pushStatus === "loading" ? "default" : "pointer",
-                  fontFamily:"Nunito,sans-serif", fontSize:`${14*textSize}px` }}>
+                  fontFamily:"inherit", fontSize:`${14*textSize}px` }}>
                 {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
               </button>
               {pushError && (

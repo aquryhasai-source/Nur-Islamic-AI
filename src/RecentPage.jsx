@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 import { getSessions, deleteSession, clearAllSessions, shareOrDownloadBackup, importBackupJSON } from "./utils.js";
 
 function timeAgo(ts) {
@@ -268,7 +269,7 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
           <span style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Chat History</span>
           {sessions.length > 0 && <span style={{ color:goldDim, fontSize:`${11*textSize}px`, marginLeft:"8px" }}>{sessions.length} saved</span>}
         </div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       {/* Search bar */}
@@ -280,10 +281,10 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search conversations…"
-              style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif" }}
+              style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"inherit" }}
             />
             {search && (
-              <button onClick={() => setSearch("")} style={{ background:"none", border:"none", color:goldDim, fontSize:"calc(16px * var(--ts, 1))", cursor:"pointer", lineHeight:1 }}>✕</button>
+              <button onClick={() => setSearch("")} style={{ background:"none", border:"none", color:goldDim, cursor:"pointer", lineHeight:1, display:"flex", alignItems:"center" }}><Icon n="close" size={16}/></button>
             )}
           </div>
         </div>
@@ -293,16 +294,16 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
 
         {sessions.length === 0 && (
           <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"60px 24px", textAlign:"center" }}>
-            <div style={{ fontSize:"calc(32px * var(--ts, 1))", marginBottom:"12px", opacity:0.4 }}>🕐</div>
-            <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontWeight:700, marginBottom:"8px" }}>No History Yet</div>
+            <div style={{ marginBottom:"12px", opacity:0.4, color:gold, display:"flex" }}><Icon n="clock" size={32}/></div>
+            <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${18.5 * textSize}px`, fontWeight:700, marginBottom:"8px" }}>No History Yet</div>
             <div style={{ color:textDim, fontSize:`${13 * textSize}px`, lineHeight:1.8, marginBottom:"24px" }}>
               Your conversations will appear here. Start chatting!
             </div>
             <div style={{ width:"100%", maxWidth:"300px" }}>
               <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>
               <button onClick={() => fileRef.current?.click()}
-                style={{ width:"100%", padding:"12px", borderRadius:"12px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-                📥 Restore from backup
+                style={{ width:"100%", padding:"12px", borderRadius:"12px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+                <Icon n="download" size={16}/>Restore from backup
               </button>
               {importMsg && (
                 <div style={{ color: importState === "error" ? dangerClr : greenClr, fontSize:`${12*textSize}px`, marginTop:"8px", textAlign:"center" }}>
@@ -340,8 +341,8 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                     <span style={{ color:textDim, fontSize:`${10*textSize}px` }}>{msgCount(session)}</span>
                   </div>
                 </div>
-                <div style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", lineHeight:1, flexShrink:0, marginTop:"2px", transition:"transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
-                  ⌄
+                <div style={{ color:goldDim, lineHeight:1, flexShrink:0, marginTop:"2px", display:"flex", transition:"transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>
+                  <Icon n="chevronDown" size={18}/>
                 </div>
               </button>
 
@@ -377,12 +378,12 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                   <div style={{ padding:"0 14px 13px", display:"flex", gap:"8px" }}>
                     <button
                       onClick={() => onContinue(session)}
-                      style={{ flex:1, padding:"10px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-                      Continue →
+                      style={{ flex:1, padding:"10px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}>
+                      Continue<Icon n="forward" size={14}/>
                     </button>
                     <button
                       onClick={() => handleDelete(session.id)}
-                      style={{ padding:"10px 16px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", color:dangerClr, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                      style={{ padding:"10px 16px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 25%,transparent)", color:dangerClr, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"inherit" }}>
                       Delete
                     </button>
                   </div>
@@ -407,8 +408,8 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                 background: backupState === "done" ? "color-mix(in srgb,var(--green) 12%,transparent)" : goldFaint,
                 border:`1px solid ${backupState === "done" ? greenClr : goldBdr}`,
                 color: backupState === "done" ? greenClr : gold,
-                fontSize:`${13 * textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-              {backupState === "saving" ? "Preparing…" : backupState === "done" ? "✓ Backup saved!" : backupState === "error" ? "Failed — try again" : "📤 Save backup to Drive / Files"}
+                fontSize:`${13 * textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              {backupState === "saving" ? "Preparing…" : backupState === "done" ? <><Icon n="check" size={16}/>Backup saved!</> : backupState === "error" ? "Failed — try again" : <><Icon n="upload" size={16}/>Save backup to Drive / Files</>}
             </button>
             <input ref={fileRef} type="file" accept=".json" onChange={handleImport} style={{ display:"none" }}/>
             <button
@@ -418,8 +419,8 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                 background: importState === "done" ? "color-mix(in srgb,var(--green) 12%,transparent)" : "transparent",
                 border:`1px solid ${importState === "done" ? greenClr : importState === "error" ? dangerClr : goldBdr}`,
                 color: importState === "done" ? greenClr : importState === "error" ? dangerClr : goldDim,
-                fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
-              {importState === "importing" ? "Importing…" : importMsg ? importMsg : "📥 Restore from backup file"}
+                fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+              {importState === "importing" ? "Importing…" : importMsg ? importMsg : <><Icon n="download" size={16}/>Restore from backup file</>}
             </button>
           </div>
         )}
@@ -431,18 +432,18 @@ export default function RecentPage({ onBack, onOpenSidebar, onContinue, lightMod
                 <div style={{ color:dangerClr, fontSize:`${13 * textSize}px`, fontWeight:600 }}>Delete all conversations?</div>
                 <div style={{ display:"flex", gap:"10px" }}>
                   <button onClick={() => setConfirmAll(false)}
-                    style={{ padding:"8px 20px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    style={{ padding:"8px 20px", borderRadius:"10px", background:goldFaint, border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13*textSize}px`, cursor:"pointer", fontFamily:"inherit" }}>
                     Cancel
                   </button>
                   <button onClick={handleClearAll}
-                    style={{ padding:"8px 20px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 15%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 35%,transparent)", color:dangerClr, fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+                    style={{ padding:"8px 20px", borderRadius:"10px", background:"color-mix(in srgb,var(--warn) 15%,transparent)", border:"1px solid color-mix(in srgb,var(--warn) 35%,transparent)", color:dangerClr, fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                     Delete All
                   </button>
                 </div>
               </div>
             ) : (
               <button onClick={() => setConfirmAll(true)}
-                style={{ background:"none", border:"none", color:textDim, fontSize:`${12*textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", textDecoration:"underline", padding:"8px" }}>
+                style={{ background:"none", border:"none", color:textDim, fontSize:`${12*textSize}px`, cursor:"pointer", fontFamily:"inherit", textDecoration:"underline", padding:"8px" }}>
                 Delete all conversations
               </button>
             )}

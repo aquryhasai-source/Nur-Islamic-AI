@@ -1,6 +1,7 @@
 import { useSadaqahLink } from "./sadaqah.js";
 import { trackEvent } from "./analytics.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 
 export default function SupportPage({ onBack, onOpenSidebar, lightMode, textSize = 1, navigateTo }) {
   const url = useSadaqahLink();
@@ -80,7 +81,7 @@ export default function SupportPage({ onBack, onOpenSidebar, lightMode, textSize
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Support NŪR</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"32px 20px 48px", textAlign:"center" }}>
@@ -113,7 +114,7 @@ export default function SupportPage({ onBack, onOpenSidebar, lightMode, textSize
         </div>
 
         <button onClick={() => navigateTo && navigateTo("getpro")}
-          style={{ background:"none", border:"none", color:gold, fontSize:`${12.5*textSize}px`, cursor:"pointer", textDecoration:"underline", fontFamily:"Nunito,sans-serif" }}>
+          style={{ background:"none", border:"none", color:gold, fontSize:`${12.5*textSize}px`, cursor:"pointer", textDecoration:"underline", fontFamily:"inherit" }}>
           Looking to remove ads? See Pro
         </button>
       </div>

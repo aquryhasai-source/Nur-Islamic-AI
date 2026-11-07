@@ -5,15 +5,16 @@ import CityBox from "./CityBox.jsx";
 import { resolveCity } from "./cities.js";
 import { syncPrayerLocation, subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 
 // ── Prayer list ───────────────────────────────────────────────────────────────
 const PRAYER_LIST = [
-  { key:"Fajr",    label:"Fajr",    arabic:"الفجر",  icon:"🌙", hasAlarm:true  },
-  { key:"Sunrise", label:"Sunrise", arabic:"الشروق", icon:"🌅", hasAlarm:false },
-  { key:"Dhuhr",   label:"Dhuhr",   arabic:"الظهر",  icon:"☀️",  hasAlarm:true  },
-  { key:"Asr",     label:"Asr",     arabic:"العصر",  icon:"🌤️",  hasAlarm:true  },
-  { key:"Maghrib", label:"Maghrib", arabic:"المغرب", icon:"🌇", hasAlarm:true  },
-  { key:"Isha",    label:"Isha",    arabic:"العشاء", icon:"🌙", hasAlarm:true  },
+  { key:"Fajr",    label:"Fajr",    arabic:"الفجر",  icon:"moon", hasAlarm:true  },
+  { key:"Sunrise", label:"Sunrise", arabic:"الشروق", icon:"sunrise", hasAlarm:false },
+  { key:"Dhuhr",   label:"Dhuhr",   arabic:"الظهر",  icon:"sun", hasAlarm:true  },
+  { key:"Asr",     label:"Asr",     arabic:"العصر",  icon:"sunCloud", hasAlarm:true  },
+  { key:"Maghrib", label:"Maghrib", arabic:"المغرب", icon:"sunset", hasAlarm:true  },
+  { key:"Isha",    label:"Isha",    arabic:"العشاء", icon:"moon", hasAlarm:true  },
 ];
 
 // ── Prayer detail data ────────────────────────────────────────────────────────
@@ -65,7 +66,7 @@ function playAlarmSound() {
 
 // ── Notification ──────────────────────────────────────────────────────────────
 function fireNotification(label, pTime, fireKey) {
-  const title = `🕌 ${label} — Time to Pray`;
+  const title = `${label} — Time to Pray`;
   const opts  = {
     body:  `It is ${pTime} — time for ${label} prayer`,
     icon:  "/icon-192.png",
@@ -463,7 +464,7 @@ export default function PrayerTimesPage({
             display:"flex", alignItems:"center", justifyContent:"center",
             fontSize:"calc(10px * var(--ts, 1))", fontWeight:800, color:dotClr,
           }}>
-            {isPast ? "✓" : ""}
+            {isPast ? <Icon n="check" size={12} sw={2.6}/> : ""}
           </div>
           {!isLastRow && (
             <div style={{
@@ -492,9 +493,9 @@ export default function PrayerTimesPage({
             width:"36px", height:"36px", borderRadius:"10px", flexShrink:0,
             background: isCurrent ? `color-mix(in srgb,${gold} 16%,transparent)` : goldFaint,
             border:`1px solid ${goldBdr}`,
-            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(17px * var(--ts, 1))",
+            display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(17px * var(--ts, 1))", color: isCurrent ? gold : goldDim,
           }}>
-            {prayer.icon}
+            <Icon n={prayer.icon} size={Math.round(19*textSize)}/>
           </div>
 
           {/* Name + arabic + countdown */}
@@ -502,7 +503,7 @@ export default function PrayerTimesPage({
             <div style={{ display:"flex", alignItems:"center", gap:"6px", flexWrap:"wrap" }}>
               <span style={{
                 color: isCurrent ? gold : isPast ? textDim : textClr,
-                fontSize:`${14*textSize}px`, fontWeight: isCurrent ? 800 : 600,
+                fontFamily:"var(--font-head)", fontSize:`${16*textSize}px`, fontWeight:700,
               }}>
                 {prayer.label}
               </span>
@@ -522,7 +523,7 @@ export default function PrayerTimesPage({
             </div>
             {isUpcoming && time && (
               <div style={{ color:goldDim, fontSize:`${10.5*textSize}px`, marginTop:"3px" }}>
-                ⏱ {miniCd(time)}
+                <span style={{ display:"inline-flex", alignItems:"center", gap:"4px" }}><Icon n="hourglass" size={Math.round(11*textSize)}/>{miniCd(time)}</span>
               </div>
             )}
           </div>
@@ -534,7 +535,7 @@ export default function PrayerTimesPage({
               fontSize:`${14*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums",
               display:"flex", alignItems:"center", gap:"4px",
             }}>
-              <span style={{ fontSize:"calc(12px * var(--ts, 1))", opacity:0.6 }}>🕐</span>
+              <span style={{ display:"inline-flex", opacity:0.6 }}><Icon n="clock" size={Math.round(13*textSize)}/></span>
               {time || "--:--"}
             </div>
             {prayer.hasAlarm && (
@@ -550,9 +551,9 @@ export default function PrayerTimesPage({
                   color: alarmOn ? gold : textDim,
                   fontSize:`${10*textSize}px`,
                   transition:"color 0.2s, border-color 0.2s",
-                  lineHeight:1.4, fontFamily:"Nunito,sans-serif",
+                  lineHeight:1.4, fontFamily:"inherit",
                 }}>
-                🔔 {alarmOn ? "On" : "Off"}
+                <Icon n="bell" size={Math.round(11*textSize)}/> {alarmOn ? "On" : "Off"}
               </button>
             )}
           </div>
@@ -789,7 +790,7 @@ export default function PrayerTimesPage({
           <div style={{ color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"0.5px" }}>Prayer Times</div>
           {locationName && (
             <div style={{ color:goldDim, fontSize:`${11*textSize}px`, display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:"6px" }}>{docked ? <DkIco d={DK_PIN} size={15}/> : "📍"} {locationName}</span>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:"6px" }}>{docked ? <DkIco d={DK_PIN} size={15}/> : <Icon n="pin" size={Math.round(13*textSize)}/>} {locationName}</span>
               {docked && <><span>{todayStr}</span>{hijriDate && <><span aria-hidden="true">·</span><span>{hijriDate}</span></>}</>}
             </div>
           )}
@@ -797,11 +798,11 @@ export default function PrayerTimesPage({
         <div style={{ display:"flex", alignItems:"center", gap:"6px", flexShrink:0 }}>
           <button onClick={() => setShowCityInput(v => !v)} title="Change city"
             style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius: docked ? "12px" : "8px", padding: docked ? "0 16px" : "5px 10px", height: docked ? "40px" : "auto", display:"flex", alignItems:"center", gap:"8px", color: docked ? gold : goldDim, fontSize: docked ? "13px" : `${13*textSize}px`, fontWeight: docked ? 700 : 400, cursor:"pointer" }}>
-            {docked ? <><DkIco d={DK_PIN} size={16}/>Change city</> : "📍"}
+            {docked ? <><DkIco d={DK_PIN} size={16}/>Change city</> : <Icon n="pin" size={Math.round(16*textSize)}/>}
           </button>
           <button className="nur-ph-back" onClick={onBack}
-            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", padding:"4px", flexShrink:0 }}>
-            ←
+            style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", padding:"4px", flexShrink:0, display:"flex", alignItems:"center" }}>
+            <Icon n="back" size={20}/>
           </button>
         </div>
       </div>
@@ -813,13 +814,13 @@ export default function PrayerTimesPage({
             <CityBox
               value={city} onChange={setCity} onPick={pickCity} onSubmit={lookupCity} autoFocus
               placeholder="Search a city, e.g. Karachi, Hyderabad, London"
-              inputStyle={{ width:"100%", boxSizing:"border-box", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"Nunito,sans-serif" }}
+              inputStyle={{ width:"100%", boxSizing:"border-box", background:inputBg, border:`1px solid ${goldBdr}`, borderRadius:"10px", padding:"9px 12px", color:textClr, fontSize:`${13*textSize}px`, outline:"none", fontFamily:"inherit" }}
             />
-            <button onClick={() => lookupCity()} style={{ padding:"9px 18px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            <button onClick={() => lookupCity()} style={{ padding:"9px 18px", borderRadius:"10px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${13*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Go
             </button>
           </div>
-          <button onClick={useMyLocation} style={{ marginTop:"8px", background:"none", border:"none", padding:0, color:gold, fontSize:`${12*textSize}px`, fontWeight:600, cursor:"pointer", fontFamily:"Nunito,sans-serif", textDecoration:"underline" }}>
+          <button onClick={useMyLocation} style={{ marginTop:"8px", background:"none", border:"none", padding:0, color:gold, fontSize:`${12*textSize}px`, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}>
             Use my current location
           </button>
           {locError && (
@@ -862,10 +863,10 @@ export default function PrayerTimesPage({
 
               {/* Current prayer name row */}
               <div style={{ display:"flex", alignItems:"center", gap:"12px", marginBottom:"14px" }}>
-                <span style={{ fontSize:"calc(30px * var(--ts, 1))", lineHeight:1 }}>{currentPrayer?.icon || "🕌"}</span>
+                <span style={{ display:"inline-flex", lineHeight:1, color:gold }}><Icon n={currentPrayer?.icon || "mosque"} size={Math.round(32*textSize)}/></span>
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
-                    <span style={{ color:textClr, fontSize:`${21*textSize}px`, fontWeight:800 }}>
+                    <span style={{ color:textClr, fontFamily:"var(--font-head)", fontSize:`${24*textSize}px`, fontWeight:700 }}>
                       {currentPrayer?.label || "—"}
                     </span>
                     <span style={{
@@ -915,20 +916,20 @@ export default function PrayerTimesPage({
                 }}>
                   <div>
                     <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"3px" }}>Next Prayer</div>
-                    <div style={{ color:textClr, fontSize:`${14*textSize}px`, fontWeight:700 }}>
+                    <div style={{ color:textClr, fontFamily:"var(--font-head)", fontSize:`${16*textSize}px`, fontWeight:700 }}>
                       {nextPrayer.label}{" "}
                       <span style={{ color:goldDim, fontFamily:"var(--font-ar)", fontWeight:400, fontSize:`${12*textSize}px` }}>
                         {nextPrayer.arabic}
                       </span>
                     </div>
-                    <div style={{ color:gold, fontSize:`${13*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums", marginTop:"2px" }}>
-                      🕐 {prayerTimes[nextKey]}
+                    <div style={{ color:gold, fontSize:`${13*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums", marginTop:"2px", display:"flex", alignItems:"center", gap:"5px" }}>
+                      <Icon n="clock" size={Math.round(14*textSize)}/>{prayerTimes[nextKey]}
                     </div>
                   </div>
                   <div style={{ textAlign:"right" }}>
                     <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"3px" }}>Remaining</div>
-                    <div style={{ color:gold, fontSize:`${19*textSize}px`, fontWeight:800, fontVariantNumeric:"tabular-nums" }}>
-                      ⏳ {fmtCd(countdown)}
+                    <div style={{ color:gold, fontSize:`${19*textSize}px`, fontWeight:800, fontVariantNumeric:"tabular-nums", display:"flex", alignItems:"center", justifyContent:"flex-end", gap:"6px" }}>
+                      <Icon n="hourglass" size={Math.round(18*textSize)}/>{fmtCd(countdown)}
                     </div>
                   </div>
                 </div>
@@ -945,7 +946,7 @@ export default function PrayerTimesPage({
               <div style={{ display:"flex", gap:"10px", marginBottom:"12px" }}>
                 {prayerTimes.Sunrise && (
                   <div style={{ flex:1, display:"flex", alignItems:"center", gap:"10px", padding:"12px 14px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                    <span style={{ fontSize:"calc(22px * var(--ts, 1))", flexShrink:0 }}>🌅</span>
+                    <span style={{ display:"inline-flex", flexShrink:0, color:gold }}><Icon n="sunrise" size={Math.round(24*textSize)}/></span>
                     <div>
                       <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"2px" }}>Sunrise</div>
                       <div style={{ color:textClr, fontSize:`${15*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>
@@ -956,7 +957,7 @@ export default function PrayerTimesPage({
                 )}
                 {prayerTimes.Sunset && (
                   <div style={{ flex:1, display:"flex", alignItems:"center", gap:"10px", padding:"12px 14px", background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px" }}>
-                    <span style={{ fontSize:"calc(22px * var(--ts, 1))", flexShrink:0 }}>🌇</span>
+                    <span style={{ display:"inline-flex", flexShrink:0, color:gold }}><Icon n="sunset" size={Math.round(24*textSize)}/></span>
                     <div>
                       <div style={{ color:textDim, fontSize:`${10*textSize}px`, marginBottom:"2px" }}>Sunset</div>
                       <div style={{ color:textClr, fontSize:`${15*textSize}px`, fontWeight:700, fontVariantNumeric:"tabular-nums" }}>
@@ -975,7 +976,7 @@ export default function PrayerTimesPage({
               padding:"14px 16px", marginBottom:"16px",
             }}>
               <div style={{ display:"flex", gap:"10px", alignItems:"flex-start" }}>
-                <span style={{ fontSize:"calc(22px * var(--ts, 1))", lineHeight:1, flexShrink:0, marginTop:"2px", color:gold }}>❝</span>
+                <span style={{ fontSize:"calc(22px * var(--ts, 1))", lineHeight:1, flexShrink:0, marginTop:"2px", color:gold, display:"inline-flex" }}><Icon n="quote" size={Math.round(22*textSize)}/></span>
                 <div>
                   <div style={{ color:textClr, fontSize:`${13*textSize}px`, lineHeight:1.6, marginBottom:"6px" }}>
                     {insight.text}
@@ -1036,10 +1037,10 @@ export default function PrayerTimesPage({
               cursor:"pointer", marginBottom:"12px",
             }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                <span style={{ fontSize:"calc(20px * var(--ts, 1))" }}>🧭</span>
+                <span style={{ display:"inline-flex", color:gold }}><Icon n="compass" size={Math.round(22*textSize)}/></span>
                 <span style={{ fontSize:`${14*textSize}px`, fontWeight:600, color:textClr }}>Open Qibla Compass</span>
               </div>
-              <span style={{ color:goldDim, fontSize:"calc(18px * var(--ts, 1))", lineHeight:1 }}>›</span>
+              <span style={{ color:goldDim, display:"inline-flex" }}><Icon n="chevronRight" size={Math.round(18*textSize)}/></span>
             </button>
 
             {/* ── PWA hint ───────────────────────────────────────────────── */}
@@ -1049,7 +1050,7 @@ export default function PrayerTimesPage({
               background: "var(--panel)",
               border:`1px solid ${goldBdr}`, borderRadius:"12px",
             }}>
-              <span style={{ fontSize:"calc(14px * var(--ts, 1))", flexShrink:0, marginTop:"1px" }}>ℹ️</span>
+              <span style={{ display:"inline-flex", flexShrink:0, marginTop:"1px", color:goldDim }}><Icon n="info" size={Math.round(15*textSize)}/></span>
               <span style={{ color:textDim, fontSize:`${11*textSize}px`, lineHeight:1.55 }}>
                 Browser alarms work best when the app is installed to your Home Screen.
               </span>
@@ -1086,11 +1087,11 @@ export default function PrayerTimesPage({
             {/* Prayer header */}
             <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", marginBottom:"18px" }}>
               <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`color-mix(in srgb,${gold} 13%,transparent)`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(26px * var(--ts, 1))", flexShrink:0 }}>
-                  {selectedPrayer.icon}
+                <div style={{ width:"50px", height:"50px", borderRadius:"14px", background:`color-mix(in srgb,${gold} 13%,transparent)`, border:`1px solid ${goldBdr}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"calc(26px * var(--ts, 1))", flexShrink:0, color:gold }}>
+                  <Icon n={selectedPrayer.icon} size={Math.round(28*textSize)}/>
                 </div>
                 <div>
-                  <div style={{ color:textClr, fontSize:`${21*textSize}px`, fontWeight:800 }}>{selectedPrayer.label}</div>
+                  <div style={{ color:textClr, fontFamily:"var(--font-head)", fontSize:`${24*textSize}px`, fontWeight:700 }}>{selectedPrayer.label}</div>
                   <div style={{ color:goldDim, fontSize:`${15*textSize}px`, fontFamily:"var(--font-ar)" }}>{selectedPrayer.arabic}</div>
                 </div>
               </div>
@@ -1124,7 +1125,7 @@ export default function PrayerTimesPage({
                   <div key={i} style={{
                     color: i === 0 ? gold : textClr,
                     fontSize: i === 0 ? `${17*textSize}px` : `${12*textSize}px`,
-                    fontFamily: i === 0 ? "Georgia,serif" : "inherit",
+                    fontFamily: i === 0 ? "var(--font-ar)" : "inherit",
                     lineHeight: 1.7,
                     marginBottom: i === 0 ? "4px" : 0,
                   }}>
@@ -1137,7 +1138,7 @@ export default function PrayerTimesPage({
             {/* Close */}
             <button
               onClick={() => setSelectedPrayer(null)}
-              style={{ width:"100%", marginTop:"16px", padding:"13px", background:`color-mix(in srgb,${gold} 9%,transparent)`, border:`1px solid ${goldBdr}`, borderRadius:"12px", color:gold, fontSize:`${14*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+              style={{ width:"100%", marginTop:"16px", padding:"13px", background:`color-mix(in srgb,${gold} 9%,transparent)`, border:`1px solid ${goldBdr}`, borderRadius:"12px", color:gold, fontSize:`${14*textSize}px`, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
               Close
             </button>
           </div>

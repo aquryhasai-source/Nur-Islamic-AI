@@ -26,7 +26,7 @@ export default function ConsentModal({ onAccept, onDeny, onOpenPage }) {
     <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: "16px", overflowY: "auto" }}>
       <div role="dialog" aria-modal="true" aria-labelledby="consent-title" aria-describedby="consent-body"
         style={{ width: "100%", maxWidth: "460px", margin: "auto", background: "var(--pop)", border: "1px solid var(--line)", borderRadius: "20px", padding: "22px 22px 20px", boxShadow: "0 24px 60px rgba(0,0,0,.45)" }}>
-        <div id="consent-title" style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--gold)", fontSize: "calc(17px * var(--ts, 1))", fontWeight: 800, marginBottom: "10px" }}>
+        <div id="consent-title" style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--gold)", fontFamily: "var(--font-head)", fontSize: "calc(19.5px * var(--ts, 1))", fontWeight: 700, marginBottom: "10px" }}>
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10.3 3.9 2.4 17.6A2 2 0 0 0 4.1 20.6h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9.5v4.2M12 17h.01"/></svg>
           Important — Read This First
         </div>

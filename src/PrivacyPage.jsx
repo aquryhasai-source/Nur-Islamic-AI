@@ -1,6 +1,7 @@
 import { Children } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import LegalLayout, { slugOf } from "./LegalLayout.jsx";
+import { Icon } from "./Icons.jsx";
 
 const TOC = ["What We Collect", "Stored Only in Your Browser", "What We Never Collect", "Third-Party Services", "Children's Privacy", "Your Rights & Data Deletion", "Changes to This Policy"];
 
@@ -22,7 +23,7 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
     </section>
   ) : (
     <div style={{ marginBottom:"22px" }}>
-      <div style={{ color:gold, fontSize:`${11 * textSize}px`, fontWeight:800, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:"10px" }}>
+      <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${17 * textSize}px`, fontWeight:700, letterSpacing:"0.5px", marginBottom:"10px" }}>
         {title}
       </div>
       <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px" }}>
@@ -62,6 +63,17 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
         );
       }
       return <p style={{ ...body, margin:last?"0":"0 0 12px 0" }}>{children}</p>;
+    }
+    const arrP = Children.toArray(children);
+    const firstP = typeof arrP[0] === "string" ? arrP[0] : "";
+    if (firstP.startsWith("✗")) {
+      const restP = [firstP.replace(/^✗[\s\u00a0]*/, ""), ...arrP.slice(1)];
+      return (
+        <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", margin:last?"0":"0 0 8px 0" }}>
+          <span style={{ flex:"none", marginTop:`${3 * textSize}px`, color:"var(--warn)", display:"flex" }}><Icon n="close" size={14}/></span>
+          <span style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>{restP}</span>
+        </div>
+      );
     }
     return <p style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8, margin:last?"0":"0 0 8px 0" }}>{children}</p>;
   };
@@ -141,7 +153,7 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Privacy Policy</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
@@ -149,7 +161,7 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
         <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: November 2026</div>
 
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
-          <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:800, marginBottom:"6px" }}>Our Commitment</div>
+          <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${15 * textSize}px`, fontWeight:700, marginBottom:"6px" }}>Our Commitment</div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
             NŪR is built on trust. We collect the absolute minimum data needed to make the app work. No accounts. No behavioural tracking. No selling your data. Ever.
           </div>

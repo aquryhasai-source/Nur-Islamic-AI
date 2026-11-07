@@ -1,6 +1,7 @@
 import { Children } from "react";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import LegalLayout, { slugOf } from "./LegalLayout.jsx";
+import { Icon } from "./Icons.jsx";
 
 const TOC = ["Acceptance of Terms", "Educational Purpose Only", "AI Disclaimer", "Content & Third-Party Sources", "Pro Subscription", "Acceptable Use", "Limitation of Liability", "Changes & Contact"];
 
@@ -22,7 +23,7 @@ export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize =
     </section>
   ) : (
     <div style={{ marginBottom:"22px" }}>
-      <div style={{ color:gold, fontSize:`${11 * textSize}px`, fontWeight:800, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:"10px" }}>
+      <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${17 * textSize}px`, fontWeight:700, letterSpacing:"0.5px", marginBottom:"10px" }}>
         {title}
       </div>
       <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px" }}>
@@ -129,7 +130,7 @@ export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize =
           <div style={{ width:"18px", height:"2px", background:gold, borderRadius:"2px" }}/>
         </button>
         <div className="nur-ph-title" style={{ flex:1, textAlign:"center", color:gold, fontSize:`${16*textSize}px`, fontWeight:700, letterSpacing:"1px" }}>Terms of Use</div>
-        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0 }}>←</button>
+        <button className="nur-ph-back" onClick={onBack} style={{ background:"none", border:"none", color:gold, fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", lineHeight:1, padding:"4px 6px", flexShrink:0, display:"flex", alignItems:"center" }}><Icon n="back" size={20}/></button>
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
@@ -137,8 +138,8 @@ export default function TermsPage({ onBack, onOpenSidebar, lightMode, textSize =
         <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: November 2026 · Beta Release</div>
 
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
-          <div style={{ color:gold, fontSize:`${13 * textSize}px`, fontWeight:800, marginBottom:"8px" }}>
-            ⚠️ Important — Read This First
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", color:gold, fontFamily:"var(--font-head)", fontSize:`${15 * textSize}px`, fontWeight:700, marginBottom:"8px" }}>
+            <span style={{ color:"var(--warn)", display:"flex" }}><Icon n="warning" size={16}/></span>Important — Read This First
           </div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
             NŪR is an <Bold>educational tool</Bold>, not a source of religious authority. AI responses are generated for learning purposes and <Bold>must not replace the guidance of a qualified Islamic scholar (Alim)</Bold>. For personal religious rulings (fatwa), legal matters, or important Islamic decisions — always consult a qualified scholar.

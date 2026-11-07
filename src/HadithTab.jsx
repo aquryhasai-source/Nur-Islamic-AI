@@ -1,4 +1,5 @@
 import ReadingOptions from "./ReadingOptions.jsx";
+import { Icon } from "./Icons.jsx";
 import { useState, useEffect, useRef } from "react";
 import { HADITH_COLLECTIONS, hadithUrl, isBookmarked } from "./utils.js";
 
@@ -47,15 +48,15 @@ function HadithCard({ h, i, expanded, setExpanded, bookmarks, onToggleBookmark, 
             <svg width="16" height="16" viewBox="0 0 24 24" fill={saved ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ color:"var(--gold)" }}><path d="M6 3.5h12a1 1 0 0 1 1 1V21l-7-4.5L5 21V4.5a1 1 0 0 1 1-1Z"/></svg>
           </button>
           <button onClick={() => setExpanded(expanded === i ? null : i)}
-            style={{ background:"none", border:"none", color:goldDim, fontSize:"calc(18px * var(--ts, 1))", cursor:"pointer", lineHeight:1 }}>
-            {expanded === i ? "−" : "+"}
+            style={{ background:"none", border:"none", color:goldDim, fontSize:"calc(18px * var(--ts, 1))", cursor:"pointer", lineHeight:1, display:"inline-flex" }}>
+            {expanded === i ? <Icon n="chevronDown" size={18} style={{ transform:"rotate(180deg)" }}/> : <Icon n="plus" size={18}/>}
           </button>
         </div>
       </div>
       <div className="rd-tr" style={{ padding:"12px 14px", color:textClr }}>
         {expanded === i || h.text.length <= 200 ? h.text : `${h.text.slice(0, 200)}…`}
         {h.text.length > 200 && expanded !== i && (
-          <button onClick={() => setExpanded(i)} style={{ background:"none", border:"none", color:gold, fontSize:"calc(12px * var(--ts, 1))", cursor:"pointer", padding:"0 0 0 6px", fontFamily:"Nunito,sans-serif" }}>Read more</button>
+          <button onClick={() => setExpanded(i)} style={{ background:"none", border:"none", color:gold, fontSize:"calc(12px * var(--ts, 1))", cursor:"pointer", padding:"0 0 0 6px", fontFamily:"inherit" }}>Read more</button>
         )}
       </div>
     </div>
@@ -83,14 +84,14 @@ function SearchBar({
           <SearchIcon/>
           <input value={searchQuery} onChange={e => setSearchQuery(e.target.value)} onKeyDown={e => e.key==="Enter" && doSearch()}
             placeholder="Search across all collections…"
-            style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif" }}/>
+            style={{ flex:1, background:"none", border:"none", outline:"none", color:textClr, fontSize:`${13 * textSize}px`, fontFamily:"inherit" }}/>
         </div>
         <button onClick={() => doSearch()} disabled={!searchQuery.trim() || loading}
           style={{ padding:"8px 14px", borderRadius:"10px",
             background: searchQuery.trim() && !loading ? "var(--goldFill)" : "transparent",
             border:`1px solid ${goldBdr}`,
             color: searchQuery.trim() && !loading ? "var(--onGold)" : goldDim,
-            fontSize:`${13 * textSize}px`, fontWeight:700, cursor: searchQuery.trim() && !loading ? "pointer" : "not-allowed", fontFamily:"Nunito,sans-serif", flexShrink:0 }}>
+            fontSize:`${13 * textSize}px`, fontWeight:700, cursor: searchQuery.trim() && !loading ? "pointer" : "not-allowed", fontFamily:"inherit", flexShrink:0 }}>
           Search
         </button>
       </div>
@@ -228,7 +229,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
                 <div style={{ color:gold, fontSize:`${12 * textSize}px`, fontFamily:"var(--font-ar)", marginTop:"2px" }}>{coll.arabic}</div>
                 <div style={{ color:textDim, fontSize:`${11 * textSize}px`, marginTop:"2px" }}>{coll.hadiths?.toLocaleString()} hadiths</div>
               </div>
-              <div style={{ color:goldDim, fontSize:"calc(20px * var(--ts, 1))" }}>›</div>
+              <div style={{ color:goldDim, display:"inline-flex" }}><Icon n="chevronRight" size={20}/></div>
             </button>
           ))}
         </div>
@@ -253,7 +254,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
               {paged.map((h, i) => <HadithCard key={i} h={h} i={i} expanded={expanded} setExpanded={setExpanded} isTarget={targetHadith && h.hadithnumber === targetHadith} {...cardProps}/>)}
               {hasMore && (
                 <button onClick={() => setPage(p => p + 1)}
-                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif", marginTop:"6px" }}>
+                  style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"inherit", marginTop:"6px" }}>
                   Load more ({total - paged.length} remaining)
                 </button>
               )}
@@ -279,7 +280,7 @@ function HadithTabBody({ initialTopic, initialNav, bookmarks = [], onToggleBookm
         {paged.map((h, i) => <HadithCard key={i} h={h} i={i} expanded={expanded} setExpanded={setExpanded} isTarget={false} {...cardProps}/>)}
         {hasMore && !loading && (
           <button onClick={() => setPage(p => p + 1)}
-            style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"Nunito,sans-serif" }}>
+            style={{ width:"100%", padding:"12px", borderRadius:"10px", background:"var(--chip)", border:`1px solid ${goldBdr}`, color:goldDim, fontSize:`${13 * textSize}px`, cursor:"pointer", fontFamily:"inherit" }}>
             Load more ({total - paged.length} remaining)
           </button>
         )}

@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from "react";
 import { KEYS } from "./utils.js";
+import { Icon } from "./Icons.jsx";
 import { subscribeToPush, getPushPermissionState } from "./lib/pushNotifications.js";
 import { trackEvent, trackError } from "./analytics.js";
 
@@ -56,9 +57,12 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
         style={{
           color: "var(--text)",
           fontSize: `${12 * textSize}px`,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "6px",
         }}
       >
-        Get a daily Hadith each morning ✦
+        Get a daily Hadith each morning <Icon n="spark" size={12}/>
       </span>
       <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
         <button
@@ -73,7 +77,7 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
             fontWeight: 700,
             fontSize: `${11 * textSize}px`,
             cursor: loading ? "default" : "pointer",
-            fontFamily: "Nunito,sans-serif",
+            fontFamily:"inherit",
           }}
         >
           {loading ? "…" : "Enable"}
@@ -88,9 +92,10 @@ export default function NotificationPrompt({ hasEngaged, lightMode, textSize }) 
             fontSize: "16px",
             cursor: "pointer",
             padding: "0 4px",
+            display: "inline-flex",
           }}
         >
-          ✕
+          <Icon n="close" size={16}/>
         </button>
       </div>
     </div>

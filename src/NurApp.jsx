@@ -7,6 +7,7 @@ import QuranTab           from "./QuranTab.jsx";
 import HadithTab          from "./HadithTab.jsx";
 import Sidebar, { snapTextSize } from "./Sidebar.jsx";
 import { useMedia, DOCK_QUERY } from "./useMedia.js";
+import { Icon } from "./Icons.jsx";
 const GetProPage = lazy(() => import("./GetProPage.jsx"));
 const SupportPage = lazy(() => import("./SupportPage.jsx"));
 import FridayCard         from "./FridayCard.jsx";
@@ -44,14 +45,14 @@ const Khatam = () => (
 
 const InstallModal = ({ onClose, isIOS }) => {
   const steps = isIOS
-    ? [["1","Open this page in","Safari browser"],["2","Tap the Share button","□↑  at the bottom"],["3","Scroll down and tap",'"Add to Home Screen"'],["4","Tap",'"Add" to confirm']]
-    : [["1","Tap the","⋮  menu in your browser"],["2","Look for",'"Add to Home Screen"'],["3","Tap",'"Add" to confirm'],["4","Find NŪR","on your home screen"]];
+    ? [["1","Open this page in","Safari browser"],["2","Tap the Share button",<><Icon n="share" size={15}/> at the bottom</>],["3","Scroll down and tap",'"Add to Home Screen"'],["4","Tap",'"Add" to confirm']]
+    : [["1","Tap the",<><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" style={{ verticalAlign:"-0.18em" }}><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg> menu in your browser</>],["2","Look for",'"Add to Home Screen"'],["3","Tap",'"Add" to confirm'],["4","Find NŪR","on your home screen"]];
   return (
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(6px)", zIndex:200, display:"flex", alignItems:"flex-end", padding:"20px" }}>
       <div style={{ background:"var(--pop)", border:"1px solid var(--line)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"400px", margin:"0 auto", color:"var(--text)" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
-          <span style={{ color:"var(--gold)", fontSize:"calc(17px * var(--ts, 1))", fontWeight:700 }}>Add to Home Screen</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"calc(22px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontFamily:"var(--font-head)", fontSize:"calc(19.5px * var(--ts, 1))", fontWeight:700 }}>Add to Home Screen</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:"var(--dim)", fontSize:"calc(22px * var(--ts, 1))", cursor:"pointer", display:"inline-flex" }}><Icon n="close" size={22}/></button>
         </div>
         {steps.map(([n,a,b]) => (
           <div key={n} style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"16px" }}>
@@ -311,7 +312,7 @@ export default function NurApp() {
           + Home
         </button>
       )}
-      {!showInstall && unlocked && <div style={{ fontSize:`${11*textSize}px`, color:"var(--green)", letterSpacing:"1px", fontWeight:700 }}>✦ Pro</div>}
+      {!showInstall && unlocked && <div style={{ fontSize:`${11*textSize}px`, color:"var(--green)", letterSpacing:"1px", fontWeight:700, display:"flex", alignItems:"center", gap:"4px" }}><Icon n="spark" size={11}/> Pro</div>}
     </div>
   );
 

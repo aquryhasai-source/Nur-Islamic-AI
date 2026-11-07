@@ -5,6 +5,7 @@ import {
   getPrayerTimesByCity, getCountdownTo, getLastLocation, saveLastLocation, getDevicePosition,
 } from "./utils.js";
 import CityBox from "./CityBox.jsx";
+import { Icon } from "./Icons.jsx";
 import { getCitationText } from "./citeText.js";
 import { resolveCity } from "./cities.js";
 import { SADAQAH_ENABLED } from "./sadaqah.js";
@@ -42,12 +43,12 @@ function RamadanBanner({ prayerTimes, hijriDay, onRequestCity }) {
   return (
     <div style={{ background:"linear-gradient(135deg,color-mix(in srgb,var(--gold) 12%,transparent),color-mix(in srgb,var(--gold) 4%,transparent))", borderBottom:"1px solid color-mix(in srgb,var(--gold) 20%,transparent)", padding:"10px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 }}>
       <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-        <span style={{ fontSize:"calc(18px * var(--ts, 1))" }}>☽</span>
+        <span style={{ fontSize:"calc(18px * var(--ts, 1))", color:"var(--gold)", display:"inline-flex" }}><Icon n="moon" size={20}/></span>
         <div>
           <div style={{ color:"var(--gold)", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700 }}>Ramadan Mubarak · Day {hijriDay}</div>
           {prayerTimes
             ? <div style={{ color:"color-mix(in srgb,var(--gold) 65%,transparent)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"2px" }}>{info.label} <strong style={{ color:"var(--gold)", fontVariantNumeric:"tabular-nums" }}>{info.time}</strong></div>
-            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 55%,transparent)", fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"Nunito,sans-serif" }}>Add city for Iftar times</button>}
+            : <button onClick={onRequestCity} style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 55%,transparent)", fontSize:"calc(11px * var(--ts, 1))", cursor:"pointer", textDecoration:"underline", padding:0, fontFamily:"inherit" }}>Add city for Iftar times</button>}
         </div>
       </div>
       {prayerTimes && <div style={{ color:"color-mix(in srgb,var(--gold) 35%,transparent)", fontSize:"calc(10px * var(--ts, 1))", textAlign:"right", lineHeight:1.8 }}>Suhoor: {prayerTimes.Fajr}<br/>Iftar: {prayerTimes.Maghrib}</div>}
@@ -80,16 +81,16 @@ function CityModal({ onSubmit, onClose }) {
     <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(6px)", zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", padding:"20px" }}>
       <div style={{ background:"var(--pop)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"20px", padding:"24px", width:"100%", maxWidth:"340px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" }}>
-          <span style={{ color:"var(--gold)", fontSize:"calc(16px * var(--ts, 1))", fontWeight:700 }}>Your City</span>
-          <button onClick={onClose} aria-label="Close" style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer" }}>✕</button>
+          <span style={{ color:"var(--gold)", fontFamily:"var(--font-head)", fontSize:"calc(18.5px * var(--ts, 1))", fontWeight:700 }}>Your City</span>
+          <button onClick={onClose} aria-label="Close" style={{ background:"none", border:"none", color:"color-mix(in srgb,var(--gold) 40%,transparent)", fontSize:"calc(20px * var(--ts, 1))", cursor:"pointer", display:"inline-flex" }}><Icon n="close" size={20}/></button>
         </div>
         <CityBox value={city} onChange={setCity} onPick={pick} onSubmit={submit} autoFocus
           placeholder="Search a city, e.g. Istanbul, Karachi"
           wrapStyle={{ flex:"none", marginBottom:"12px" }}
-          inputStyle={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"calc(15px * var(--ts, 1))", outline:"none", fontFamily:"Nunito,sans-serif", boxSizing:"border-box" }}/>
+          inputStyle={{ width:"100%", background:"color-mix(in srgb,var(--text) 5%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 25%,transparent)", borderRadius:"10px", padding:"12px 14px", color:"var(--text)", fontSize:"calc(15px * var(--ts, 1))", outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}/>
         {err && <div style={{ color:"var(--warn)", fontSize:"calc(13px * var(--ts, 1))", marginBottom:"10px" }}>{err}</div>}
         <button onClick={() => submit()} disabled={!city.trim() || busy}
-          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"Nunito,sans-serif" }}>
+          style={{ width:"100%", padding:"12px", borderRadius:"10px", background:city.trim()?"var(--goldFill)":"color-mix(in srgb,var(--gold) 8%,transparent)", border:"1px solid color-mix(in srgb,var(--gold) 30%,transparent)", color:city.trim()?"var(--onGold)":"color-mix(in srgb,var(--gold) 30%,transparent)", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700, cursor:city.trim()?"pointer":"not-allowed", fontFamily:"inherit" }}>
           {busy ? "Finding times…" : "Get Prayer Times"}
         </button>
       </div>
@@ -107,14 +108,14 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
         You've used all your free reflections today.
       </div>
       <button onClick={() => navigateTo("getpro")}
-        style={{ padding:"15px 40px", borderRadius:"50px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${16 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"Nunito,sans-serif", boxShadow:`0 6px 28px ${"var(--line)"}` }}>
-        🌙 Get Pro
+        style={{ padding:"15px 40px", borderRadius:"50px", background:"var(--goldFill)", border:"none", color:"var(--onGold)", fontSize:`${16 * textSize}px`, fontWeight:800, cursor:"pointer", fontFamily:"inherit", boxShadow:`0 6px 28px ${"var(--line)"}`, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:"8px" }}>
+        <Icon n="moon" size={16}/> Get Pro
       </button>
       <div style={{ color:"var(--dim)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"12px" }}>or wait — resets at midnight</div>
       {SADAQAH_ENABLED && (
         <button onClick={() => navigateTo("support")}
-          style={{ marginTop:"22px", background:"none", border:"none", cursor:"pointer", color:gold, fontSize:`${13 * textSize}px`, fontFamily:"Nunito,sans-serif", textDecoration:"underline", opacity:0.85 }}>
-          💛 Or give sadaqah to keep NŪR free for everyone
+          style={{ marginTop:"22px", background:"none", border:"none", cursor:"pointer", color:gold, fontSize:`${13 * textSize}px`, fontFamily:"inherit", textDecoration:"underline", opacity:0.85, display:"inline-flex", alignItems:"center", gap:"6px" }}>
+          <Icon n="heart" size={13}/> Or give sadaqah to keep NŪR free for everyone
         </button>
       )}
     </div>
@@ -177,7 +178,7 @@ function CiteCard({ c, onOpen }) {
     <div style={{ padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
         <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>{c.raw}</span>
-        <button className="cb" onClick={() => onOpen(c)} style={{ background:"none", border:0, padding:0, cursor:"pointer", fontFamily:"inherit", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)" }}>Open →</button>
+        <button className="cb" onClick={() => onOpen(c)} style={{ background:"none", border:0, padding:0, cursor:"pointer", fontFamily:"inherit", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)", display:"inline-flex", alignItems:"center", gap:"4px" }}>Open <Icon n="forward" size={14}/></button>
       </div>
       {state === "loading" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Loading text…</div>}
       {state === "err" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Text unavailable right now. Use Open to read it.</div>}
