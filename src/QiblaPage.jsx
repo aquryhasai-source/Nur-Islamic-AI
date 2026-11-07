@@ -1357,7 +1357,7 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
                 inputStyle={{ flex:1, minWidth:0, border:0, outline:0, background:"transparent", color:"var(--text)", fontFamily:"inherit", fontSize:"calc(13px * var(--ts, 1))", fontWeight:500 }}/>
               <button className="cb" onClick={useMyLocation}
                 style={{ display:"flex", alignItems:"center", gap:"7px", height:"36px", padding:"0 14px", borderRadius:"10px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontFamily:"inherit", fontSize:"calc(12.5px * var(--ts, 1))", fontWeight:600, cursor:"pointer" }}>
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.5"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
+                <Icon n="locate" size={15}/>
                 Use my location
               </button>
             </>
@@ -1411,7 +1411,16 @@ export default function QiblaPage({ onBack, onOpenSidebar, lightMode, textSize =
               Go
             </button>
           </div>
+          <button onClick={useMyLocation}
+            style={{
+              marginTop:"10px", display:"flex", alignItems:"center", gap:"8px", width:"100%", justifyContent:"center",
+              padding:"9px 12px", borderRadius:"10px", border:`1px solid ${goldBdr}`, background:goldFaint,
+              color:gold, fontSize:"calc(13px * var(--ts, 1))", fontWeight:600, cursor:"pointer", fontFamily:"inherit",
+            }}>
+            <Icon n="locate" size={16}/> Use my current location
+          </button>
           {locError === "No city matches that" && <div style={{ color:"var(--warn)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"8px" }}>No city matches that. Pick one from the suggestions, or try a nearby larger city.</div>}
+          {locError === "Location access denied" && <div style={{ color:"var(--warn)", fontSize:"calc(12px * var(--ts, 1))", marginTop:"8px" }}>Location access is blocked. Allow location for this site in your browser settings, or search a city above.</div>}
         </div>
       )}
 
