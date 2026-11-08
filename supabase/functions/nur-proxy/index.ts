@@ -1,6 +1,51 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// FAQ data for identity/app questions — loaded at startup from bundled JSON
+// eslint-ignore-next-line @typescript-eslint/no-var-requires,denn/store
+const FA_QS: FAQEntry[] = JSON.parse(await Deno.readTextFile("./nur_faqs.json"));
+
+interface FAQEntry {
+  id: string;
+  category: string;
+  question: string;
+  aliases: string[];
+  keywords: string[];
+  answer: string;
+}
+
+// ── FAQ Matching ───────────────────────────────────────────────────────────
+function normalizeForFaq(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^\w\s']/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchFAQ(query: string): FAQEntry | null {
+  const q = normalizeForFaq(query);
+  const tokens = q.split(/[\s]+/);
+
+  for (const faq of FA_QS) {
+    // Exact match on question or any alias
+    const normalizedQ = normalizeForFaq(faq.question);
+    const normalizedA = normalizeForFaq(faq.aliases.join(" "));
+    if (q === normalizedQ || faq.aliases.some(a => normalizeForFaq(a) === q)) {
+      return faq;
+    }
+    // High token overlap (>= 70%) on keywords
+    const kwTokens = faq.keywords.flatMap(k => normalizeForFaq(k).split(/[\s]+/));
+    const overlap = tokens.filter(t => kwTokens.includes(t)).length;
+    const ratio = tokens.length > 0 ? overlap / tokens.length : 0;
+    if (ratio >= 0.7 && overlap >= 2) {
+      return faq;
+    }
+  }
+  return null;
+}
+
 // ── Config ───────────────────────────────────────────────────────────────
 const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -12,8 +57,8 @@ const CLASSIFICATION_CONFIDENCE_THRESHOLD = parseFloat(Deno.env.get("NUR_CLASSIF
 
 // Every safe, validated generation is logged to ai_response_log (data collection only —
 // nothing is ever read back from that table to serve a response).
-const RAG_VERSION        = "v1";
-const PROMPT_VERSION     = "v1";
+const RAG_VERSION        = "v2";
+const PROMPT_VERSION     = "v2";
 const VALIDATION_VERSION = "v1";
 
 interface QuranVerse   { ref: string; text: string; surah: number; ayah: number; }
@@ -100,7 +145,7 @@ const GENERIC_LOW_VALUE = new Set([
 
 function extractKeywords(query: string): string[] {
   const stop = new Set(["what","does","the","say","about","how","are","were","been","into","more","some","also","then","them","they","their","in","on","to","and","or","for","with","of","that","this","should","can","will","have","has","had","tell","please","explain","when","who","why","which","there","from"]);
-  const rawWords = query.toLowerCase().replace(/[^a-z\s]/g," ").split(/\s+/).filter(Boolean);
+  const rawWords = query.toLowerCase().replace(/[^a-z\s]/g," ").split(/[\s]+/).filter(Boolean);
   const normalized = rawWords.map(w => NAME_ALIASES[w] ?? w);
   const filtered = normalized.filter(w => w.length > 3 && !stop.has(w));
   const seen = new Set<string>();
@@ -399,6 +444,48 @@ function normalizeQuestion(raw: string): string {
     .replace(/[^\w\s']/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Query expansion — adds synonyms/relevant terms to improve retrieval coverage.
+// Maps common Islamic terminology variants and related concepts.
+const EXPANSION_MAP: Record<string, string[]> = {
+  "halal": ["permissible", "lawful", "halal", "clean", "pure", "fitrah"],
+  "haram": ["forbidden", "haram", "makruh", "disliked"],
+  "meat": ["food", "animal", "eating", "consumption", "provisions", "makan"],
+  "chicken": ["poultry", "bird", "meat", "food", "daf", "dafal"],
+  "zabiha": ["slaughter", "qurbani", "dhabiha", "ritual slaughter", "halal meat"],
+  "prayer": ["salah", "salat", "namaz", "salawat", "ibadah", "worship"],
+  "fasting": ["sawm", "ramadan", "saum", "fast", "suhoor", "iftar"],
+  "charity": ["sadaqah", "zakat", "donation", "giving", "contribution", "philanthropy"],
+  "knowledge": ["ilm", "learning", "education", "study", "wisdom", "understanding"],
+  "patience": ["sabr", "perseverance", "endurance", "calamity", "trial"],
+  "dua": ["supplication", "du'a", "duaa", "prayer", "invocation", "asking"],
+  "forgiveness": ["tawbah", "istighfar", "repentance", "pardoning", "forgiver"],
+  "anger": ["ghadab", "temper", "rage", "irritation", "wrath"],
+  "brotherhood": ["ummah", "community", "muslim unity", "social cohesion"],
+  "truth": ["sidq", "honesty", "truthfulness", "siddiq"],
+  "good": ["hayr", "virtue", "benefit", "righteous"],
+  "evil": ["sharr", "misguidance", "harm", "sin"],
+  "beautiful": ["hasan", "good", "excellent", "commendable"],
+  "worship": ["ibadah", "salah", "dhikr", "acts of devotion"],
+  "beauty": ["hassan", "goodness", "positive"],
+  "sin": ["dhulm", "wrong", "transgression", "offense"],
+  "ruling": ["fatwa", "hukm", "judgment", "legal opinion"],
+  "permissible": ["halal", "jawsan", "valid", "allowed"],
+  "forbidden": ["haram", "haramat", "makruh", "prohibited"],
+};
+
+function expandQuery(query: string): string {
+  const q = query.toLowerCase();
+  const terms = new Set<string>();
+  for (const word of q.split(/[\s]+/)) {
+    if (EXPANSION_MAP[word]) {
+      for (const ex of EXPANSION_MAP[word]) terms.add(ex);
+    }
+    if (word.length > 3) terms.add(word);
+  }
+  const baseTokens = q.split(/[\s]+/).filter(t => t.length > 2);
+  return [...baseTokens, ...terms].join(" ");
 }
 
 // Deterministic light/complex classifier; uncertainty always resolves to "complex".
@@ -830,7 +917,35 @@ Deno.serve(async (req: Request) => {
     const complexity = classifyComplexity(userQuery);
     const isSafeToLog = classifySafeToLog(userQuery, complexity);
 
-    const ragQuery = stripContextPreamble(userQuery);
+    // ── FAQ Pre-Query (deterministic identity answers) ──────────────────────
+    const matchedFAQ = matchFAQ(userQuery);
+    let faqId = null;
+
+    if (matchedFAQ) {
+      faqId = matchedFAQ.id;
+      console.log(`[FAQ] matched: ${faqId}`);
+      console.log(`[RAG] faq_only=true`);
+
+      if (isSafeToLog) {
+        try {
+          await logResponse(supabase, {
+            deviceId: device_id, normalizedQuestion, topicKeys: [], userQuery, reply: matchedFAQ.answer,
+            sourceRefs: { faq: faqId }, model: "faq-dataset", generationType: "faq", hadCitationIssues: false,
+          });
+        } catch (err: any) {
+          console.error("[nur-proxy] response log write failed (non-fatal):", err?.message ?? err);
+        }
+      }
+      await logMetric(supabase, device_id, usageDate, "ai_request", {
+        model: "faq-dataset", generation_type: "faq", faq_id: faqId, safe_to_log: isSafeToLog,
+      });
+      return reply({ reply: matchedFAQ.answer, remaining, unlocked: isUnlocked, model: "faq-dataset", faq_id: faqId });
+    }
+
+    // ── Query Expansion ───────────────────────────────────────────────────
+    const ragQuery = stripContextPreamble(expandQuery(userQuery));
+    console.log(`[RAG] expanded query: ${ragQuery.slice(0, 120)}...`);
+
     const [verses, { records: hadiths, contextSet }, entities] = await Promise.all([
       searchQuran(supabase, ragQuery), retrieveHadiths(ragQuery), detectEntities(supabase, ragQuery),
     ]);

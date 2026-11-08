@@ -1,0 +1,108 @@
+[
+  {
+    "id": "faq_identity_who_are_you",
+    "category": "identity",
+    "question": "who are you",
+    "aliases": [
+      "what is your name",
+      "what are you",
+      "tell me about yourself",
+      "who is nur",
+      "what is nur",
+      "introduce yourself"
+    ],
+    "keywords": ["who", "are", "you", "name", "nur", "identity", "assistant", "bot"],
+    "answer": "I am NŪR, a warm and knowledgeable Islamic AI assistant grounded in the Holy Quran and authentic Sunnah. I am designed to help explore Islamic knowledge, study verses, read Hadith, and learn about Islamic teachings."
+  },
+  {
+    "id": "faq_identity_developer",
+    "category": "identity",
+    "question": "who made you",
+    "aliases": [
+      "who created you",
+      "who built you",
+      "who developed you",
+      "who owns nur",
+      "what company made you",
+      "who is behind nur"
+    ],
+    "keywords": ["who", "made", "created", "built", "developed", "owner", "company", "team"],
+    "answer": "NŪR was developed by a small independent team dedicated to making authentic Islamic knowledge accessible worldwide. NŪR is an independent app and is not affiliated with any commercial organisation or political entity."
+  },
+  {
+    "id": "faq_identity_purpose",
+    "category": "identity",
+    "question": "what is the purpose of nur",
+    "aliases": [
+      "why was nur created",
+      "what can nur do",
+      "how can nur help me",
+      "what is nur used for"
+    ],
+    "keywords": ["purpose", "goal", "mission", "help", "do", "features", "benefit"],
+    "answer": "NŪR aims to provide a clear, reliable, and accessible platform for learning about Islam. Key features include an AI assistant grounded in verified scripture, full Quran text with translations, six canonical Hadith collections, precise Salah prayer times, a Hijri calendar, and Qibla direction."
+  },
+  {
+    "id": "faq_app_sources",
+    "category": "app",
+    "question": "where do you get your information",
+    "aliases": [
+      "what sources do you use",
+      "are your hadith authentic",
+      "how do you verify answers",
+      "what quran translation do you use"
+    ],
+    "keywords": ["source", "sources", "quran", "hadith", "authentic", "verification", "translation", "database"],
+    "answer": "NŪR retrieves information directly from verified Islamic texts: the Holy Quran (Saheeh International and other authentic translations) and six primary Hadith collections (Sahih Bukhari, Sahih Muslim, Sunan Abu Dawud, Jami at-Tirmidhi, Sunan an-Nasai, and Sunan Ibn Majah)."
+  },
+  {
+    "id": "faq_app_fatwa_disclaimer",
+    "category": "app",
+    "question": "can you give me a fatwa",
+    "aliases": [
+      "is this fatwa",
+      "can you make a ruling for me",
+      "can you issue a fatwa",
+      "are you an alim or scholar"
+    ],
+    "keywords": ["fatwa", "ruling", "scholar", "alim", "mufti", "personal", "fiqh", "judge"],
+    "answer": "No, NŪR is an educational tool and does not issue religious rulings (fatwas). For personal legal matters, complex fiqh questions, or binding Islamic rulings, please consult a qualified human scholar (Alim or Mufti). Allahu A'lam."
+  },
+  {
+    "id": "faq_pricing_pro",
+    "category": "billing",
+    "question": "is nur free or paid",
+    "aliases": [
+      "what is nur pro",
+      "how much does pro cost",
+      "what do i get with pro",
+      "is nur completely free"
+    ],
+    "keywords": ["free", "pro", "cost", "price", "paid", "subscription", "limit"],
+    "answer": "NŪR is free to use with a daily limit of 15 AI reflection messages. NŪR Pro is available as a single one-time payment ($2.99 globally / ₹299 in India) for lifetime unlimited AI reflections and an ad-free experience. There are no recurring subscriptions."
+  },
+  {
+    "id": "faq_pricing_unlock_code",
+    "category": "billing",
+    "question": "how do i redeem my pro code",
+    "aliases": [
+      "where do i enter my code",
+      "i paid for pro where is my code",
+      "how to unlock pro"
+    ],
+    "keywords": ["redeem", "code", "unlock", "enter", "licence", "payment", "activate"],
+    "answer": "After completing payment for NŪR Pro, your unlock code is emailed to you. Open the Get Pro page in the app, scroll to 'Already paid? Enter your code', enter your unlock code, and click 'Activate Pro Access'."
+  },
+  {
+    "id": "faq_privacy_data",
+    "category": "privacy",
+    "question": "do you save my messages or personal data",
+    "aliases": [
+      "is my chat private",
+      "do you track me",
+      "what data is stored"
+    ],
+    "keywords": ["privacy", "data", "store", "save", "track", "private", "security", "pii"],
+    "answer": "Your privacy is respected. NŪR does not require account creation or personal login for basic use. Chat messages are processed securely via encrypted proxies, and no personal identifiable information (PII) is sold or shared."
+  }
+]
