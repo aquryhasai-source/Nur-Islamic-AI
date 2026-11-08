@@ -1,4 +1,5 @@
--- NOT YET APPLIED — needs the owner's explicit OK (these remove permissions). Run in the Supabase SQL editor.
+-- APPLIED to production on 2026-10-20 (removes permissions; not additive). Kept for the record / new environments.
+-- Part B (push_subscriptions policies) depends on the new app version being live everywhere first.
 -- Roll back with supabase/migrations/ROLLBACK notes in rollback-2026-10-19.sql.
 
 -- PART A — safe right now (the app never uses these).

@@ -7,6 +7,7 @@
 | send-feedback | send-feedback | false | the app (Origin allowlist + rate limit) |
 | nur-rp-webhook | nur-rp-webhook | false | Razorpay (HMAC signature) |
 | nur-ls-webhook | **hyper-function** | false | Lemon Squeezy (HMAC signature) |
+| hyper-function | hyper-function | false | Lemon Squeezy (HMAC signature) — recovered deployed source; identical to nur-ls-webhook |
 | send-push, send-prayer-alerts, post-daily-hadith-social | same | true | pg_cron only (x-cron-secret from Vault) |
 | daily-hadith | daily-hadith | true | retired stub (410) — delete in dashboard |
 

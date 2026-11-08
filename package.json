@@ -11,6 +11,7 @@
     "@vercel/blob": "^2.8.2",
     "@vercel/og": "^0.6.3",
     "d3-geo": "^3.1.1",
+    "docx": "^9.15.3",
     "ffmpeg-static": "^5.2.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

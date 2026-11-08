@@ -450,6 +450,15 @@ function classifyComplexity(query: string): QueryComplexity {
   return { level: "complex", confidence: 0.3, reason: "no strong signal — defaulting to complex per uncertainty rule" };
 }
 
+// Logging safety criteria (accurate scope — this is a keyword/regex heuristic, NOT PII detection):
+//   - All "complex" classified questions are excluded (coarse proxy for sensitive rulings).
+//   - Queries matching PERSONAL_PATTERNS or TIME_SENSITIVE_PATTERNS regexes are excluded.
+//   - Does NOT detect: names, email addresses, phone numbers, locations, ages, medical
+//     conditions, financial figures, or any free-text PII not matching those regexes.
+//   - ai_response_log is write-only server-side: no Edge Function, API endpoint, or RPC
+//     reads from it. RLS is enabled with no policies, which denies anon/authenticated
+//     access entirely (service_role bypasses RLS by design).
+//   - A retention policy (migration 005) deletes rows older than 90 days.
 function classifySafeToLog(query: string, complexity: QueryComplexity): boolean {
   if (complexity.level === "complex") return false;
   if (PERSONAL_PATTERNS.some(re => re.test(query))) return false;
@@ -608,6 +617,65 @@ function sanitizeMessages(raw: unknown): Msg[] | null {
   return recent;
 }
 
+// ── Hybrid auth: JWT (paying users) OR device key (free users) ──────────────
+// Free users authenticate with the device key exactly as before. Paying users who
+// registered via email present a Supabase Auth JWT, verified against the project's
+// JWKS. A valid JWT supersedes the device key: the token's `sub` becomes the quota
+// identity and device-key verification is skipped for that request.
+//
+// verify_jwt stays OFF on the function so Supabase does not reject the device-key
+// clients. This function does the JWT check itself, so it is self-contained and
+// does not depend on Supabase's edge JWT middleware.
+
+function base64urlToBytes(b64: string): Uint8Array {
+  const pad = "=".repeat((4 - b64.length % 4) % 4);
+  const str = b64.replace(/-/g, "+").replace(/_/g, "/") + pad;
+  const bin = atob(str);
+  return new Uint8Array(Array.from(bin).map((c) => c.charCodeAt(0)));
+}
+
+function base64urlDecode(b64: string): string {
+  return new TextDecoder().decode(base64urlToBytes(b64));
+}
+
+async function verifyJwt(token: string): Promise<{ sub: string } | null> {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+
+    const [headerB64, payloadB64, sigB64] = parts;
+    const header = JSON.parse(base64urlDecode(headerB64));
+    const payload = JSON.parse(base64urlDecode(payloadB64));
+
+    // Only RS256 is accepted — Supabase Auth issues RS256 tokens.
+    if (header.alg !== "RS256") return null;
+    if (!payload.sub || typeof payload.sub !== "string") return null;
+    // Reject expired tokens and tokens issued in the future (clock skew 5 min).
+    if (typeof payload.exp === "number" && payload.exp < Date.now() / 1000) return null;
+    if (typeof payload.iat === "number" && payload.iat > Date.now() / 1000 + 300) return null;
+
+    const jwksRes = await fetch(`${SUPABASE_URL}/auth/v1/.well-known/jwks.json`);
+    if (!jwksRes.ok) return null;
+    const jwks = await jwksRes.json();
+    const key = (jwks.keys ?? []).find((k: any) => k.kid === header.kid);
+    if (!key) return null;
+
+    const cryptoKey = await crypto.subtle.importKey(
+      "jwk", key, { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["verify"],
+    );
+    const sigBytes = base64urlToBytes(sigB64);
+    const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+    // Cast to ArrayBuffer: crypto.subtle.verify requires a BufferSource, and the
+    // Uint8Array produced by base64urlToBytes may carry an ArrayBufferLike that TS
+    // refuses to narrow. The bytes themselves are correct; this is a type-only cast.
+    const sig = sigBytes.buffer as ArrayBuffer;
+    const valid = await crypto.subtle.verify("RSASSA-PKCS1-v1_5", cryptoKey, sig, data);
+    return valid ? { sub: payload.sub } : null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   const C = corsFor(req);
   const JH = { ...C, "Content-Type": "application/json" };
@@ -654,13 +722,29 @@ Deno.serve(async (req: Request) => {
     const ip = (req.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
     const ipH = await hmacShort(ip);
 
-    const deviceKey = req.headers.get("x-device-key") ?? "";
-    if (deviceKey) {
-      if (!/^[A-Za-z0-9_-]{32,128}$/.test(deviceKey)) return reply({ error: "Device verification failed" }, 403);
-      const { data: bind } = await supabase.rpc("bind_device_key", { p_device: device_id, p_key_hash: await sha256Hex(deviceKey) });
-      if (bind === "mismatch") return reply({ error: "Device verification failed" }, 403);
-    } else if (REQUIRE_DEVICE_KEY) {
-      return reply({ error: "Please refresh the app to continue." }, 403);
+    // Hybrid auth: a valid Supabase Auth JWT (paying users) supersedes the device
+    // key. The token's `sub` becomes the quota identity; device-key verification is
+    // skipped for that request. Free users continue with the device key as before.
+    const authHeader = req.headers.get("authorization") ?? "";
+    const jwt = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+    let authenticatedAs: { sub: string } | null = null;
+    if (jwt) {
+      authenticatedAs = await verifyJwt(jwt);
+      if (!authenticatedAs) return reply({ error: "Authentication failed" }, 401);
+    }
+
+    if (authenticatedAs) {
+      // JWT holder: identity comes from the token, device key is not required.
+      deviceIdForLog = authenticatedAs.sub;
+    } else {
+      const deviceKey = req.headers.get("x-device-key") ?? "";
+      if (deviceKey) {
+        if (!/^[A-Za-z0-9_-]{32,128}$/.test(deviceKey)) return reply({ error: "Device verification failed" }, 403);
+        const { data: bind } = await supabase.rpc("bind_device_key", { p_device: device_id, p_key_hash: await sha256Hex(deviceKey) });
+        if (bind === "mismatch") return reply({ error: "Device verification failed" }, 403);
+      } else if (REQUIRE_DEVICE_KEY) {
+        return reply({ error: "Please refresh the app to continue." }, 403);
+      }
     }
 
     const limited = async (key: string, windowS: number, max: number) => {
@@ -693,9 +777,18 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── Pro status (revoked licences don't count) ───────────────────────
-    const { data: licenseRow } = await supabase.from("licenses").select("id")
-      .contains("used_by", [device_id]).is("revoked_at", null).limit(1).maybeSingle();
-    const isUnlocked = !!licenseRow;
+    // JWT holders are paying users: their identity is the token's `sub`, and they
+    // get the higher Pro cap. Free users keep the device-key + licence path.
+    const quotaIdentity = authenticatedAs ? authenticatedAs.sub : device_id;
+
+    let isUnlocked = false;
+    if (!authenticatedAs) {
+      const { data: licenseRow } = await supabase.from("licenses").select("id")
+        .contains("used_by", [device_id]).is("revoked_at", null).limit(1).maybeSingle();
+      isUnlocked = !!licenseRow;
+    } else {
+      isUnlocked = true; // JWT = registered paying user
+    }
 
     const usageDate = resolveUsageDate(local_date);
     let remaining = 999;
@@ -706,22 +799,22 @@ Deno.serve(async (req: Request) => {
         return reply({ error: "Daily limit reached", remaining: 0 }, 429);
       }
       // Atomic reservation: the count is incremented only if still below the limit.
-      const { data: q, error: qErr } = await supabase.rpc("consume_quota", { p_device: device_id, p_date: usageDate, p_limit: FREE_DAILY_LIMIT });
+      const { data: q, error: qErr } = await supabase.rpc("consume_quota", { p_device: quotaIdentity, p_date: usageDate, p_limit: FREE_DAILY_LIMIT });
       if (qErr) throw qErr;
       const row = Array.isArray(q) ? q[0] : q;
       if (!row?.allowed) return reply({ error: "Daily limit reached", remaining: 0 }, 429);
-      reserved.free = [device_id, usageDate];
+      reserved.free = [quotaIdentity, usageDate];
       remaining = Math.max(0, FREE_DAILY_LIMIT - (row.used ?? FREE_DAILY_LIMIT));
 
-      const { data: u } = await supabase.rpc("consume_quota", { p_device: device_id, p_date: `u:${utcDate(0)}`, p_limit: UTC_DAY_SAFETY_CAP });
+      const { data: u } = await supabase.rpc("consume_quota", { p_device: quotaIdentity, p_date: `u:${utcDate(0)}`, p_limit: UTC_DAY_SAFETY_CAP });
       const urow = Array.isArray(u) ? u[0] : u;
       if (!urow?.allowed) { await refund(); return reply({ error: "Daily limit reached", remaining: 0 }, 429); }
-      reserved.utc = [device_id, `u:${utcDate(0)}`];
+      reserved.utc = [quotaIdentity, `u:${utcDate(0)}`];
     } else {
-      const { data: p } = await supabase.rpc("consume_quota", { p_device: device_id, p_date: `p:${utcDate(0)}`, p_limit: PRO_DAILY_CAP });
+      const { data: p } = await supabase.rpc("consume_quota", { p_device: quotaIdentity, p_date: `p:${utcDate(0)}`, p_limit: PRO_DAILY_CAP });
       const prow = Array.isArray(p) ? p[0] : p;
       if (!prow?.allowed) return reply({ error: "Daily limit reached", remaining: 0 }, 429);
-      reserved.pro = [device_id, `p:${utcDate(0)}`];
+      reserved.pro = [quotaIdentity, `p:${utcDate(0)}`];
     }
 
     // Global spend safety net

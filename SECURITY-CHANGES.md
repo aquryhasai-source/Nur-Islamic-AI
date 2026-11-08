@@ -9,5 +9,6 @@ GET only, safe notification URLs), `/api/hadith-reel` requires `NUR_INTERNAL_SEC
 no more ipapi.co lookups, security headers + CSP (Report-Only) in vercel.json, corrected Privacy page,
 `@vercel/blob` ^2.8.2 + package-lock.json.
 
-Deploy order: 1) set Vercel env `NUR_INTERNAL_SECRET` (see chat), 2) upload this project to GitHub, 3) let Vercel deploy,
-4) after a few days run PENDING_lockdown (Part A, then Part B).
+Deploy order: 1) set Vercel env `NUR_INTERNAL_SECRET` (see chat), 2) upload this project to GitHub, 3) let Vercel deploy.
+
+Done: lockdown applied 2026-10-20 (Part A + Part B) — see `supabase/migrations/002_lockdown_applied_2026-10-20.sql`.
