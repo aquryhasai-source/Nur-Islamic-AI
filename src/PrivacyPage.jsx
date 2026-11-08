@@ -3,7 +3,7 @@ import { useMedia, DOCK_QUERY } from "./useMedia.js";
 import LegalLayout, { slugOf } from "./LegalLayout.jsx";
 import { Icon } from "./Icons.jsx";
 
-const TOC = ["What We Collect", "Stored Only in Your Browser", "What We Never Collect", "Third-Party Services", "Children's Privacy", "Your Rights & Data Deletion", "Changes to This Policy"];
+const TOC = ["What We Collect", "Stored Only in Your Browser", "AI Questions & Answers", "What We Never Collect", "Third-Party Services", "How We Protect Data", "How Long We Keep Data", "Children's Privacy", "Your Rights & Data Deletion", "Changes to This Policy"];
 
 export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize = 1 }) {
   const docked = useMedia(DOCK_QUERY);
@@ -78,62 +78,108 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
     return <p style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8, margin:last?"0":"0 0 8px 0" }}>{children}</p>;
   };
 
+  const sections = (
+    <>
+        <Section title="What We Collect">
+          <Row label="Anonymous Device ID and Device Key" desc="Two random codes created the first time you open NŪR and stored only in your browser. The Device ID is used to count your daily AI messages. The Device Key is a private secret that proves requests really come from your own browser; our server keeps only a one-way hash of it, never the key itself. Neither is linked to your name, email, or any personal information."/>
+          <Row label="Daily Message Count" desc="How many AI questions you have asked today, stored with your Device ID in our database. The free daily count resets at midnight in your local timezone."/>
+          <Row label="Network Address (Abuse Protection)" desc="To stop abuse we apply short rate limits per network address. Your address is turned into a scrambled (keyed-hash) code before anything is stored, and those records are deleted automatically after 2 days. As with any website, our servers and hosting providers can see your IP address while handling a request."/>
+          <Row label="Anonymous Usage Events" desc="Basic events tied to your Device ID: which pages and tabs you open, whether you installed the app or turned on notifications, your choice on the first-visit notice, whether Pro is active, your light or dark theme, and for AI questions the model that answered and a general topic label such as &quot;patience&quot; (never the text of your question). Deleted automatically after 90 days."/>
+          <Row label="Error Reports" desc="If the app hits an error, we receive a short error message (up to 500 characters) with your Device ID and the date, so we can fix bugs. We keep these only for debugging and delete them on request."/>
+          <Row label="Pro Purchase and Licence" desc="If you buy Pro, Razorpay or LemonSqueezy sends us your email address and a payment reference. We store them with your unlock code so we can email you the code, restore Pro if you reinstall, and cancel the licence if the payment is refunded. We also record which devices (up to 3) have activated the code. Your unlock code is saved in your browser to switch Pro on. We never see or store your card details."/>
+          <Row label="Feedback" desc="If you send feedback we store your message, its category, your browser type and your Device ID. Your email address is stored only if you choose to give one so we can reply; you can skip it. Feedback is delivered to us by email through Resend." last/>
+        </Section>
+
+        <Section title="Stored Only in Your Browser">
+          <P>The following is saved on your device and is not stored on our servers:</P>
+          <P>· Your name and year of birth (optional)</P>
+          <P>· Your bookmarks (Quran ayahs and Hadith)</P>
+          <P>· Your prayer alarm preferences</P>
+          <P>· Your chat history</P>
+          <P>· Your last city and coordinates, saved so Prayer Times and Qibla load faster</P>
+          <P>· Your display settings, such as theme and text size</P>
+          <P last>Clearing your browser or app data removes all of it permanently, and gives you a new Device ID. Keep your Pro unlock code safe so you can restore Pro afterwards.</P>
+        </Section>
+
+        <Section title="AI Questions & Answers">
+          <Row label="How Your Question Is Answered" desc="Your question, plus up to the previous 12 messages of the conversation (each cut to 4,000 characters), is sent to our server. The server searches our own Quran database and a public Hadith collection for passages related to your question, then sends your conversation and those passages to the Groq AI service, which writes the answer. Hadith lookups carry only a collection name and number, never your question. References in the answer that do not match a passage we found are removed."/>
+          <Row label="Ready-Made Answers" desc="Common questions about NŪR itself, such as who made it, what Pro costs, how to redeem a code or how your data is handled, are answered from a fixed set of pre-written answers on our server. Those questions are not sent to Groq."/>
+          <Row label="Age-Appropriate Answers" desc="Your year of birth never leaves your device. If it shows you are under 18, we add a short note such as &quot;the person asking is a teenager&quot; in front of your question so the answer suits your age."/>
+          <Row label="What We Save" desc="Simple, general questions and their answers may be saved with your Device ID, the AI model used, the passages cited and version numbers. We use them only to check and improve answer quality. They are not used to answer other people, are not shown publicly, and cannot be read from the app or your browser. They are deleted automatically after 90 days. A question is not saved when our automatic filter judges it to be complex, personal or time-sensitive, but it is still sent to Groq so it can be answered."/>
+          <Row label="Please Keep It Impersonal" desc="The filter looks for keywords. It cannot recognise names, phone numbers, email addresses, locations, or health and financial details, so please do not type personal information into the chat. We do not use your questions to train AI models. If you shared something by mistake, contact us and we will delete it." last/>
+        </Section>
+
+        <Section title="What We Never Collect">
+          <P>✗ &nbsp;Your name, phone number or home address</P>
+          <P>✗ &nbsp;Your email address, unless you give it in Feedback or it comes with your Pro purchase</P>
+          <P>✗ &nbsp;Your precise GPS location unless you turn on prayer-time notifications — in that case the city or coordinates you chose are kept with your notification subscription so alerts arrive at the right time (turn notifications off to remove it)</P>
+          <P>✗ &nbsp;Card or other payment details (handled entirely by our payment providers)</P>
+          <P>✗ &nbsp;Your chat history. It stays on your device; only the filtered questions described above are saved</P>
+          <P>✗ &nbsp;Cookies or trackers of our own. The free version shows an ad banner from Adsterra, which may use its own cookies or identifiers; Pro removes the ads</P>
+          <P last>✗ &nbsp;Anything we sell or share for advertising</P>
+        </Section>
+
+        <Section title="Third-Party Services">
+          <P>NŪR uses trusted third-party services to deliver its features. Only the minimum information necessary for each feature is shared with them, and each handles it under its own terms.</P>
+          <P>· <strong style={{ color:textClr }}>Groq (AI answers)</strong> — receives your conversation and the Quran and Hadith passages we retrieved, to write the answer.</P>
+          <P>· <strong style={{ color:textClr }}>Supabase (database and server functions)</strong> — stores the records described above. Our database is hosted in Mumbai, India.</P>
+          <P>· <strong style={{ color:textClr }}>Vercel (hosting)</strong> — serves the app and sees standard request details such as your IP address and browser type.</P>
+          <P>· <strong style={{ color:textClr }}>Prayer times, calendar &amp; location</strong> — Aladhan (prayer times and Hijri dates), Open-Meteo (city search) and OpenStreetMap Nominatim (turning coordinates into a place name). Your city or coordinates go to them directly from your browser when you use these features. We do not store them unless you turn on notifications.</P>
+          <P>· <strong style={{ color:textClr }}>Quran &amp; Hadith content</strong> — verse text comes from alquran.cloud and Hadith text from a public dataset delivered through jsDelivr. No personal data is included, though like any website they can see your IP address.</P>
+          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — if you opt in, your device's push subscription (endpoint and encryption keys), timezone and chosen city are stored on our Supabase backend and used only to send you app notifications such as prayer alerts and the daily Hadith.</P>
+          <P>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive confirmation of payment, your email address and a payment reference. Your card and payment details are never seen or stored by us.</P>
+          <P last>· <strong style={{ color:textClr }}>Email (Resend)</strong> — delivers your Pro unlock code to you and feedback messages to us.</P>
+        </Section>
+
+        <Section title="How We Protect Data">
+          <P>· Everything travels over HTTPS.</P>
+          <P>· Our database cannot be read from your browser. The app can only write anonymous usage events and error reports. Everything else goes through our server, which checks each request, applies rate limits and daily caps, and verifies your device.</P>
+          <P>· Payment notifications are accepted only when they carry a valid signature from Razorpay or LemonSqueezy, and a refund cancels the licence.</P>
+          <P>· Secret keys, including our AI key, are kept on the server and never in the app.</P>
+          <P>· The saved AI log is write-only: nothing in the app or on our server reads it back to answer questions.</P>
+          <P last>No online service is perfectly secure, which is one more reason to keep personal details out of the chat.</P>
+        </Section>
+
+        <Section title="How Long We Keep Data">
+          <Row label="Rate-limit records" desc="Deleted automatically after 2 days."/>
+          <Row label="Usage events" desc="Deleted automatically after 90 days."/>
+          <Row label="Saved AI questions and answers" desc="Deleted automatically after 90 days."/>
+          <Row label="Daily message counts and device records" desc="Kept so your daily limit and device checks keep working. Removed on request."/>
+          <Row label="Error reports and feedback" desc="Kept only as long as they are useful for fixing bugs and replying to you. Removed on request."/>
+          <Row label="Notification subscription" desc="Kept until you turn notifications off or your device stops accepting alerts."/>
+          <Row label="Pro licence records" desc="Kept for as long as your licence is active, so Pro can be restored if you reinstall." last/>
+        </Section>
+
+        <Section title="Children's Privacy">
+          <P last>NŪR is designed to be safe for all ages. If you enter a year of birth in Profile, it stays on your device and is used only to make AI answers age-appropriate. We do not knowingly collect personal information from children. If a child has shared an email address with us, a parent or guardian can ask us to delete it using the Feedback page.</P>
+        </Section>
+
+        <Section title="Your Rights & Data Deletion">
+          <P>NŪR has no accounts, so there is nothing to sign in to or close. Clearing your browser's site data removes everything stored on your device and gives you a new anonymous Device ID.</P>
+          <P>Records on our side that contain your email address, such as a Pro purchase or feedback where you gave your email, can be found and deleted on request. Anonymous records are tied only to a random Device ID, so we cannot tell which are yours; usage events and saved AI questions expire automatically after 90 days, and rate-limit records after 2 days.</P>
+          <P last>To ask for deletion or ask any privacy question, use the Feedback page inside NŪR and include the email address involved. If you shared personal information in a chat by mistake, tell us roughly what you wrote and when.</P>
+        </Section>
+
+        <Section title="Changes to This Policy">
+          <P last>We may update this policy as NŪR grows. Changes will be reflected with a new "Last updated" date above. Continued use of NŪR after changes constitutes acceptance of the updated policy.</P>
+        </Section>
+    </>
+  );
+
   if (docked) {
     const ts = textSize || 1;
     return (
-      <LegalLayout title="Privacy Policy" updated="Last updated: November 2026" toc={TOC} textSize={textSize}>
+      <LegalLayout title="Privacy Policy" updated="Last updated: 9 November 2026" toc={TOC} textSize={textSize}>
         <div className="card" style={{ padding:"24px 28px", marginBottom:"20px" }}>
           <div style={{ display:"flex", alignItems:"center", gap:"12px", color:gold }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 3.5 5 6v5.5c0 4.2 2.8 7.4 7 9 4.2-1.6 7-4.8 7-9V6l-7-2.5Z"/><path d="m9 12 2.2 2.2L15.2 10"/></svg>
             <h2 className="h2" style={{ fontSize:`${24*ts}px` }}>Our Commitment</h2>
           </div>
           <div style={{ marginTop:"12px", fontSize:`${14*ts}px`, fontWeight:500, lineHeight:1.75, color:textDim }}>
-            NŪR is built on trust. We collect the absolute minimum data needed to make the app work. No accounts. No behavioural tracking. No selling your data. Ever.
+            NŪR is built on trust. We collect the minimum data needed to make the app work and to keep it safe. No accounts. No selling your data. Ever.
           </div>
         </div>
-        <Section title="What We Collect">
-          <Row label="Anonymous Device ID" desc="A randomly generated identifier created the first time you open NŪR. Stored only in your browser. Not linked to your name, email, or any personal information. Used only to track your daily AI message count."/>
-          <Row label="Daily Message Count" desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone. To prevent abuse, your network address is used only briefly for rate limiting, in a scrambled (keyed-hash) form — it is not stored in readable form."/>
-          <Row label="License Key (Pro users only)" desc="If you purchase Pro, your license key is saved in your browser to activate Pro features. We do not store your payment details." last/>
-        </Section>
-
-        <Section title="Stored Only in Your Browser">
-          <P>The following data never leaves your device and is never sent to our servers:</P>
-          <P>· Your name and year of birth (optional)</P>
-          <P>· Your bookmarks (Quran ayahs and Hadith)</P>
-          <P>· Your prayer alarm preferences</P>
-                    {docked ? (<><P>· Your chat history</P><P last>Clearing your browser or app data removes all of it permanently.</P></>) : (<P last>· Your chat history · Clearing your browser or app data removes all of it permanently.</P>)}
-        </Section>
-
-        <Section title="What We Never Collect">
-          <P>✗ &nbsp;Your name or email address</P>
-          <P>✗ &nbsp;Your precise GPS location unless you turn on prayer-time notifications — in that case the city or coordinates you chose are kept with your notification subscription so alerts arrive at the right time (turn notifications off to remove it)</P>
-          <P>✗ &nbsp;Your name, or anything that identifies you, in chat. Most questions are processed in real time and not kept. General, non-personal questions and the answers may be saved anonymously (tied only to the random device ID) to improve answer quality; questions that look personal or time-sensitive are not saved</P>
-          <P>✗ &nbsp;Payment details (handled entirely by our payment providers)</P>
-          <P last>✗ &nbsp;Cookies or trackers of our own. The free version shows an ad banner from Adsterra, which may use its own cookies or identifiers; Pro removes the ads</P>
-        </Section>
-
-        <Section title="Third-Party Services">
-          <P>NŪR uses trusted third-party services to deliver its features. Only the minimum information necessary for each feature is shared with these providers.</P>
-          <P>· <strong style={{ color:textClr }}>Quran, Hadith & Islamic content</strong> — sourced from reputable Islamic content providers. No personal data is included in these requests.</P>
-          <P>· <strong style={{ color:textClr }}>Prayer times & location</strong> — your city name or coordinates are shared only to compute your local prayer schedule, then discarded.</P>
-          <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are sent through our server to the Groq AI service to generate an answer. We do not use them to train models.</P>
-          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — if you opt in, your device's push subscription (endpoint and encryption keys, no personal data) is stored on our own Supabase backend and used only to send you app notifications like the daily Hadith.</P>
-          <P last>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive only confirmation of payment. Your card and payment details are never seen or stored by us.</P>
-        </Section>
-
-        <Section title="Children's Privacy">
-          <P last>NŪR is designed to be safe for all ages. When a year of birth is provided in Profile, the app tailors AI responses to be age-appropriate. We do not knowingly collect personal information from any user.</P>
-        </Section>
-
-        <Section title="Your Rights & Data Deletion">
-          <P>Because NŪR requires no account, there is nothing to delete on our end. To remove all your data, clear your browser's site data. Your anonymous usage count in our database is tied to a random device ID with no personal connection to you.</P>
-          <P last>For any privacy questions, use the Feedback page inside NŪR.</P>
-        </Section>
-
-        <Section title="Changes to This Policy">
-          <P last>We may update this policy as NŪR grows. Changes will be reflected with a new "Last updated" date above. Continued use of NŪR after changes constitutes acceptance of the updated policy.</P>
-        </Section>
+        {sections}
 
         <div style={{ textAlign:"center", marginTop:"32px" }}>
           <div lang="ar" dir="rtl" style={{ color:gold, fontSize:`${22*ts}px`, fontFamily:"var(--font-ar)", marginBottom:"5px" }}>وَاللَّهُ يَعْلَمُ وَأَنتُمْ لَا تَعْلَمُونَ</div>
@@ -158,58 +204,16 @@ export default function PrivacyPage({ onBack, onOpenSidebar, lightMode, textSize
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 52px" }}>
 
-        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: November 2026</div>
+        <div style={{ color:textDim, fontSize:`${11*textSize}px`, marginBottom:"20px" }}>Last updated: 9 November 2026</div>
 
         <div style={{ background:goldFaint, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"24px" }}>
           <div style={{ color:gold, fontFamily:"var(--font-head)", fontSize:`${15 * textSize}px`, fontWeight:700, marginBottom:"6px" }}>Our Commitment</div>
           <div style={{ color:textDim, fontSize:`${12 * textSize}px`, lineHeight:1.8 }}>
-            NŪR is built on trust. We collect the absolute minimum data needed to make the app work. No accounts. No behavioural tracking. No selling your data. Ever.
+            NŪR is built on trust. We collect the minimum data needed to make the app work and to keep it safe. No accounts. No selling your data. Ever.
           </div>
         </div>
 
-        <Section title="What We Collect">
-          <Row label="Anonymous Device ID" desc="A randomly generated identifier created the first time you open NŪR. Stored only in your browser. Not linked to your name, email, or any personal information. Used only to track your daily AI message count."/>
-          <Row label="Daily Message Count" desc="How many AI questions you have asked today. Stored with your anonymous device ID in our database. Automatically resets at midnight in your local timezone. To prevent abuse, your network address is used only briefly for rate limiting, in a scrambled (keyed-hash) form — it is not stored in readable form."/>
-          <Row label="License Key (Pro users only)" desc="If you purchase Pro, your license key is saved in your browser to activate Pro features. We do not store your payment details." last/>
-        </Section>
-
-        <Section title="Stored Only in Your Browser">
-          <P>The following data never leaves your device and is never sent to our servers:</P>
-          <P>· Your name and year of birth (optional)</P>
-          <P>· Your bookmarks (Quran ayahs and Hadith)</P>
-          <P>· Your prayer alarm preferences</P>
-                    {docked ? (<><P>· Your chat history</P><P last>Clearing your browser or app data removes all of it permanently.</P></>) : (<P last>· Your chat history · Clearing your browser or app data removes all of it permanently.</P>)}
-        </Section>
-
-        <Section title="What We Never Collect">
-          <P>✗ &nbsp;Your name or email address</P>
-          <P>✗ &nbsp;Your precise GPS location unless you turn on prayer-time notifications — in that case the city or coordinates you chose are kept with your notification subscription so alerts arrive at the right time (turn notifications off to remove it)</P>
-          <P>✗ &nbsp;Your name, or anything that identifies you, in chat. Most questions are processed in real time and not kept. General, non-personal questions and the answers may be saved anonymously (tied only to the random device ID) to improve answer quality; questions that look personal or time-sensitive are not saved</P>
-          <P>✗ &nbsp;Payment details (handled entirely by our payment providers)</P>
-          <P last>✗ &nbsp;Cookies or trackers of our own. The free version shows an ad banner from Adsterra, which may use its own cookies or identifiers; Pro removes the ads</P>
-        </Section>
-
-        <Section title="Third-Party Services">
-          <P>NŪR uses trusted third-party services to deliver its features. Only the minimum information necessary for each feature is shared with these providers.</P>
-          <P>· <strong style={{ color:textClr }}>Quran, Hadith & Islamic content</strong> — sourced from reputable Islamic content providers. No personal data is included in these requests.</P>
-          <P>· <strong style={{ color:textClr }}>Prayer times & location</strong> — your city name or coordinates are shared only to compute your local prayer schedule, then discarded.</P>
-          <P>· <strong style={{ color:textClr }}>AI-powered responses</strong> — your questions are sent through our server to the Groq AI service to generate an answer. We do not use them to train models.</P>
-          <P>· <strong style={{ color:textClr }}>Push notifications</strong> — if you opt in, your device's push subscription (endpoint and encryption keys, no personal data) is stored on our own Supabase backend and used only to send you app notifications like the daily Hadith.</P>
-          <P last>· <strong style={{ color:textClr }}>Payments</strong> — handled by Razorpay (India) or LemonSqueezy (international). We receive only confirmation of payment. Your card and payment details are never seen or stored by us.</P>
-        </Section>
-
-        <Section title="Children's Privacy">
-          <P last>NŪR is designed to be safe for all ages. When a year of birth is provided in Profile, the app tailors AI responses to be age-appropriate. We do not knowingly collect personal information from any user.</P>
-        </Section>
-
-        <Section title="Your Rights & Data Deletion">
-          <P>Because NŪR requires no account, there is nothing to delete on our end. To remove all your data, clear your browser's site data. Your anonymous usage count in our database is tied to a random device ID with no personal connection to you.</P>
-          <P last>For any privacy questions, use the Feedback page inside NŪR.</P>
-        </Section>
-
-        <Section title="Changes to This Policy">
-          <P last>We may update this policy as NŪR grows. Changes will be reflected with a new "Last updated" date above. Continued use of NŪR after changes constitutes acceptance of the updated policy.</P>
-        </Section>
+        {sections}
 
         <div style={{ textAlign:"center", marginTop:"32px" }}>
           <div style={{ color:gold, fontSize:`${16 * textSize}px`, fontFamily:"var(--font-ar)", marginBottom:"5px" }}>
