@@ -820,8 +820,9 @@ export default function PrayerTimesPage({
               Go
             </button>
           </div>
-          <button onClick={useMyLocation} style={{ marginTop:"8px", background:"none", border:"none", padding:0, color:gold, fontSize:`${12*textSize}px`, fontWeight:600, cursor:"pointer", fontFamily:"inherit", textDecoration:"underline" }}>
-            Use my current location
+          <button onClick={useMyLocation}
+            style={{ marginTop:"10px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", width:"100%", padding:"9px 12px", borderRadius:"10px", border:`1px solid ${goldBdr}`, background:goldFaint, color:gold, fontSize:`${13*textSize}px`, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+            <Icon n="locate" size={16}/> Use my current location
           </button>
           {locError && (
             <div style={{ color:"var(--warn)", fontSize:`${12*textSize}px`, marginTop:"8px" }}>{locError}</div>
