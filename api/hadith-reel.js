@@ -1,5 +1,5 @@
 // Builds the daily Hadith Reel: static vertical hadith-card image over a
-// fixed 5-second ambient bed (melody + thunder + ocean waves), uploaded to
+// fixed 5-second ambient bed (thunder + ocean waves, no music), uploaded to
 // Vercel Blob. Returns { video_url } for the caller to post to Meta.
 //
 // No narration/TTS -- the no-narration version was confirmed as the final
@@ -24,15 +24,17 @@ import { randomUUID, timingSafeEqual } from "node:crypto";
 export const config = { maxDuration: 60 };
 
 const CARD_BASE_URL = "https://nurislamicai.app/api/hadith-card";
-const MAIN_TRACK_URL = "https://nurislamicai.app/audio/bg-melody.mp3";
 const THUNDER_TRACK_URL = "https://nurislamicai.app/audio/thunder.mp3";
 const OCEAN_TRACK_URL = "https://nurislamicai.app/audio/ocean-waves.mp3";
 
 const DURATION = 5; // seconds, fixed (Instagram/Facebook Reels minimum is 3s)
 const FADE = 0.5; // seconds -- fade in/out on each track so there's no audible hard edge
-const MAIN_VOLUME = 1.0;
-const THUNDER_VOLUME = 0.7;
-const OCEAN_VOLUME = 0.5;
+// Thunder and ocean sit 10% above their old levels (0.7 and 0.5) now the melody is gone.
+const THUNDER_VOLUME = 0.7 * 1.1;
+const OCEAN_VOLUME = 0.5 * 1.1;
+// The old 3-track mix averaged its inputs (÷3). The mix below is switched to a plain sum
+// (normalize=0), so this keeps each track at the same loudness it had in that mix.
+const MIX_SCALE = 1 / 3;
 
 function runFfmpeg(args) {
   return new Promise((resolve, reject) => {
@@ -78,7 +80,6 @@ export default async function handler(req, res) {
 
   const tmpId = randomUUID();
   const imagePath = `/tmp/${tmpId}.png`;
-  const mainPath = `/tmp/${tmpId}-main.mp3`;
   const thunderPath = `/tmp/${tmpId}-thunder.mp3`;
   const oceanPath = `/tmp/${tmpId}-ocean.mp3`;
   const outputPath = `/tmp/${tmpId}.mp4`;
@@ -88,28 +89,24 @@ export default async function handler(req, res) {
     const imageUrl = `${CARD_BASE_URL}?text=${encodeURIComponent(hadith_text)}&ref=${encodeURIComponent(reference)}&format=reel`;
     await fetchToFile(imageUrl, imagePath);
 
-    // 2. Three-layer ambient bed -- all three are now full-length tracks,
-    // each trimmed/faded identically
+    // 2. Two-layer ambient bed (thunder + ocean), trimmed/faded identically
     await Promise.all([
-      fetchToFile(MAIN_TRACK_URL, mainPath),
       fetchToFile(THUNDER_TRACK_URL, thunderPath),
       fetchToFile(OCEAN_TRACK_URL, oceanPath),
     ]);
 
     const layer = (inputIdx, label, volume) =>
-      `[${inputIdx}:a]atrim=0:${DURATION},afade=t=in:st=0:d=${FADE},afade=t=out:st=${DURATION - FADE}:d=${FADE},volume=${volume}[${label}]`;
+      `[${inputIdx}:a]atrim=0:${DURATION},afade=t=in:st=0:d=${FADE},afade=t=out:st=${DURATION - FADE}:d=${FADE},volume=${(volume * MIX_SCALE).toFixed(4)}[${label}]`;
 
     const filterComplex =
-      `${layer(1, "main", MAIN_VOLUME)};` +
-      `${layer(2, "thunder", THUNDER_VOLUME)};` +
-      `${layer(3, "ocean", OCEAN_VOLUME)};` +
-      `[main][thunder][ocean]amix=inputs=3:duration=longest:dropout_transition=0[a]`;
+      `${layer(1, "thunder", THUNDER_VOLUME)};` +
+      `${layer(2, "ocean", OCEAN_VOLUME)};` +
+      `[thunder][ocean]amix=inputs=2:duration=longest:dropout_transition=0:normalize=0[a]`;
 
-    // 3. Mux: static image as video, fixed-duration 3-layer mix as audio
+    // 3. Mux: static image as video, fixed-duration 2-layer mix as audio
     await runFfmpeg([
       "-y",
       "-loop", "1", "-i", imagePath,
-      "-i", mainPath,
       "-i", thunderPath,
       "-i", oceanPath,
       "-filter_complex", filterComplex,
@@ -133,6 +130,6 @@ export default async function handler(req, res) {
     console.error("hadith-reel error:", String(err));
     res.status(500).json({ error: "Reel generation failed" });
   } finally {
-    await Promise.allSettled([unlink(imagePath), unlink(mainPath), unlink(thunderPath), unlink(oceanPath), unlink(outputPath)]);
+    await Promise.allSettled([unlink(imagePath), unlink(thunderPath), unlink(oceanPath), unlink(outputPath)]);
   }
 }
