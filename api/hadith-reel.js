@@ -1,5 +1,5 @@
 // Builds the daily Hadith Reel: static vertical hadith-card image over a
-// fixed-length ambient bed (melody + thunder + ocean waves), uploaded to
+// fixed 5-second ambient bed (melody + thunder + ocean waves), uploaded to
 // Vercel Blob. Returns { video_url } for the caller to post to Meta.
 //
 // No narration/TTS -- the no-narration version was confirmed as the final
@@ -28,7 +28,7 @@ const MAIN_TRACK_URL = "https://nurislamicai.app/audio/bg-melody.mp3";
 const THUNDER_TRACK_URL = "https://nurislamicai.app/audio/thunder.mp3";
 const OCEAN_TRACK_URL = "https://nurislamicai.app/audio/ocean-waves.mp3";
 
-const DURATION = 10; // seconds, fixed
+const DURATION = 5; // seconds, fixed (Instagram/Facebook Reels minimum is 3s)
 const FADE = 0.5; // seconds -- fade in/out on each track so there's no audible hard edge
 const MAIN_VOLUME = 1.0;
 const THUNDER_VOLUME = 0.7;
