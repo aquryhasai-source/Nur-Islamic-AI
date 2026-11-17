@@ -1,4 +1,4 @@
-// Text for the Citations panel: one verse (Arabic + English) or one hadith, fetched on demand and cached.
+// Text for the Citations panel: handles structured citations from backend
 const cache = new Map();
 
 async function getJson(url, ms = 10000) {
@@ -35,4 +35,11 @@ async function loadHadith(collection, number) {
   if (!h?.text) throw new Error("no hadith");
   const grade = h.grades?.[0]?.grade;
   return { text: h.text.trim(), grade: grade || "" };
+}
+
+// New: fetch scholarly ruling text (placeholder for future API)
+export async function loadScholarlyRuling(sourceId) {
+  // sourceId format: "scholar:school:topic"
+  // For now, return the cached text from the citation
+  return { text: "Scholarly ruling text would be loaded here", grade: "" };
 }

@@ -11,14 +11,12 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
   const [pushStatus,  setPushStatus]  = useState("idle"); // idle | loading | granted | denied | unsupported | error
   const [pushError,   setPushError]   = useState("");
+  const [fiqhPreference, setFiqhPreference] = useState(profile?.fiqh_preference || null);
 
   useEffect(() => {
     const state = getPushPermissionState();
     setPushStatus(state);
     if (state === "granted") {
-      // Permission may have been granted in an earlier attempt without the
-      // subscription actually reaching Supabase — resync quietly on load
-      // so the DB row always matches what the browser shows.
       subscribeToPush().catch((err) => trackError(err.message, "resync_notifications"));
     }
   }, []);
@@ -120,7 +118,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                     <div style={{ marginTop:"14px", height:"6px", borderRadius:"4px", background:"var(--lineSoft)", overflow:"hidden" }}>
                       <div style={{ height:"100%", width:`${pct}%`, borderRadius:"4px", background:barColor, transition:"width 0.4s" }}/>
                     </div>
-                    <div style={{ marginTop:"10px", fontSize:`${12*ts}px`, fontWeight:500, color:"var(--faint)" }}>Resets at midnight</div>
+                    <div style={{ marginTop:"10x", fontSize:`${12*ts}px`, fontWeight:500, color:"var(--faint)" }}>Resets at midnight</div>
                   </>
                 )}
               </section>
@@ -170,12 +168,12 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                   </div>
                 ) : (
                   <>
-                    <div style={{ marginTop:"12px", fontSize:`${13.5*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>
+                    <div style={{ marginTop:"12px", fontSize:`${13*ts}px`, fontWeight:500, lineHeight:1.6, color:"var(--dim)" }}>
                       Get a daily Hadith each morning, right on your device.
                     </div>
                     <button className="pc" onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
                       style={{ marginTop:"16px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", width:"100%", height:"44px", borderRadius:"12px",
-                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:"calc(14px * var(--ts, 1))", fontWeight:700,
+                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:`${14px * textSize}`, fontWeight:700,
                         cursor: pushStatus === "loading" ? "default" : "pointer" }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>
                       {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
@@ -207,7 +205,6 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
       </div>
 
       <div style={{ flex:1, overflowY:"auto", padding:"24px 20px 40px" }}>
-
         {/* Usage */}
         <span style={labelStyle}>Today's Usage</span>
         <div style={{ background:cardBg, border:`1px solid ${goldBdr}`, borderRadius:"14px", padding:"16px 18px", marginBottom:"8px" }}>
@@ -245,7 +242,95 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
           <div style={{ display:"flex", alignItems:"center", gap:"6px", color:goldDim, fontSize:`${12*textSize}px`, marginTop:"8px" }}><Icon n={ageLabel.icon} size={12}/>{ageLabel.text}</div>
         )}
 
+        {divider}
 
+        {/* Jurisprudence School Preference */}
+        <section className="card" style={secStyle}>
+          <span className="lbl">Qurisprudence School</span>
+          <p style={{ fontSize:"calc(12*textSize)px", color:var(--dim), marginBottom:"14px" }}>
+            Select your preferred school of Islamic jurisprudence. This affects how scholarly rulings are presented.
+          </p>
+          <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px" }}>
+            <button
+              className={`pc ${fiqhPreference === "hanafi" ? "active" : ""}`}
+              style={{
+                padding: "12px 8px",
+                borderRadius: "12px",
+                border: "1px solid var(--line)",
+                background: fiqhPreference === "hanafi" ? "var(--goldFill)" : "var(--chip)",
+                color: fiqhPreference === "hanafi" ? "var(--onGold)" : "var(--gold)",
+                fontSize: `${12*textSize}px`,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s",
+              }}
+              onClick={() => { localStorage.setItem("nur_fiqh_preference", "hanafi"); setFiqhPreference("hanafi"); window.location.reload(); }}>Hanafi</button>
+            <button
+              className={`pc ${fiqhPreference === "maliki" ? "active" : ""}`}
+              style={{
+                padding: "12px 8px",
+                borderRadius: "12px",
+                border: "1px solid var(--line)",
+                background: fiqhPreference === "maliki" ? "var(--goldFill)" : "var(--chip)",
+                color: fiqhPreference === "maliki" ? "var(--onGold)" : "var(--gold)",
+                fontSize: `${12*textSize}px`,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s",
+              }}
+              onClick={() => { localStorage.setItem("nur_fiqh_preference", "maliki"); setFiqhPreference("maliki"); window.location.reload(); }}>Maliki</button>
+            <button
+              className={`pc ${fiqhPreference === "shafi" ? "active" : ""}`}
+              style={{
+                padding: "12px 8px",
+                borderRadius: "12px",
+                border: "1px solid var(--line)",
+                background: fiqhPreference === "shafi" ? "var(--goldFill)" : "var(--chip)",
+                color: fiqhPreference === "shafi" ? "var(--onGold)" : "var(--gold)",
+                fontSize: `${12*textSize}px`,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s",
+              }}
+              onClick={() => { localStorage.setItem("nur_fiqh_preference", "shafi"); setFiqhPreference("shafi"); window.location.reload(); }}>Shafi'i</button>
+            <button
+              className={`pc ${fiqhPreference === "hanbali" ? "active" : ""}`}
+              style={{
+                padding: "12px 8px",
+                borderRadius: "12px",
+                border: "1px solid var(--line)",
+                background: fiqhPreference === "hanbali" ? "var(--goldFill)" : "var(--chip)",
+                color: fiqhPreference === "hanbali" ? "var(--onGold)" : "var(--gold)",
+                fontSize: `${12*textSize}px`,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s",
+              }}
+              onClick={() => { localStorage.setItem("nur_fiqh_preference", "hanbali"); setFiqhPreference("hanbali"); window.location.reload(); }}>Hanbali</button>
+            <button
+              className={`pc ${fiqhPreference === "comparative" ? "active" : ""}`}
+              style={{
+                padding: "12px 8px",
+                borderRadius: "12px",
+                border: "1px solid var(--line)",
+                background: fiqhPreference === "comparative" ? "var(--goldFill)" : "var(--chip)",
+                color: fiqhPreference === "comparative" ? "var(--onGold)" : "var(--gold)",
+                fontSize: `${12*textSize}px`,
+                fontWeight: 700,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                transition: "background 0.2s",
+              }}
+              onClick={() => { localStorage.setItem("nur_fiqh_preference", "comparative"); setFiqhPreference("comparative"); window.location.reload(); }}>Comparative</button>
+          </div>
+          <p style={{ fontSize:"calc(11*textSize)px", color:var(--dim), marginTop:"8px" }}>
+            When schools differ, we show both views. Select "Comparative" to always see all four schools.
+          </p>
+        </section>
 
         {divider}
 

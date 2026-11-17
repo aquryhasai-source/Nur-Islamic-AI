@@ -122,11 +122,12 @@ function LockedBanner({ navigateTo, lightMode, textSize = 1 }) {
   );
 }
 
-// Citation chips inside an answer (look only — click handlers are unchanged)
+// Citation chips inside an answer (updated for v3 structured citations)
 const CITE_STYLE = { display:"inline-block", margin:"1px 2px", padding:"1px 9px", borderRadius:"8px", border:"1px solid var(--line)", background:"var(--chip)", color:"var(--gold)", fontWeight:700, fontSize:"0.88em", cursor:"pointer", lineHeight:1.5 };
 
 const QURAN_CITATION  = /\[[^\]]*?(\d{1,3}):(\d{1,3})[^\]]*\]/g;
-const HADITH_CITATION = /\[((?:Sahih\s+)?(?:Bukhari|Muslim|Abu\s+Dawud|Tirmidhi|An-Nasai|Nasai|Ibn\s+Majah|Jami'[^\]]*?))[^\]]*?(\d+)\]/gi;
+const HADITH_CITATION = /\[((?:Sahih\s+)?(?:Bukhari|Muslim|Abu\s+Dawud|Tirmidhi|Jami'[^\]]{0,20}?|An-Nasai|Nasai|Ibn\s+Majah))\s*[,#]?\s*(?:Hadith\s+)?#?(\d{1,5})\]/gi;
+const SCHOLARLY_CITATION = /\[([A-Za-z]+):\s*([^\]]+)\]/gi;
 
 const COLLECTION_MAP = {
   bukhari: "bukhari", muslim: "muslim", dawud: "abudawud",
@@ -142,8 +143,62 @@ function resolveCollection(name) {
 }
 
 // Lists every citation mentioned in the conversation (for the side panel).
-function collectCitations(messages) {
-  const out = []; const seen = new Set();
+// v3: Supports structured citations from backend, falls back to regex parsing
+function collectCitations(messages, citationsArray = null) {
+  const out = [];
+  const seen = new Set();
+
+  // v3: Use structured citations array if provided by backend
+  if (citationsArray && Array.isArray(citationsArray)) {
+    for (const c of citationsArray) {
+      const k = c.sourceId;
+      if (!seen.has(k)) {
+        seen.add(k);
+        if (c.sourceType === "quran") {
+          out.push({
+            key: k,
+            type: "quran",
+            raw: c.label,
+            sourceId: k,
+            surah: parseInt(k.split(":")[1]),
+            ayah: parseInt(k.split(":")[2]),
+            school: c.school,
+            textSnippet: c.textSnippet,
+            citationNum: c.citationNum,
+          });
+        } else if (c.sourceType === "hadith") {
+          const coll = resolveCollectionFromId(k);
+          const num = parseInt(k.split(":")[3]);
+          out.push({
+            key: k,
+            type: "hadith",
+            raw: c.label,
+            sourceId: k,
+            collection: coll,
+            number: num,
+            school: c.school,
+            textSnippet: c.textSnippet,
+            citationNum: c.citationNum,
+          });
+        } else if (c.sourceType === "scholarly") {
+          const parts = k.split(":");
+          out.push({
+            key: k,
+            type: "scholarly",
+            raw: c.label,
+            sourceId: k,
+            school: parts[1],
+            topic: parts[2],
+            textSnippet: c.textSnippet,
+            citationNum: c.citationNum,
+          });
+        }
+      }
+    }
+    return out;
+  }
+
+  // Fallback: parse old-style bracket citations
   messages.filter(m => m.role === "assistant").forEach(m => {
     const t = m.content || "";
     let x;
@@ -162,33 +217,75 @@ function collectCitations(messages) {
   return out;
 }
 
+function resolveCollectionFromId(sourceId) {
+  if (sourceId.startsWith("hadith:")) {
+    const parts = sourceId.split(":");
+    return parts.length > 1 ? parts[1] : null;
+  }
+  return null;
+}
+
 // One entry in the Citations panel: the reference, the passage itself, and a button to open it in full.
 function CiteCard({ c, onOpen }) {
   const [d, setD] = useState(null);
   const [state, setState] = useState("loading");
   const [more, setMore] = useState(false);
+
   useEffect(() => {
     let live = true; setState("loading");
-    getCitationText(c).then(r => { if (live) { setD(r); setState("ok"); } }).catch(() => { if (live) setState("err"); });
+    // For scholarly citations, use structured data; otherwise fetch via API
+    const loadData = c.type === "scholarly"
+      ? Promise.resolve({ text: c.textSnippet || "Scholarly ruling text", grade: "" })
+      : getCitationText(c).catch(() => { throw new Error("Text unavailable"); });
+
+    loadData.then(r => { if (live) { setD({ text: r.text, grade: r.grade || "" }); setState("ok"); } }).catch(() => { if (live) setState("err"); });
     return () => { live = false; };
   }, [c.key]);
+
   const LIM = 260;
   const long = d && d.text.length > LIM;
+
+  // School badge styling
+  const schoolBadge = c.school ? {
+    display: "inline-block",
+    padding: "2px 8px",
+    borderRadius: "12px",
+    background: c.school === "consensus" ? "var(--gold)" : "color-mix(in srgb,var(--gold) 30%,transparent)",
+    color: "var(--onGold)",
+    fontSize: "0.75em",
+    fontWeight: 600,
+    letterSpacing: "0.5px",
+    marginLeft: "6px",
+  } : null;
+
   return (
     <div style={{ padding:"13px 15px", borderRadius:"14px", border:"1px solid var(--lineSoft)", background:"var(--panel)", color:"var(--text)" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:"12px" }}>
-        <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>{c.raw}</span>
+      <div style={{ display:"flex", alignItems:"center", gap:"8px", flexWrap:"wrap" }}>
+        <span style={{ flex:1, fontSize:"calc(13.5px * var(--ts, 1))", fontWeight:700 }}>
+          {c.raw}
+          {schoolBadge && <span style={schoolBadge}>{c.school.toUpperCase()}</span>}
+        </span>
         <button className="cb" onClick={() => onOpen(c)} style={{ background:"none", border:0, padding:0, cursor:"pointer", fontFamily:"inherit", fontSize:"calc(12px * var(--ts, 1))", fontWeight:700, color:"var(--gold)", display:"inline-flex", alignItems:"center", gap:"4px" }}>Open <Icon n="forward" size={14}/></button>
       </div>
       {state === "loading" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Loading text…</div>}
       {state === "err" && <div style={{ marginTop:"10px", color:"var(--faint)", fontSize:"calc(12.5px * var(--ts, 1))" }}>Text unavailable right now. Use Open to read it.</div>}
       {state === "ok" && d && (
         <div style={{ marginTop:"10px", borderTop:"1px solid var(--lineSoft)", paddingTop:"10px" }}>
-          {d.arabic && <div dir="rtl" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(20px * var(--ts, 1))", lineHeight:2, color:"var(--gold)", marginBottom:"6px" }}>{d.arabic}</div>}
-          <div style={{ fontSize:"calc(13px * var(--ts, 1))", lineHeight:1.7, color:"var(--dim)" }}>
-            {long && !more ? `${d.text.slice(0, LIM).trim()}…` : d.text}
-            {long && <button className="cb" onClick={() => setMore(m => !m)} style={{ background:"none", border:0, padding:"0 0 0 6px", cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:700, color:"var(--gold)" }}>{more ? "Less" : "More"}</button>}
-          </div>
+          {c.type === "scholarly" && !d.text.includes("Arabic") && (
+            <div style={{ fontSize:"calc(13px * var(--ts, 1))", lineHeight:1.7, color:"var(--dim)", marginBottom:"6px" }}>
+              {long && !more ? `${d.text.slice(0, LIM).trim()}…` : d.text}
+              {long && <button className="cb" onClick={() => setMore(m => !m)} style={{ background:"none", border:0, padding:"0 0 0 6px", cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:700, color:"var(--gold)" }}>{more ? "Less" : "More"}</button>}
+            </div>
+          )}
+          {d.arabic && c.type === "quran" && (
+            <div dir="rtl" style={{ fontFamily:"var(--font-ar)", fontSize:"calc(20px * var(--ts, 1))", lineHeight:2, color:"var(--gold)", marginBottom:"6px" }}>{d.arabic}</div>
+          )}
+          {(!d.arabic || d.text) && (
+            <div style={{ fontSize:"calc(13px * var(--ts, 1))", lineHeight:1.7, color:"var(--dim)" }}>
+              {long && !more ? `${d.text.slice(0, LIM).trim()}…` : d.text}
+              {long && <button className="cb" onClick={() => setMore(m => !m)} style={{ background:"none", border:0, padding:"0 0 0 6px", cursor:"pointer", fontFamily:"inherit", fontSize:"inherit", fontWeight:700, color:"var(--gold)" }}>{more ? "Less" : "More"}</button>}
+            </div>
+          )}
           {d.grade && <div style={{ marginTop:"6px", fontSize:"calc(11px * var(--ts, 1))", fontWeight:700, letterSpacing:"1px", color:"var(--faint)" }}>{d.grade.toUpperCase()}</div>}
         </div>
       )}
@@ -284,24 +381,31 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
     }
 
     try {
-      const res  = await fetch(PROXY_URL, { 
-        method:"POST", 
-        headers:deviceHeaders({"Content-Type":"application/json"}), 
-        body:JSON.stringify({ device_id:deviceId, local_date:getLocalDate(), messages:newMessages.map(m => ({ role:m.role, content:m.content })) }) 
+      // Include fiqh_preference if available from localStorage
+      const fiqhPref = localStorage.getItem("nur_fiqh_preference") || null;
+      const res  = await fetch(PROXY_URL, {
+        method:"POST",
+        headers:deviceHeaders({"Content-Type":"application/json"}),
+        body:JSON.stringify({
+          device_id:deviceId,
+          local_date:getLocalDate(),
+          messages:newMessages.map(m => ({ role:m.role, content:m.content })),
+          fiqh_preference: fiqhPref,
+        })
       });
       const data = await res.json();
-      
+
       if (res.status === 429) { setRemaining(0); setCachedRemaining(0); return; }
-      
+
       // Throw error to trigger the catch block and rollback local limit
-      if (!res.ok) { throw new Error(data.error || res.status); } 
-      
+      if (!res.ok) { throw new Error(data.error || res.status); }
+
       if (data.unlocked) { setUnlocked(true); localStorage.setItem(KEYS.UNLOCKED,"true"); }
 
       // 2. Safe Backend Sync: Guard against stale proxy responses
       if (data.remaining !== undefined) {
         const nr = data.remaining === 999 ? 999 : Number(data.remaining);
-        
+
         // Only accept the backend limit if it unlocks Pro (999) or is stricter than our local count
         if (nr === 999 || nr < localRemaining) {
           setRemaining(nr);
@@ -310,10 +414,20 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
       }
 
       const reply = data.reply;
-      const updatedMessages = [...newMessages, { role:"assistant", content:reply }];
+
+      // v3: Handle structured response with citations and school attribution
+      const updatedMessages = [...newMessages, {
+        role:"assistant",
+        content: reply,
+        citations: data.citations || null,
+        schoolAttribution: data.schoolAttribution || null,
+        hasUnsupportedClaims: data.hasUnsupportedClaims || false,
+        abstained: data.abstained || false,
+        abstentionReason: data.abstentionReason || null,
+      }];
       setMessages(updatedMessages);
       onSessionUpdate(updatedMessages);
-      
+
     } catch (err) {
       setError(`Connection error: ${err.message}`);
       // 3. Rollback: If the API fails, restore the lost token to the user
@@ -403,14 +517,22 @@ export default function ChatTab({ session, onSessionUpdate, onNewChat, remaining
 
   const isEmpty  = messages.length === 0;
   const isLocked = !unlocked && remaining <= 0;
-  const citations = collectCitations(messages);
+
+  // Collect citations from structured response data or fallback to parsing
+  const citations = collectCitations(messages, messages.findLast(m => m.role === "assistant")?.citations);
+
   const shown     = citations.filter(c => c.type === citeKind);
   const firstQ    = (messages.find(m => m.role === "user")?.display) || "";
   const canSend   = input.trim() && !loading;
 
+  // Extract school attribution for display
+  const lastAssistantMsg = messages.findLast(m => m.role === "assistant");
+  const schoolAttribution = lastAssistantMsg?.schoolAttribution;
+
   const openCitation = (c) => {
     if (c.type === "quran") { onSwitchTab("quran"); onQuranSurah(c.surah, c.ayah); }
-    else { onSwitchTab("hadith"); if (c.collection) onHadithNav({ collectionId:c.collection, number:c.number }); }
+    else if (c.type === "hadith") { onSwitchTab("hadith"); if (c.collection) onHadithNav({ collectionId:c.collection, number:c.number }); }
+    else if (c.type === "scholarly") { onSwitchTab("hadith"); /* Scholarly rulings don't have a direct nav target yet */ }
   };
 
   const assistantAvatar = (
