@@ -114,39 +114,8 @@ BEGIN
 END;
 $$;
 
--- Keep the original FTS-only function for backward compatibility
--- but update it to use the new schema
-CREATE OR REPLACE FUNCTION public.search_quran_ayahs(
-  p_search_query text,
-  p_match_limit integer DEFAULT 10
-)
-RETURNS TABLE (
-  surah_number integer,
-  ayah_number integer,
-  surah_name_english text,
-  translation_en text,
-  search_vector tsvector,
-  arabic_text text
-)
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $$
-BEGIN
-  RETURN QUERY
-  SELECT
-    surah_number,
-    ayah_number,
-    surah_name_english,
-    translation_en,
-    search_vector,
-    arabic_text
-  FROM public.quran_ayahs
-  WHERE search_vector @@ plainto_tsquery('english', p_search_query)
-  ORDER BY ts_rank_cd(search_vector, plainto_tsquery('english', p_search_query), 32) DESC
-  LIMIT p_match_limit;
-END;
-$$;
+-- Keep the original FTS-only function untouched for backward compatibility.
+-- It is already deployed and used as the fallback path. Do not redefine it here.
 
 -- Grant execute to service_role only (per lockdown)
 REVOKE EXECUTE ON FUNCTION public.search_quran_ayahs_hybrid(text, integer, real, real, vector) FROM public, anon, authenticated;

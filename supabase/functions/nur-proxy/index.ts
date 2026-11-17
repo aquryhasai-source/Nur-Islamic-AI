@@ -298,7 +298,7 @@ const EXPANSION_MAP: Record<string, string[]> = {
   "loan": ["debt", "borrowing", "lending", "qard"],
   "trade": ["commerce", "business", "buying", "selling", "bay"],
   "al-baqarah": ["baqarah", "cow", "surah 2", "al-baqarah", "al-baqarah 2:255"],
-  "2:255": ["ayat al-kursi", "kursi", "throne verse", "2:255", "2:255 surah"]
+  "2:255": ["ayat al-kursi", "kursi", "throne verse", "2:255", "2:255 surah"],
   "food": ["eating", "consumption", "diet", "nutrition", "makan"],
   "meat": ["flesh", "protein", "animal flesh", "lahm"],
   "slaughter": ["zabiha", "dhabiha", "qurbani", "ritual slaughter", "halal slaughter"],
