@@ -173,7 +173,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
                     </div>
                     <button className="pc" onClick={handleEnableNotifications} disabled={pushStatus === "loading"}
                       style={{ marginTop:"16px", display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", width:"100%", height:"44px", borderRadius:"12px",
-                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:`${14px * textSize}`, fontWeight:700,
+                        border:0, background:"var(--goldFill)", color:"var(--onGold)", fontFamily:"inherit", fontSize:`${14 * ts}px`, fontWeight:700,
                         cursor: pushStatus === "loading" ? "default" : "pointer" }}>
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15L6 16ZM10 20.5a2 2 0 0 0 4 0"/></svg>
                       {pushStatus === "loading" ? "Enabling…" : "Enable Notifications"}
@@ -247,7 +247,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
         {/* Jurisprudence School Preference */}
         <section className="card" style={secStyle}>
           <span className="lbl">Qurisprudence School</span>
-          <p style={{ fontSize:"calc(12*textSize)px", color:var(--dim), marginBottom:"14px" }}>
+          <p style={{ fontSize:`${12*textSize}px`, color:"var(--dim)", marginBottom:"14px" }}>
             Select your preferred school of Islamic jurisprudence. This affects how scholarly rulings are presented.
           </p>
           <div style={{ marginTop:"14px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:"8px" }}>
@@ -327,7 +327,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
               }}
               onClick={() => { localStorage.setItem("nur_fiqh_preference", "comparative"); setFiqhPreference("comparative"); window.location.reload(); }}>Comparative</button>
           </div>
-          <p style={{ fontSize:"calc(11*textSize)px", color:var(--dim), marginTop:"8px" }}>
+          <p style={{ fontSize:`${11*textSize}px`, color:"var(--dim)", marginTop:"8px" }}>
             When schools differ, we show both views. Select "Comparative" to always see all four schools.
           </p>
         </section>
