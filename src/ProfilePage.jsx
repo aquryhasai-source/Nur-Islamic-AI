@@ -11,7 +11,9 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
   const [yearOfBirth, setYearOfBirth] = useState(profile.yearOfBirth || "");
   const [pushStatus,  setPushStatus]  = useState("idle"); // idle | loading | granted | denied | unsupported | error
   const [pushError,   setPushError]   = useState("");
-  const [fiqhPreference, setFiqhPreference] = useState(profile?.fiqh_preference || null);
+  const [fiqhPreference, setFiqhPreference] = useState(() => {
+    try { return localStorage.getItem("nur_fiqh_preference") || null; } catch { return null; }
+  });
 
   useEffect(() => {
     const state = getPushPermissionState();
@@ -70,6 +72,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
     textTransform:"uppercase", marginBottom:"10px", display:"block",
   };
   const divider = <div style={{ height:"1px", background:goldBdr, margin:"22px 0" }}/>;
+  const secStyle = { padding:"22px 24px" }; // phone layout; the desktop branch declares its own
 
   if (docked) {
     const modeText = age && age > 0 && age < 120
@@ -246,7 +249,7 @@ export default function ProfilePage({ onBack, onOpenSidebar, profile, setProfile
 
         {/* Jurisprudence School Preference */}
         <section className="card" style={secStyle}>
-          <span className="lbl">Qurisprudence School</span>
+          <span className="lbl">Jurisprudence School</span>
           <p style={{ fontSize:`${12*textSize}px`, color:"var(--dim)", marginBottom:"14px" }}>
             Select your preferred school of Islamic jurisprudence. This affects how scholarly rulings are presented.
           </p>
