@@ -1,5 +1,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import {
+  sanitizeSchoolPref, safeTerm, matchTopicsWB, buildCitationIndex,
+  buildGraderCandidates, buildGraderPrompt, parseGraderOutput, applyGrade,
+  parseVerifierOutput, extractClaimsCore, finalizeAnswer,
+  type ClaimLike, type Verdict,
+} from "./rag_core.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // CONFIGURATION
@@ -11,15 +17,14 @@ const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 const MODEL_LIGHT   = Deno.env.get("NUR_MODEL_LIGHT")   ?? "openai/gpt-oss-20b";
 const MODEL_COMPLEX = Deno.env.get("NUR_MODEL_COMPLEX") ?? "openai/gpt-oss-120b";
-const MODEL_VERIFY  = Deno.env.get("NUR_MODEL_VERIFY")  ?? "openai/gpt-oss-20b"; // separate verification model
+const MODEL_VERIFY  = Deno.env.get("NUR_MODEL_VERIFY")  ?? "openai/gpt-oss-20b"; // claim verification
+const MODEL_GRADE   = Deno.env.get("NUR_MODEL_GRADE")   ?? "openai/gpt-oss-120b"; // evidence relevance grader (the main safety layer)
 
 const CLASSIFICATION_CONFIDENCE_THRESHOLD = parseFloat(Deno.env.get("NUR_CLASSIFICATION_CONFIDENCE_THRESHOLD") ?? "0.75");
-const EMBEDDING_MODEL = Deno.env.get("NUR_EMBEDDING_MODEL") ?? "text-embedding-3-small";
-const EMBEDDING_DIM = 1536;
 
-const RAG_VERSION        = "v3";
-const PROMPT_VERSION     = "v3";
-const VALIDATION_VERSION = "v2";
+const RAG_VERSION        = "v4";
+const PROMPT_VERSION     = "v4";
+const VALIDATION_VERSION = "v3";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // TYPE DEFINITIONS
@@ -86,41 +91,7 @@ interface QueryAnalysis {
   isTimeSensitive: boolean;
   complexity: "light" | "complex";
   confidence: number;
-}
-
-interface Claim {
-  id: string;
-  text: string;
-  type: "ruling" | "fact" | "attribution" | "definition";
-  citedSourceIds: string[];
-  schoolContext?: string;
-}
-
-interface VerificationResult {
-  claimId: string;
-  status: "supported" | "partially_supported" | "contradicted" | "irrelevant" | "insufficient_evidence";
-  evidenceSourceIds: string[];
-  explanation: string;
-  confidence: number;
-}
-
-interface VerifiedAnswer {
-  text: string;
-  claims: Claim[];
-  verifications: VerificationResult[];
-  citations: Citation[];
-  schoolAttribution: string;
-  hasUnsupportedClaims: boolean;
-  abstained: boolean;
-  abstentionReason?: string;
-}
-
-interface Citation {
-  sourceId: string;
-  sourceType: "quran" | "hadith" | "scholarly";
-  label: string;           // Display label: "Al-Baqarah 2:255", "Sahih Bukhari #1"
-  school?: string;
-  textSnippet: string;
+  reason?: string;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -306,6 +277,21 @@ const EXPANSION_MAP: Record<string, string[]> = {
   "combine": ["join", "jam", "combining prayers", "qasr"],
   "wudu": ["ablution", "purification", "tahara"],
   "tayammum": ["dry ablution", "sand purification"],
+  // Transliteration → the spellings the English Quran translation actually uses (e.g. it says
+  // "zakah", never "zakat"), otherwise lexical search misses the verses entirely.
+  "zakat": ["zakah", "zaka", "zakaah", "obligatory charity"],
+  "zakah": ["zakat", "zaka", "obligatory charity"],
+  "salah": ["prayer", "establish prayer"], "salat": ["prayer", "establish prayer"], "namaz": ["prayer", "establish prayer"],
+  "sawm": ["fasting", "fast", "ramadan"], "siyam": ["fasting", "fast", "ramadan"], "saum": ["fasting", "fast", "ramadan"],
+  "hajj": ["pilgrimage", "umrah"], "umrah": ["hajj", "pilgrimage"],
+  "sadaqah": ["charity", "charities", "spend"], "sadaqa": ["charity", "charities", "spend"],
+  "jannah": ["paradise", "gardens"], "jahannam": ["hellfire", "fire"],
+  "taqwa": ["righteousness", "fear allah", "mindful"], "kafir": ["disbeliever", "disbelievers"],
+  "shirk": ["associate", "partners", "polytheism"], "tawhid": ["oneness", "one god"],
+  "khamr": ["intoxicants", "wine"], "riba": ["usury", "interest"], "jihad": ["strive", "striving"],
+  "tawbah": ["repentance", "repent"], "sabr": ["patience", "patient"], "iman": ["faith", "believe"],
+  "nikah": ["marriage", "marry"], "talaq": ["divorce", "divorced"], "hijab": ["veil", "modesty", "khimar"],
+  "dhikr": ["remembrance", "remember allah"],
 };
 
 function stripContextPreamble(query: string): string {
@@ -351,7 +337,7 @@ function expandQuery(query: string): string {
     if (word.length >= 2) terms.add(word);
   }
   const baseTokens = words.filter(t => t.length >= 2);
-  return [...baseTokens, ...terms].join(" ");
+  return [...new Set([...baseTokens, ...terms])].join(" ");
 }
 
 // Intent classification and query decomposition
@@ -464,75 +450,35 @@ async function analyzeQuery(query: string, supabase: any): Promise<QueryAnalysis
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// EMBEDDING GENERATION (for semantic search)
-// ──────────────────────────────────────────────────────────────────────────────
-
-async function generateEmbedding(text: string): Promise<number[]> {
-  // Use Groq's embedding endpoint or a dedicated embedding service
-  // For now, we'll use a placeholder - in production, call your embedding API
-  try {
-    const res = await fetch("https://api.groq.com/openai/v1/embeddings", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${GROQ_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: EMBEDDING_MODEL,
-        input: text.slice(0, 8000), // truncate if needed
-      }),
-    });
-    if (!res.ok) throw new Error(`Embedding API error: ${res.status}`);
-    const data = await res.json();
-    return data.data[0].embedding;
-  } catch (e) {
-    console.error("[Embedding] Failed to generate embedding:", e);
-    // Return zero vector as fallback
-    return new Array(EMBEDDING_DIM).fill(0);
-  }
-}
-
-// ──────────────────────────────────────────────────────────────────────────────
 // QURAN RETRIEVAL: HYBRID FTS + VECTOR (Phase 1)
 // ──────────────────────────────────────────────────────────────────────────────
 
-async function searchQuranHybrid(supabase: any, query: string, queryEmbedding: number[]): Promise<QuranVerse[]> {
-  const keywords = extractKeywords(query);
-  if (keywords.length === 0) return [];
+// Lexical (OR-ranked) search via search_quran_ayahs_hybrid_v2. There is no semantic half yet:
+// quran_ayahs has no embeddings and no embedding provider is wired up, so we pass no vector.
+// THROWS on RPC failure so the caller falls back to searchQuranFts instead of silently returning nothing.
+async function searchQuranLexical(supabase: any, query: string): Promise<QuranVerse[]> {
+  const terms = extractKeywords(query).map(safeTerm).filter(t => t.length >= 3).slice(0, 10);
+  if (terms.length === 0) return [];
 
-  // Use top 3 keywords for lexical search, full query for semantic
-  const lexicalQuery = keywords.slice(0, 3).join(" ");
-
-  try {
-    const embeddingVector = `[${queryEmbedding.join(",")}]`;
-    const { data, error } = await supabase.rpc("search_quran_ayahs_hybrid", {
-      p_search_query: lexicalQuery,
-      p_match_limit: 10,
-      p_lexical_weight: 0.4,
-      p_semantic_weight: 0.6,
-      p_query_embedding: embeddingVector,
-    });
-
-    if (error || !data) {
-      console.error("[Quran Hybrid] RPC error:", error);
-      return [];
-    }
-
-    return (data as any[]).map(row => ({
-      sourceId: `quran:${row.surah_number}:${row.ayah_number}`,
-      surah: row.surah_number,
-      ayah: row.ayah_number,
-      surahName: row.surah_name_english,
-      arabicText: row.arabic_text || "",
-      translationEn: row.translation_en || "",
-      lexicalScore: row.lexical_rank || 0,
-      semanticScore: row.semantic_rank || 0,
-      fusedScore: row.fused_score || 0,
-    })).slice(0, 8); // Return top 8 after RRF
-  } catch (e) {
-    console.error("[Quran Hybrid] Exception:", e);
-    return [];
-  }
+  const { data, error } = await supabase.rpc("search_quran_ayahs_hybrid_v2", {
+    p_search_query: terms.join(" "),
+    p_match_limit: 12,
+    p_lexical_weight: 1.0,
+    p_semantic_weight: 0.0,
+    p_query_embedding: null,
+  });
+  if (error) throw new Error(`quran rpc: ${error.message ?? error.code}`);
+  return ((data ?? []) as any[]).map(row => ({
+    sourceId: `quran:${row.surah_number}:${row.ayah_number}`,
+    surah: row.surah_number,
+    ayah: row.ayah_number,
+    surahName: row.surah_name_english,
+    arabicText: row.arabic_text || "",
+    translationEn: row.translation_en || "",
+    lexicalScore: row.lexical_rank || 0,
+    semanticScore: 0,
+    fusedScore: row.fused_score || 0,
+  }));
 }
 
 // Fallback to original FTS-only search
@@ -585,12 +531,12 @@ const TOPIC_MAP: { key: string; kw: string[]; refs: { c: string; n: number }[] }
   { key:"intention", kw: ["intention","niyyah","niyyat","actions judged","deeds judged"], refs: [{ c:"bukhari",n:1 }] },
   { key:"pillars", kw: ["five pillars","shahada","testimony of faith","pillars of islam"], refs: [{ c:"bukhari",n:8 },{c:"muslim",n:16}] },
   { key:"prayer", kw: ["prayer","salah","salat","namaz","fajr","dhuhr","asr","maghrib","isha","worship"], refs: [{c:"bukhari",n:8},{c:"bukhari",n:504},{c:"muslim",n:223}] },
-  { key:"patience", kw: ["patience","sabr","trial","hardship","affliction","difficulty","suffering","calamity","test"], refs: [{c:"bukhari",n:5641},{c:"muslim",n:2999},{c:"tirmidhi",n:2396}] },
+  { key:"patience", kw: ["patience","sabr","trial","hardship","affliction","difficulty","suffering","calamity"], refs: [{c:"bukhari",n:5641},{c:"muslim",n:2999},{c:"tirmidhi",n:2396}] },
   { key:"knowledge", kw: ["knowledge","ilm","learn","scholar","education","teach","wisdom","study"], refs: [{c:"ibnmajah",n:224},{c:"bukhari",n:71},{c:"tirmidhi",n:2682}] },
-  { key:"charity", kw: ["charity","sadaqah","donate","donation","zakat","give","poor","needy","spend","generosity"], refs: [{c:"bukhari",n:1410},{c:"muslim",n:1017},{c:"bukhari",n:1344}] },
+  { key:"charity", kw: ["charity","sadaqah","donate","donation","zakat","poor","needy","generosity"], refs: [{c:"bukhari",n:1410},{c:"muslim",n:1017},{c:"bukhari",n:1344}] },
   { key:"fasting", kw: ["fasting","ramadan","sawm","fast","iftar","suhoor","suhur"], refs: [{c:"bukhari",n:1904},{c:"muslim",n:1151},{c:"bukhari",n:1894}] },
   { key:"parents", kw: ["parent","mother","father","parents","birr","respect parents","honor parents"], refs: [{c:"bukhari",n:5971},{c:"muslim",n:2548},{c:"tirmidhi",n:1900}] },
-  { key:"kindness", kw: ["kindness","mercy","compassion","gentle","rahma","care","soft"], refs: [{c:"bukhari",n:6013},{c:"muslim",n:2593},{c:"bukhari",n:6039}] },
+  { key:"kindness", kw: ["kindness","mercy","compassion","gentle","rahma"], refs: [{c:"bukhari",n:6013},{c:"muslim",n:2593},{c:"bukhari",n:6039}] },
   { key:"tawakkul", kw: ["tawakkul","trust allah","reliance","rely on allah","depend on allah"], refs: [{ c:"tirmidhi",n:2517}] },
   { key:"dua", kw: ["dua","supplication","supplicate","invocation","make dua","asking allah"], refs: [{c:"tirmidhi",n:3371},{c:"bukhari",n:6340},{c:"tirmidhi",n:3604}] },
   { key:"honesty", kw: ["honest","honesty","truth","truthful","truthfulness","lying","lie","deceive","deception"], refs: [{c:"bukhari",n:6094},{c:"muslim",n:2607}] },
@@ -614,13 +560,17 @@ const TOPIC_MAP: { key: string; kw: string[]; refs: { c: string; n: number }[] }
   { key:"children", kw: ["children","child","raising children","parenting","upbringing"], refs: [{c:"bukhari",n:5097},{c:"tirmidhi",n:1952}] },
   // NEW: Animal/pet topics
   { key:"animals", kw: ["dog","dogs","pet","pets","animal","animals","guardian dog","guard dog","hunting dog","guide dog","service dog","kalb","kilaab"], refs: [
-    { c:"muslim",n:2244 }, { c:"bukhari",n:3316 }, { c:"muslim",n:1572 }, { c:"bukhari",n:5483 },
-    { c:"abudawud",n:2839 }, { c:"tirmidhi",n:1468 }, { c:"nasai",n:4235 }, { c:"ibnmajah",n:3639 }
+    // Checked against sunnah.com (Bukhari 5480-5482 keeping a dog / qirat; 3321 thirsty dog; 3322 angels;
+    // 3324 reward reduced except farm/livestock; Muslim 1571-1575 killing order, exemptions, qirat).
+    // The grader still reads each fetched text, so a numbering mismatch can never become a citation.
+    { c:"bukhari",n:5480 }, { c:"bukhari",n:5481 }, { c:"bukhari",n:5482 }, { c:"bukhari",n:3324 },
+    { c:"bukhari",n:3322 }, { c:"bukhari",n:3321 }, { c:"muslim",n:1571 }, { c:"muslim",n:1572 },
+    { c:"muslim",n:1574 }, { c:"muslim",n:1575 }
   ]},
 ];
 
-function matchTopics(qLower: string) {
-  return TOPIC_MAP.filter(topic => topic.kw.some(kw => qLower.includes(kw)));
+function matchTopics(query: string) {
+  return matchTopicsWB(query, TOPIC_MAP);
 }
 
 async function fetchOneHadith(collId: string, number: number): Promise<HadithRecord|null> {
@@ -644,36 +594,17 @@ async function fetchOneHadith(collId: string, number: number): Promise<HadithRec
   } catch { return null; }
 }
 
-async function retrieveHadiths(query: string, queryEmbedding: number[]): Promise<{ records: HadithRecord[]; contextSet: Set<string> }> {
-  const qLower = query.toLowerCase();
+// Curated topic → hadith references. The relevance grader (gradeEvidence) reads each fetched text
+// and drops anything that does not actually address the question, so a wrong or off-topic
+// reference here can cost recall but can never reach the user as a citation.
+async function retrieveHadiths(query: string): Promise<{ records: HadithRecord[]; contextSet: Set<string> }> {
   const refs = new Map<string, { c: string; n: number }>();
-
-  // 1. Topic map matches (high precision)
-  for (const topic of matchTopics(qLower)) {
+  for (const topic of matchTopics(query)) {
     for (const ref of topic.refs) {
       const key = `${ref.c}-${ref.n}`;
       if (!refs.has(key)) refs.set(key, ref);
     }
   }
-
-  // 2. Keyword-based fallback for broader coverage
-  const keywords = extractKeywords(query);
-  if (refs.size < 8 && keywords.length > 0) {
-    // Search hadith collections by keyword via API
-    // For now, we'll add common fiqh hadiths for uncovered topics
-    const commonHadiths: { c: string; n: number }[] = [
-      { c: "bukhari", n: 1 },       // Intention
-      { c: "bukhari", n: 8 },       // Pillars
-      { c: "muslim", n: 223 },      // Prayer
-      { c: "bukhari", n: 5483 },    // Dogs
-      { c: "muslim", n: 2244 },     // Dogs
-    ];
-    for (const h of commonHadiths) {
-      const key = `${h.c}-${h.n}`;
-      if (!refs.has(key) && refs.size < 12) refs.set(key, h);
-    }
-  }
-
   const toFetch = [...refs.values()].slice(0, 12);
   const fetched = await Promise.all(toFetch.map(r => fetchOneHadith(r.c, r.n)));
   const records = fetched.filter((h): h is HadithRecord => h !== null);
@@ -695,8 +626,9 @@ async function retrieveScholarlyRulings(supabase: any, analysis: QueryAnalysis):
       schools = [analysis.schoolContext, "consensus", "difference"];
     }
 
-    const topics = analysis.keywords.filter(k => k.length > 3).slice(0, 3);
-    const topicConditions = topics.map(t => `topic ILIKE '%${t}%'`).join(" OR ");
+    const topics = [...new Set(analysis.keywords.map(safeTerm).filter(k => k.length >= 3))].slice(0, 4);
+    if (topics.length === 0) return [];
+    const topicConditions = topics.map(t => `topic.ilike.*${t}*`).join(",");
 
     const { data, error } = await supabase
       .from("fiqh_rulings")
@@ -776,19 +708,16 @@ async function assembleEvidence(
   supabase: any,
   query: string,
   analysis: QueryAnalysis,
-  userSchoolPref: string | null
 ): Promise<EvidenceBundle> {
-  // Generate embedding for semantic search
-  const queryEmbedding = await generateEmbedding(query);
-
-  // Parallel retrieval
   const [quran, { records: hadiths }, entities, scholarly] = await Promise.all([
-    searchQuranHybrid(supabase, query, queryEmbedding).catch(() => searchQuranFts(supabase, query)),
-    retrieveHadiths(query, queryEmbedding),
+    searchQuranLexical(supabase, query).catch(e => {
+      console.error("[Quran] lexical RPC failed, using FTS fallback:", e);
+      return searchQuranFts(supabase, query);
+    }),
+    retrieveHadiths(query),
     detectEntities(supabase, query),
     retrieveScholarlyRulings(supabase, analysis),
   ]);
-
   return { quran, hadith: hadiths, scholarly, entities };
 }
 
@@ -797,62 +726,39 @@ async function assembleEvidence(
 // ──────────────────────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(evidence: EvidenceBundle, analysis: QueryAnalysis, userSchoolPref: string | null): string {
-  const hasPrimarySources = evidence.quran.length > 0 || evidence.hadith.length > 0;
+  const index = buildCitationIndex(evidence);
+  const numFor = new Map(index.map(e => [e.sourceId, e.num]));
+  const hasSources = index.length > 0;
   const hasScholarly = evidence.scholarly.length > 0;
 
   let srcBlock = "";
-  let citationIndex = 0;
-  const citationMap = new Map<string, number>();
-
-  // Helper to assign citation numbers
-  const getCiteNum = (sourceId: string) => {
-    if (!citationMap.has(sourceId)) {
-      citationMap.set(sourceId, ++citationIndex);
-    }
-    return citationMap.get(sourceId)!;
-  };
-
-  // Quran sources
   if (evidence.quran.length > 0) {
-    srcBlock += "\n--- PRIMARY SOURCE: QURAN VERSES ---\n";
+    srcBlock += "\n--- QURAN VERSES ---\n";
     for (const v of evidence.quran) {
-      const num = getCiteNum(v.sourceId);
-      srcBlock += `[${num}] Quran ${v.surah}:${v.ayah} (${v.surahName})\n`;
-      srcBlock += `Arabic: ${v.arabicText}\n`;
-      srcBlock += `Translation: "${v.translationEn}"\n`;
-      srcBlock += `SourceID: ${v.sourceId}\n\n`;
+      srcBlock += `[${numFor.get(v.sourceId)}] Quran ${v.surah}:${v.ayah} (${v.surahName})\nArabic: ${v.arabicText}\nTranslation: "${v.translationEn}"\n\n`;
     }
   }
-
-  // Hadith sources
   if (evidence.hadith.length > 0) {
-    srcBlock += "\n--- PRIMARY SOURCE: HADITH ---\n";
+    srcBlock += "\n--- HADITH ---\n";
     for (const h of evidence.hadith) {
-      const num = getCiteNum(h.sourceId);
-      srcBlock += `[${num}] ${h.collectionLabel} #${h.number}\n`;
+      srcBlock += `[${numFor.get(h.sourceId)}] ${h.collectionLabel} #${h.number}\n`;
       if (h.arabicText) srcBlock += `Arabic: ${h.arabicText}\n`;
       srcBlock += `Translation: "${h.translationEn}"\n`;
       if (h.grade) srcBlock += `Grade: ${h.grade}\n`;
-      srcBlock += `SourceID: ${h.sourceId}\n\n`;
+      srcBlock += "\n";
     }
   }
-
-  // Scholarly rulings
-  if (evidence.scholarly.length > 0) {
-    srcBlock += "\n--- SCHOLARLY RULINGS (Four Schools) ---\n";
+  if (hasScholarly) {
+    srcBlock += "\n--- SCHOLARLY RULINGS ---\n";
     for (const s of evidence.scholarly) {
-      const num = getCiteNum(s.sourceId);
-      const schoolLabel = s.school === "consensus" ? "Consensus (Ijma)"
-        : s.school === "difference" ? "Scholarly Difference (Ikhtilaf)"
-        : s.school.charAt(0).toUpperCase() + s.school.slice(1);
-      srcBlock += `[${num}] ${schoolLabel} ruling on "${s.topic}": ${s.ruling}\n`;
+      const label = s.school === "consensus" ? "Consensus (Ijma)" : s.school === "difference" ? "Scholarly Difference (Ikhtilaf)" : s.school.charAt(0).toUpperCase() + s.school.slice(1);
+      srcBlock += `[${numFor.get(s.sourceId)}] ${label} ruling on "${s.topic}": ${s.ruling}\n`;
       if (s.scholarReferences.length > 0) srcBlock += `Scholars: ${s.scholarReferences.join(", ")}\n`;
       if (s.notes) srcBlock += `Notes: ${s.notes}\n`;
-      srcBlock += `SourceID: ${s.sourceId}\n\n`;
+      srcBlock += "\n";
     }
   }
 
-  // Entity background
   let entityBlock = "";
   if (evidence.entities.length > 0) {
     entityBlock = "\n--- BACKGROUND ENTITIES (for context only, do not cite) ---\n";
@@ -864,37 +770,41 @@ function buildSystemPrompt(evidence: EvidenceBundle, analysis: QueryAnalysis, us
     entityBlock += "\n";
   }
 
-  // School preference context
+  // School preference only matters when rulings were actually retrieved. userSchoolPref is whitelisted upstream.
   let schoolContextBlock = "";
-  if (userSchoolPref && userSchoolPref !== "none" && userSchoolPref !== "comparative") {
-    schoolContextBlock = `\nUSER PREFERENCE: The user follows the ${userSchoolPref.charAt(0).toUpperCase() + userSchoolPref.slice(1)} school. Prioritize ${userSchoolPref} rulings when presenting scholarly opinions, but still mention other schools if there is meaningful disagreement.\n`;
-  } else if (userSchoolPref === "comparative") {
-    schoolContextBlock = `\nUSER PREFERENCE: The user wants a comparative view. Present all four schools (Hanafi, Maliki, Shafi'i, Hanbali) clearly when there are differences. Note consensus where it exists.\n`;
+  if (hasScholarly && userSchoolPref && userSchoolPref !== "none" && userSchoolPref !== "comparative") {
+    const nice = userSchoolPref === "shafi" ? "Shafi'i" : userSchoolPref.charAt(0).toUpperCase() + userSchoolPref.slice(1);
+    schoolContextBlock = `\nUSER PREFERENCE: The user follows the ${nice} school. Lead with the ${nice} ruling from the SCHOLARLY RULINGS above if present, and mention other schools only where a retrieved ruling shows a difference.\n`;
+  } else if (hasScholarly && userSchoolPref === "comparative") {
+    schoolContextBlock = `\nUSER PREFERENCE: The user wants a comparative view. Present each school that has a retrieved ruling above, and note consensus where a retrieved ruling states it.\n`;
   }
 
-  const citationRules = hasPrimarySources
-    ? `PRIMARY SOURCES RETRIEVED FOR THIS QUERY:
+  const schoolRule = hasScholarly
+    ? `6. SCHOOLS: State a school's position ONLY if a SCHOLARLY RULING above gives it, and cite it by its number. Never describe the position of any school that has no ruling above.`
+    : `6. SCHOOLS: NO SCHOLARLY RULINGS WERE RETRIEVED. Do NOT state what the Hanafi, Maliki, Shafi'i or Hanbali schools (or "the four schools") hold, and do not name a school as holding any position. If the user asks about a school's view, say that school-specific rulings are not yet available in NUR's verified sources and suggest a qualified scholar.`;
+
+  const citationRules = hasSources
+    ? `SOURCES RETRIEVED AND VERIFIED AS RELEVANT FOR THIS QUESTION:
 ${srcBlock}
 CITATION RULES — MANDATORY:
 
-1. CITE USING BRACKETED NUMBERS [1], [2], etc. corresponding to the SourceID list above.
-2. ONLY cite sources listed above. NEVER cite from memory or training data.
-3. BEFORE CITING: Re-read the source text and verify it LITERALLY supports your claim.
-4. DO NOT STRETCH: A general verse about animals does not support a specific ruling on guard dogs.
-5. FORMAT: Quran → [Surah Name Chapter:Verse] e.g. [Al-Baqarah 2:255]; Hadith → [Collection #Number] e.g. [Sahih Bukhari #1]; Scholarly → [School: Topic] e.g. [Hanafi: Dog Ownership].
-6. If no retrieved source directly supports a point, write: "Based on the retrieved sources, ..." or "The available evidence does not specify..." — NEVER write "Islamic scholarship generally holds that..." as a substitute for evidence.
-7. BETTER TO OMIT A CITATION than to misuse one.
-8. NEVER attribute a specific saying to the Prophet ﷺ unless that EXACT hadith is in the retrieved list above with its number.
-9. DISTINGUISH: Primary sources (Quran/Hadith) vs. Scholarly interpretation. Label scholarly views with their school.
-10. If schools disagree, state the disagreement explicitly: "The Hanafi school holds X, while the Shafi'i school holds Y."
+1. Cite ONLY with the bracketed source numbers shown above, like [1] or [2][3]. Never write a verse reference, hadith number, collection name or school label yourself — the system adds the readable names.
+2. Cite a source only if its text directly supports the sentence it is attached to. Do not cite a source that merely shares a word with the question.
+3. Never quote, cite or attribute any verse or hadith that is not in the list above. Never cite from memory.
+4. Never attribute a saying to the Prophet ﷺ unless that exact narration is in the list above.
+5. If the sources above do not answer the question (or only part of it), say so plainly: "The sources available to me do not specifically address ..." and answer only what you can from them. It is better to omit a citation than to misuse one.
+${schoolRule}
+7. Distinguish primary sources (Quran/Hadith) from scholarly interpretation.
 `
-    : `NO PRIMARY SOURCES RETRIEVED.
+    : `NO VERIFIED SOURCES WERE RETRIEVED FOR THIS QUESTION.
 
-You may use general Islamic knowledge (tafsir, sirah, established history) but:
-- NO specific verse/hadith citations (no [Al-Baqarah 2:255], no [Bukhari #1])
-- NO "the Prophet ﷺ said..." attributions
-- Say "According to Islamic tradition..." or "Classical scholars mention..." instead
-- If a specific source would normally support a claim, state that no verified source was retrieved
+- Do NOT cite anything: no bracketed numbers, no verse references, no hadith numbers, no collection names.
+- Do NOT write "the Prophet ﷺ said ..." or quote any verse or hadith.
+- Do NOT state what any school of thought (Hanafi, Maliki, Shafi'i, Hanbali) holds.
+- Begin by saying briefly that you could not find a verified source in NUR's library for this exact question.
+- If the question asks whether something is permitted, forbidden, obligatory, valid or invalid (a ruling), do NOT give a verdict and do NOT say what "scholars", "many scholars" or "the majority" hold. Say that you cannot give a sourced ruling here and advise asking a qualified scholar. You may add one or two sentences on general, non-controversial background only.
+- For any other question, give only widely-established general knowledge (definitions, history, well-known practice), framed as general knowledge. Do NOT state specific numbers, percentages, thresholds, amounts, dates or counts unless you are certain they are universally agreed.
+- Keep it short.
 `;
 
   return `You are NŪR, a precise Islamic knowledge assistant grounded in the Quran, authentic Sunnah, and recognized scholarship.
@@ -922,7 +832,7 @@ ${entityBlock}
 RESPONSE STYLE:
 - Flowing paragraphs, not bullets.
 - Warm, encouraging, spiritually uplifting.
-- Distinguish consensus (ijma) from disagreement (ikhtilaf).
+- Distinguish consensus (ijma) from disagreement (ikhtilaf) only where the sources above show it.
 - For personal rulings, advise consulting a qualified scholar.
 - Match user's language.
 - 2-3 focused paragraphs.
@@ -933,14 +843,18 @@ RESPONSE STYLE:
 // MODEL GENERATION
 // ──────────────────────────────────────────────────────────────────────────────
 
-async function callGroqOnce(model: string, systemPrompt: string, messages: { role: string; content: string }[]): Promise<
+async function callGroqOnce(
+  model: string, systemPrompt: string, messages: { role: string; content: string }[],
+  opts: { maxTokens?: number; temperature?: number; lowReasoning?: boolean } = {},
+): Promise<
   { ok: true; reply: string } | { ok: false; rateLimited: true; retryAfter: number } | { ok: false; rateLimited: false; error: string }
 > {
   const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: { "Content-Type": "application/json", "Authorization": `Bearer ${GROQ_API_KEY}` },
     body: JSON.stringify({
-      model, max_tokens: 1500, temperature: 0.1,
+      model, max_tokens: opts.maxTokens ?? 1500, temperature: opts.temperature ?? 0.1,
+      ...(opts.lowReasoning && model.includes("gpt-oss") ? { reasoning_effort: "low" } : {}),
       messages: [{ role: "system", content: systemPrompt }, ...messages.map(m => ({ role: m.role, content: m.content }))],
     }),
   });
@@ -981,184 +895,89 @@ async function generateReply(level: "light" | "complex", systemPrompt: string, m
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// CLAIM EXTRACTION & VERIFICATION (Phase 3)
+// RELEVANCE GRADER (before generation) + CLAIM VERIFIER (after generation)
 // ──────────────────────────────────────────────────────────────────────────────
 
-function extractClaims(response: string, evidence: EvidenceBundle): Claim[] {
-  const claims: Claim[] = [];
-  const allSourceIds = new Set([
-    ...evidence.quran.map(v => v.sourceId),
-    ...evidence.hadith.map(h => h.sourceId),
-    ...evidence.scholarly.map(s => s.sourceId),
-  ]);
+// The grader is the main safety layer: retrieved passages are only shown to the generator if a
+// judge model confirms they directly address the question. Any failure → NO sources (fail closed),
+// so an outage degrades to "no citations", never to wrong citations.
+async function gradeEvidence(question: string, evidence: EvidenceBundle): Promise<{ evidence: EvidenceBundle; status: "ok" | "skipped" | "failed"; kept: number; candidates: number }> {
+  const cands = buildGraderCandidates(evidence);
+  if (cands.length === 0) return { evidence, status: "skipped", kept: 0, candidates: 0 };
+  const valid = new Set(cands.map(c => c.id));
+  const prompt = buildGraderPrompt(question, cands);
 
-  // Extract bracketed citations [1], [2], etc.
-  const citePattern = /\[(\d+)\]/g;
-  let match: RegExpExecArray | null;
-  const citationToSourceId = new Map<number, string>();
-
-  // Build reverse mapping from citation number to sourceId
-  let citeIdx = 0;
-  for (const v of evidence.quran) { citeIdx++; citationToSourceId.set(citeIdx, v.sourceId); }
-  for (const h of evidence.hadith) { citeIdx++; citationToSourceId.set(citeIdx, h.sourceId); }
-  for (const s of evidence.scholarly) { citeIdx++; citationToSourceId.set(citeIdx, s.sourceId); }
-
-  // Split response into sentences and find claims with citations
-  const sentences = response.split(/(?<=[.!?])\s+/);
-  let claimId = 0;
-
-  for (const sentence of sentences) {
-    const cites: string[] = [];
-    let m: RegExpExecArray | null;
-    const localPattern = /\[(\d+)\]/g;
-    while ((m = localPattern.exec(sentence)) !== null) {
-      const num = parseInt(m[1], 10);
-      const sourceId = citationToSourceId.get(num);
-      if (sourceId) cites.push(sourceId);
-    }
-
-    // Determine claim type
-    let type: Claim["type"] = "fact";
-    const lower = sentence.toLowerCase();
-    if (/\b(halal|haram|permissible|forbidden|wajib|fard|mandub|makruh|ruling|allowed|prohibited)\b/i.test(lower)) type = "ruling";
-    else if (/\b(the prophet|prophet muhammad|rasulullah)\b/i.test(lower)) type = "attribution";
-    else if (/\b(means|meaning|define|definition)\b/i.test(lower)) type = "definition";
-
-    if (cites.length > 0 || type === "ruling" || type === "attribution") {
-      claims.push({
-        id: `claim_${++claimId}`,
-        text: sentence.trim(),
-        type,
-        citedSourceIds: cites,
-      });
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await callGroqOnce(MODEL_GRADE, prompt, [{ role: "user", content: "Return the JSON now." }], { maxTokens: 3000, temperature: 0, lowReasoning: true });
+      if (!r.ok) {
+        if (r.rateLimited) {
+          // Short Groq rate-limit waits are worth riding out once; longer ones fail closed (no sources).
+          console.error(`[Grader] rate limited (retry_after=${r.retryAfter}s, attempt ${attempt + 1})`);
+          if (attempt === 0 && r.retryAfter <= 4) { await new Promise((res) => setTimeout(res, Math.max(1, r.retryAfter) * 1000)); continue; }
+          break;
+        }
+        console.error(`[Grader] call failed: ${r.error}`);
+        continue;
+      }
+      const approved = parseGraderOutput(r.reply, valid);
+      if (!approved) { console.error("[Grader] unparseable output:", r.reply.slice(0, 200)); continue; }
+      const g = applyGrade(evidence, approved);
+      const graded: EvidenceBundle = {
+        ...evidence,
+        quran: g.quran as QuranVerse[], hadith: g.hadith as HadithRecord[], scholarly: g.scholarly as ScholarlyRuling[],
+      };
+      return { evidence: graded, status: "ok", kept: approved.size, candidates: cands.length };
+    } catch (e) {
+      console.error("[Grader] error:", e);
     }
   }
-
-  return claims;
+  return { evidence: { ...evidence, quran: [], hadith: [], scholarly: [] }, status: "failed", kept: 0, candidates: cands.length };
 }
 
-async function verifyClaims(
-  claims: Claim[],
-  evidence: EvidenceBundle,
-  messages: { role: string; content: string }[]
-): Promise<VerificationResult[]> {
-  if (claims.length === 0) return [];
+async function verifyClaimsLLM(claims: ClaimLike[], evidence: EvidenceBundle): Promise<Map<number, Verdict> | null> {
+  const index = buildCitationIndex(evidence);
+  const textById = new Map<string, string>();
+  for (const v of evidence.quran) textById.set(v.sourceId, v.translationEn);
+  for (const h of evidence.hadith) textById.set(h.sourceId, h.translationEn);
+  for (const s of evidence.scholarly) textById.set(s.sourceId, `${s.school} ruling on ${s.topic}: ${s.ruling}. ${s.notes}`);
+  const evidenceText = index.length > 0
+    ? index.map(e => `[${e.num}] ${e.label} — "${(textById.get(e.sourceId) ?? "").slice(0, 700)}"`).join("\n")
+    : "(none — no sources were retrieved)";
 
-  // Build evidence text for verification
-  const evidenceText = [
-    ...evidence.quran.map(v => `SOURCE ${v.sourceId}: Quran ${v.surah}:${v.ayah} — "${v.translationEn}"`),
-    ...evidence.hadith.map(h => `SOURCE ${h.sourceId}: ${h.collectionLabel} #${h.number} — "${h.translationEn}"`),
-    ...evidence.scholarly.map(s => `SOURCE ${s.sourceId}: ${s.school} ruling on ${s.topic} — ${s.ruling}`),
-  ].join("\n\n");
-
-  // Use verification model to check each claim
-  const verificationPrompt = `You are a verification engine. For each claim below, determine if the EVIDENCE supports it.
+  const prompt = `You are a strict fact-checker for an Islamic Q&A system. Check each CLAIM against ONLY the EVIDENCE below. Do not use outside knowledge.
 
 EVIDENCE:
 ${evidenceText}
 
-CLAIMS TO VERIFY:
-${claims.map((c, i) => `${i+1}. "${c.text}" (cites: ${c.citedSourceIds.join(", ") || "none"})`).join("\n")}
+CLAIMS:
+${claims.map((c, i) => `${i + 1}. "${c.text}"`).join("\n")}
 
-Respond with JSON array of objects:
-{
-  "claimIndex": 1,
-  "status": "supported" | "partially_supported" | "contradicted" | "irrelevant" | "insufficient_evidence",
-  "evidenceSourceIds": ["quran:2:255", ...],
-  "explanation": "Brief explanation",
-  "confidence": 0.9
-}`;
+Status for each claim:
+- supported: the evidence states it.
+- partially_supported: the evidence supports part of it.
+- contradicted: the evidence says the opposite.
+- irrelevant: the cited evidence is about a different subject than the claim.
+- insufficient_evidence: the evidence does not state it (including quotations of sayings that are not in the evidence).
 
-  try {
-    const result = await callGroqOnce(MODEL_VERIFY, verificationPrompt, [
-      { role: "user", content: "Verify the claims." }
-    ]);
+Respond with ONLY this JSON: [{"claimIndex": 1, "status": "supported", "explanation": "short"}]`;
 
-    if (!result.ok) throw new Error(result.error);
-
-    const parsed = JSON.parse(result.reply);
-    return parsed.map((v: any, i: number) => ({
-      claimId: claims[i].id,
-      status: v.status,
-      evidenceSourceIds: v.evidenceSourceIds || [],
-      explanation: v.explanation,
-      confidence: v.confidence || 0.5,
-    }));
-  } catch (e) {
-    console.error("[Verify] Verification failed:", e);
-    // Fallback: deterministic check - does cited source exist in evidence?
-    return claims.map(c => ({
-      claimId: c.id,
-      status: c.citedSourceIds.every(id => {
-        return evidence.quran.some(v => v.sourceId === id) ||
-               evidence.hadith.some(h => h.sourceId === id) ||
-               evidence.scholarly.some(s => s.sourceId === id);
-      }) ? "supported" : "insufficient_evidence",
-      evidenceSourceIds: c.citedSourceIds,
-      explanation: "Automated fallback verification",
-      confidence: 0.5,
-    }));
-  }
-}
-
-function buildVerifiedAnswer(
-  draftResponse: string,
-  claims: Claim[],
-  verifications: VerificationResult[],
-  evidence: EvidenceBundle,
-  userSchoolPref: string | null
-): VerifiedAnswer {
-  const unsupportedClaims = verifications.filter(v =>
-    v.status === "contradicted" || v.status === "irrelevant" || v.status === "insufficient_evidence"
-  );
-
-  const hasCriticalUnsupported = unsupportedClaims.some(v =>
-    v.status === "contradicted" || (v.status === "insufficient_evidence" && claims.find(c => c.id === v.claimId)?.type === "ruling")
-  );
-
-  // Build citation objects for frontend
-  const citationMap = new Map<string, Citation>();
-  let citeNum = 0;
-  for (const v of evidence.quran) { citeNum++; citationMap.set(v.sourceId, { sourceId: v.sourceId, sourceType: "quran", label: `${v.surahName} ${v.surah}:${v.ayah}`, textSnippet: v.translationEn.slice(0, 200) }); }
-  for (const h of evidence.hadith) { citeNum++; citationMap.set(h.sourceId, { sourceId: h.sourceId, sourceType: "hadith", label: `${h.collectionLabel} #${h.number}`, textSnippet: h.translationEn.slice(0, 200) }); }
-  for (const s of evidence.scholarly) { citeNum++; citationMap.set(s.sourceId, { sourceId: s.sourceId, sourceType: "scholarly", label: `${s.school}: ${s.topic}`, school: s.school, textSnippet: `${s.ruling} — ${s.notes}`.slice(0, 200) }); }
-
-  // If critical unsupported claims exist, we should abstain or regenerate
-  let finalText = draftResponse;
-  let abstained = false;
-  let abstentionReason: string | undefined;
-
-  if (hasCriticalUnsupported) {
-    // Remove unsupported claims from response (simple approach: flag for frontend)
-    const unsupportedText = unsupportedClaims.map(v => {
-      const claim = claims.find(c => c.id === v.claimId);
-      return claim?.text || "";
-    }).join(" ");
-
-    finalText = draftResponse.replace(unsupportedText, "").replace(/\s+/g, " ").trim();
-    if (finalText.length < 50) {
-      abstained = true;
-      abstentionReason = "Insufficient reliable evidence to provide a confident answer. Please consult a qualified scholar for this ruling.";
-      finalText = `I cannot provide a reliable answer based on the available verified sources. ${abstentionReason} Allahu A'lam.`;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const r = await callGroqOnce(MODEL_VERIFY, prompt, [{ role: "user", content: "Return the JSON now." }], { maxTokens: 3000, temperature: 0, lowReasoning: true });
+      if (!r.ok) {
+        console.error(r.rateLimited ? `[Verify] rate limited (retry_after=${r.retryAfter}s)` : `[Verify] call failed: ${r.error}`);
+        if (r.rateLimited) break;
+        continue;
+      }
+      const parsed = parseVerifierOutput(r.reply, claims.length);
+      if (parsed) return parsed;
+      console.error("[Verify] unparseable output:", r.reply.slice(0, 200));
+    } catch (e) {
+      console.error("[Verify] error:", e);
     }
   }
-
-  // School attribution summary
-  const schoolsCited = [...new Set(evidence.scholarly.map(s => s.school).filter(s => s !== "consensus" && s !== "difference"))];
-  const schoolAttribution = schoolsCited.length > 0
-    ? `Scholarly views: ${schoolsCited.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")}`
-    : "Based on primary sources (Quran/Hadith)";
-
-  return {
-    text: finalText,
-    claims,
-    verifications,
-    citations: Array.from(citationMap.values()),
-    schoolAttribution,
-    hasUnsupportedClaims: unsupportedClaims.length > 0,
-    abstained,
-    abstentionReason,
-  };
+  return null;
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1217,7 +1036,7 @@ function validateQuranCitations(response: string, verses: QuranVerse[]): { text:
 async function logResponse(supabase: any, opts: {
   deviceId: string; normalizedQuestion: string; topicKeys: string[]; userQuery: string; reply: string;
   sourceRefs: unknown; model: string; generationType: string; hadCitationIssues: boolean;
-  verificationResults?: VerificationResult[]; abstained?: boolean; schoolContext?: string;
+  verificationResults?: unknown; abstained?: boolean; schoolContext?: string;
 }) {
   const { deviceId, normalizedQuestion, topicKeys, userQuery, reply, sourceRefs, model, generationType, hadCitationIssues, verificationResults, abstained, schoolContext } = opts;
   const { error } = await supabase.from("ai_response_log").insert({
@@ -1514,11 +1333,12 @@ Deno.serve(async (req: Request) => {
     const normalizedQuestion = normalizeQuestion(userQuery);
 
     // Get user's fiqh preference
-    let userSchoolPref: string | null = fiqh_preference || null;
+    // Whitelisted: this value is interpolated into the prompt, so free text must never pass.
+    let userSchoolPref: string | null = sanitizeSchoolPref(fiqh_preference);
     if (!userSchoolPref) {
       try {
         const { data: pref } = await supabase.rpc("get_user_fiqh_preference", { p_device_id: device_id });
-        userSchoolPref = pref?.[0]?.preferred_school || null;
+        userSchoolPref = sanitizeSchoolPref(pref?.[0]?.preferred_school);
       } catch {}
     }
 
@@ -1545,21 +1365,23 @@ Deno.serve(async (req: Request) => {
       return reply({ reply: matchedFAQ.answer, remaining, unlocked: isUnlocked, model: "faq-dataset", faq_id: faqId });
     }
 
-    // Query analysis
-    const analysis = await analyzeQuery(userQuery, supabase);
-    const topicKeys = matchTopics(userQuery.toLowerCase()).map((t) => t.key);
+    // Query analysis. The client may prepend "[Context: ...]"; strip it BEFORE any matching or expansion.
+    const cleanQuestion = stripContextPreamble(userQuery);
+    const analysis = await analyzeQuery(cleanQuestion, supabase);
+    const topicKeys = matchTopics(cleanQuestion).map((t) => t.key);
     const routeLevel = analysis.confidence >= CLASSIFICATION_CONFIDENCE_THRESHOLD ? analysis.complexity : "complex";
     const isSafeToLog = routeLevel !== "complex" && !analysis.isPersonal && !analysis.isTimeSensitive;
 
-    // Query expansion
-    const ragQuery = stripContextPreamble(expandQuery(userQuery));
+    const ragQuery = expandQuery(cleanQuestion);
     console.log(`[RAG] expanded query: ${ragQuery.slice(0, 120)}...`);
 
-    // Evidence assembly
-    const evidence = await assembleEvidence(supabase, ragQuery, analysis, userSchoolPref);
-    console.log(`[RAG] quran=${evidence.quran.length} hadith=${evidence.hadith.length} scholarly=${evidence.scholarly.length} entities=${evidence.entities.length}`);
+    // Retrieval → relevance grading (fail closed)
+    const retrieved = await assembleEvidence(supabase, ragQuery, analysis);
+    const graded = await gradeEvidence(cleanQuestion, retrieved);
+    const evidence = graded.evidence;
+    console.log(`[RAG] retrieved quran=${retrieved.quran.length} hadith=${retrieved.hadith.length} scholarly=${retrieved.scholarly.length} | grader=${graded.status} kept=${graded.kept}/${graded.candidates} | final quran=${evidence.quran.length} hadith=${evidence.hadith.length} scholarly=${evidence.scholarly.length}`);
 
-    // Build system prompt
+    // Generation
     const systemPrompt = buildSystemPrompt(evidence, analysis, userSchoolPref);
     const genResult = await generateReply(routeLevel, systemPrompt, msgs);
 
@@ -1575,31 +1397,55 @@ Deno.serve(async (req: Request) => {
 
     const modelUsed = genResult.modelUsed;
 
-    // Claim extraction & verification
-    const claims = extractClaims(genResult.reply, evidence);
-    const verifications = await verifyClaims(claims, evidence, msgs);
+    // Verification of cited / quoted sentences
+    const index = buildCitationIndex(evidence);
+    const claims = extractClaimsCore(genResult.reply, index);
+    let verdicts: Map<number, Verdict> | null = null;
+    let verification: "ok" | "unavailable" | "skipped" = "skipped";
+    if (claims.length > 0) {
+      verdicts = await verifyClaimsLLM(claims, evidence);
+      verification = verdicts ? "ok" : "unavailable";
+    }
 
-    // Citation validation (legacy bracket format cleanup)
-    const hadithResult = validateHadithCitations(genResult.reply, new Set(evidence.hadith.map(h => `${h.collection}-${h.number}`)));
-    const quranResult = validateQuranCitations(hadithResult.text, evidence.quran);
+    // Deterministic post-processing: drop unsupported sentences, [n] → readable names,
+    // remove any citation/school label not backed by approved evidence, abstain if empty.
+    let hadCitationIssues = false;
+    const hadithContext = new Set(evidence.hadith.map(h => `${h.collection}-${h.number}`));
+    const final = finalizeAnswer({
+      raw: genResult.reply, evidence, claims, verdicts,
+      namedValidators: (t) => {
+        const h = validateHadithCitations(t, hadithContext);
+        const q = validateQuranCitations(h.text, evidence.quran);
+        if (h.hadInvalid || q.hadInvalid) hadCitationIssues = true;
+        return { text: q.text, changed: h.hadInvalid || q.hadInvalid };
+      },
+    });
+    if (final.droppedUnknownNumbers > 0 || final.badLabelsRemoved > 0) hadCitationIssues = true;
 
-    // Build verified answer
-    const verified = buildVerifiedAnswer(quranResult.text, claims, verifications, evidence, userSchoolPref);
-
-    const hadCitationIssues = hadithResult.hadInvalid || quranResult.hadInvalid;
+    const namedSchools = [...new Set(evidence.scholarly.map(x => x.school).filter(x => x !== "consensus" && x !== "difference"))];
+    const schoolAttribution = namedSchools.length > 0
+      ? `Scholarly views: ${namedSchools.map(x => x === "shafi" ? "Shafi'i" : x.charAt(0).toUpperCase() + x.slice(1)).join(", ")}`
+      : final.citations.length > 0
+        ? "Based on primary sources (Quran/Hadith)"
+        : "General knowledge — no verified source found";
+    const hasUnsupportedClaims = final.removedSentences > 0 || final.schoolSentencesRemoved > 0 || hadCitationIssues;
+    const abstentionReason = final.abstained ? "Insufficient reliable evidence to provide a confident answer. Please consult a qualified scholar." : undefined;
+    const verificationLog = verdicts ? [...verdicts.values()].map(v => ({ claim: claims[v.claimIndex - 1]?.id, status: v.status })) : null;
 
     // Logging
     if (isSafeToLog) {
       try {
         await logResponse(supabase, {
-          deviceId: device_id, normalizedQuestion, topicKeys, userQuery, reply: verified.text,
+          deviceId: device_id, normalizedQuestion, topicKeys, userQuery, reply: final.text,
           sourceRefs: {
             quran: evidence.quran.map(v => v.sourceId),
             hadith: evidence.hadith.map(h => h.sourceId),
-            scholarly: evidence.scholarly.map(s => s.sourceId),
+            scholarly: evidence.scholarly.map(x => x.sourceId),
+            retrieved: { quran: retrieved.quran.length, hadith: retrieved.hadith.length, scholarly: retrieved.scholarly.length },
+            grader: graded.status, verification,
           },
           model: modelUsed, generationType: routeLevel, hadCitationIssues,
-          verificationResults: verifications, abstained: verified.abstained, schoolContext: userSchoolPref,
+          verificationResults: verificationLog, abstained: final.abstained, schoolContext: userSchoolPref ?? undefined,
         });
       } catch (err: any) {
         console.error("[nur-proxy] response log write failed (non-fatal):", err?.message ?? err);
@@ -1610,23 +1456,27 @@ Deno.serve(async (req: Request) => {
       model: modelUsed, generation_type: routeLevel,
       classification_confidence: analysis.confidence, citation_issues: hadCitationIssues,
       safe_to_log: isSafeToLog, topic_keys: topicKeys,
-      verification_passed: verifications.filter(v => v.status === "supported").length,
-      verification_total: verifications.length,
-      abstained: verified.abstained,
+      grader: graded.status, grader_kept: graded.kept, grader_candidates: graded.candidates,
+      verification, claims: claims.length, removed_sentences: final.removedSentences,
+      school_sentences_removed: final.schoolSentencesRemoved,
+      abstained: final.abstained,
       school_context: userSchoolPref,
     });
 
-    // Return enhanced response
     return reply({
-      reply: verified.text,
+      reply: final.text,
       remaining,
       unlocked: isUnlocked,
       model: modelUsed,
-      citations: verified.citations,
-      schoolAttribution: verified.schoolAttribution,
-      hasUnsupportedClaims: verified.hasUnsupportedClaims,
-      abstained: verified.abstained,
-      abstentionReason: verified.abstentionReason,
+      citations: final.citations.map(c => ({
+        sourceId: c.sourceId, sourceType: c.sourceType, label: c.label, school: c.school,
+        textSnippet: c.textSnippet, citationNum: c.citationNum,
+      })),
+      schoolAttribution,
+      hasUnsupportedClaims,
+      abstained: final.abstained,
+      abstentionReason,
+      verification,
     });
 
   } catch (err: any) {
