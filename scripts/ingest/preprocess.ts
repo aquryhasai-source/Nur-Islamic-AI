@@ -39,7 +39,7 @@ const NOT_A_VERDICT_ON_THE_HADITH =
 
 /** Tokens allowed in a positive verdict, e.g. "Sahih", "Hasan Sahih", "Sahih - Agreed Upon", "Sahih Lighairihi". */
 const POSITIVE_TOKENS = new Set([
-  "sahih", "hasan", "lighairihi", "lighayrihi", "hadith", "mutawatir", "agreed", "upon", "bukhari", "muslim", "and", "-",
+  "sahih", "hasan", "lighairihi", "lighayrihi", "hadith", "mutawatir", "agreed", "upon", "bukhari", "muslim", "and", "-", "witness",
 ]);
 
 /**
@@ -49,7 +49,9 @@ const POSITIVE_TOKENS = new Set([
  * "Hasan Sahih" (Tirmidhi) counts as Hasan — the lower of the two, never rounded up.
  */
 export function classifyGrade(raw: string | null | undefined): Grade | null {
-  const s = (raw ?? "").trim().toLowerCase();
+  // "Sahih Bukhari (98) Sahih Muslim (884)" = Sahih, and it also appears in the Sahihayn at those numbers.
+  // Drop bracketed reference numbers (and stray digits/slashes) before checking the words.
+  const s = (raw ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/[\d/]+/g, " ").replace(/\s+/g, " ").trim();
   if (!s || NOT_A_VERDICT_ON_THE_HADITH.test(s)) return null;
   const tokens = s.split(/\s+/);
   if (!tokens.every((t) => POSITIVE_TOKENS.has(t))) return null;
@@ -66,8 +68,8 @@ export interface GradeDecision {
 export type RejectReason = "no_grades" | "not_all_graders_authentic";
 
 /**
- * A hadith in a non-Sahih collection qualifies only when it was rated by at least one grader AND every grader
- * who rated it gave a clear Sahih/Hasan verdict. The result is the LOWEST grade given (any Hasan → Hasan).
+ * A hadith in a non-Sahih collection qualifies only when at least one grader gave a verdict AND every grader
+ * who gave a verdict said a clear Sahih/Hasan (graders recording "-" abstain). The result is the LOWEST grade given (any Hasan → Hasan).
  * Bukhari and Muslim: collection-level Sahih.
  */
 export function decideGrade(
@@ -76,7 +78,9 @@ export function decideGrade(
   if (c.allSahih) {
     return { ok: true, decision: { grade: "Sahih", gradeSources: `collection: ${c.bookName} (agreed-upon Sahih collection)` } };
   }
-  const list = (graders ?? []).filter((g) => g && typeof g.grade === "string");
+  // A grader who recorded no verdict ("-" or empty) abstains: it is neither a vote for nor against.
+  // At least one real verdict is still required, and every real verdict must be Sahih/Hasan.
+  const list = (graders ?? []).filter((g) => g && typeof g.grade === "string" && g.grade.trim() !== "" && g.grade.trim() !== "-");
   if (list.length === 0) return { ok: false, reason: "no_grades" };
   const classes = list.map((g) => classifyGrade(g.grade));
   if (classes.some((x) => x === null)) return { ok: false, reason: "not_all_graders_authentic" };
