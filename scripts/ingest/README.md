@@ -25,43 +25,59 @@ Result on the current source files (fawazahmed0/hadith-api): **26,180 hadith** (
 
 ## Setup
 
+Needs Node **22.6 or newer** (`node --version`). Then, from the repository root:
+
 ```bash
-cd scripts/ingest && npm install
-mkdir -p data/hadith && cd data/hadith
-for b in bukhari muslim abudawud tirmidhi nasai ibnmajah malik; do
-  for l in eng ara; do
-    curl -fsSLO "https://raw.githubusercontent.com/fawazahmed0/hadith-api/1/editions/$l-$b.min.json"
-  done
-done
+cd scripts/ingest
+npm install
+npm run download            # 14 files into ./data/hadith (re-run any time; finished files are skipped)
 ```
 
-1. Apply `supabase/migrations/007_islamic_texts_hybrid_search.sql` (SQL editor or `supabase db push`). It also copies the
-   6,236 Quran verses from `quran_ayahs`.
-2. Environment (never commit these):
+1. Apply `supabase/migrations/007_islamic_texts_hybrid_search.sql` (already done if `islamic_texts` exists).
+2. Environment (never commit these). Bash / macOS / Linux:
 
 ```bash
-export DATABASE_URL='postgresql://postgres.<ref>:<password>@aws-0-ap-south-1.pooler.supabase.com:5432/postgres'
+export DATABASE_URL='postgresql://postgres.<ref>:<password>@<pooler-host>:5432/postgres'   # Supabase → Connect → Session pooler
 export QDRANT_URL='https://<cluster>.cloud.qdrant.io:6333'     # trailing slashes are stripped automatically
 export QDRANT_API_KEY='…'
-export GEMINI_API_KEY='…'                                       # or OPENAI_API_KEY=… (EMBEDDING_PROVIDER=openai)
+export GEMINI_API_KEY='…'                                       # or OPENAI_API_KEY=… and EMBEDDING_PROVIDER=openai
 ```
+
+   Windows PowerShell: `$env:DATABASE_URL='…'` (same names, one line each).
 
 ## Run
 
 ```bash
-node --experimental-strip-types ingest.ts load --dry-run          # counts only, touches nothing
-node --experimental-strip-types ingest.ts load                    # files → Supabase (idempotent)
-node --experimental-strip-types ingest.ts embed --limit 50        # smoke test: 50 rows → Qdrant
-node --experimental-strip-types ingest.ts embed                   # the rest (resumable: only rows with embedded_at IS NULL)
-node --experimental-strip-types ingest.ts verify                  # Supabase vs Qdrant counts
+node --experimental-strip-types ingest.ts load --dry-run   # counts only, touches nothing
+node --experimental-strip-types ingest.ts load             # files → Supabase (safe to repeat; unchanged rows are skipped)
+node --experimental-strip-types ingest.ts init             # creates the Qdrant collection + indexes (safe to repeat)
+node --experimental-strip-types ingest.ts embed --dry-run  # how many rows, ~tokens and ~time; sends nothing
+node --experimental-strip-types ingest.ts embed --limit 100   # smoke test: first 100 rows only
+node --experimental-strip-types ingest.ts verify              # Supabase vs Qdrant counts
+node --experimental-strip-types ingest.ts embed               # everything else (hours; safe to stop and restart)
+node --experimental-strip-types ingest.ts verify
 ```
 
-Flags: `--collections bukhari,muslim`, `--topics-file topics.jsonl`, `--batch-size 50`, `--delay-ms 700`,
-`--force-embed` (re-embed everything, e.g. after changing provider/model), `--prune` (delete rows that no longer qualify,
-also removes their Qdrant points).
+### How embedding is paced and resumed
 
-**Same embedding provider + model + 768 dims must be used here and at query time.** Switching provider = re-run with
-`--force-embed`.
+* **Gemini `batchEmbedContents`, up to 100 texts per call**, `outputDimensionality` 768, vectors L2-normalised.
+* **Token budget: 25,000 tokens per rolling minute** (`--tpm N`, `0` = off). Tokens are estimated at 3.5 characters each
+  (slightly pessimistic, so the real rate is a little under the budget). A call is also capped at half a minute's budget, so
+  a batch of very long hadith is split rather than breaking the quota; expect a few hundred calls rather than exactly 325.
+* **429 / 5xx**: exponential backoff, 5 s, 10 s, 20 s, 40 s, 60 s… for rate limits (1 s, 2 s, 4 s… for server errors),
+  up to `--max-attempts` (default 8) per call; a `Retry-After` header wins. Invalid-key / bad-request errors stop at once.
+* **Resumable**: every call is *embed → write to Qdrant → mark `embedded_at` in Supabase*. Stop it (Ctrl-C), lose the
+  connection or run out of quota, and the next `embed` carries on with rows that have no `embedded_at`.
+* **Appendable**: to add books later, `load --collections <slug>` then `embed`. Only the new rows are sent to Gemini; the
+  existing vectors are untouched and go into the same Qdrant collection. `load` also re-queues a row automatically if its
+  text changed.
+* Full corpus is roughly 3.7 million tokens: **about 2½ hours** at 25,000 tokens/minute. Keep the computer awake and online.
+
+Other flags: `--collections bukhari,muslim`, `--topics-file topics.jsonl`, `--batch-size 100`,
+`--force-embed` (re-embed everything), `--prune` (delete rows that no longer qualify, and their Qdrant points).
+
+**Use one embedding model for the whole collection.** Vectors from different models (or dimensions) are not comparable. If
+you ever switch provider or model, run `embed --force-embed` so every row is re-embedded with the new one.
 
 ## What is embedded
 
@@ -74,6 +90,6 @@ also removes their Qdrant points).
 ## Tests
 
 ```bash
-npm test                                                    # pure tests (no DB)
+npm test                                                    # pure tests (no DB): grading, splitting, throttle, backoff
 PG_TEST_URL='postgres://…/scratch' npm test                 # + integration tests (DELETES hadith rows: scratch DB only!)
 ```

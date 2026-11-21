@@ -8,7 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { COLLECTIONS } from "../preprocess.ts";
 import {
-  runLoadHadith, runSyncQuran, runEmbed, runVerify, parseTopicsJsonl, withRetry, thinPayload,
+  runLoadHadith, runSyncQuran, runEmbed, runVerify, runInitQdrant, parseTopicsJsonl, withRetry, thinPayload, createTokenThrottle, estimateTokens,
 } from "../ingest.ts";
 import { createPgDb, createSearchService, CircuitBreaker } from "../../../supabase/functions/nur-proxy/searchService.ts";
 import { EmbeddingError } from "../../../supabase/functions/nur-proxy/embeddings.ts";
@@ -161,16 +161,16 @@ test("embed: thin payload only, ids == Supabase ids, retries a 429, resumable, n
   const q = mockQdrant();
   const e = mockEmbedder(true);
   const sleeps = [];
-  const first = await runEmbed({ db: p, qdrant: q, embedder: e, batchSize: 100, limit: 120, sleep: async (ms) => { sleeps.push(ms); } });
+  const first = await runEmbed({ tokensPerMinute: 0, db: p, qdrant: q, embedder: e, batchSize: 100, limit: 120, sleep: async (ms) => { sleeps.push(ms); } });
   assert.equal(first.embedded, 120);
   assert.deepEqual(sleeps, [1000], "429 retried once, honouring retry-after");
   assert.equal(q.created, 1, "collection created on first use");
   assert.equal(q.store.size, 120);
 
-  const second = await runEmbed({ db: p, qdrant: q, embedder: e, batchSize: 100, sleep: async () => {} });
+  const second = await runEmbed({ tokensPerMinute: 0, db: p, qdrant: q, embedder: e, batchSize: 100, sleep: async () => {} });
   assert.equal(second.embedded, total - 120, "resumes where it stopped");
   assert.equal(q.store.size, total);
-  const third = await runEmbed({ db: p, qdrant: q, embedder: e, sleep: async () => {} });
+  const third = await runEmbed({ tokensPerMinute: 0, db: p, qdrant: q, embedder: e, sleep: async () => {} });
   assert.equal(third.pending, 0);
   assert.ok(e.calls.every((c) => c.task === "document"));
 
@@ -274,4 +274,110 @@ test("end to end: createPgDb + searchService with a Qdrant that returns a stale 
 
 test("COLLECTIONS covers exactly the seven gradable collections", () => {
   assert.deepEqual(COLLECTIONS.map((c) => c.slug), ["bukhari", "muslim", "abudawud", "tirmidhi", "nasai", "ibnmajah", "malik"]);
+});
+
+// --- resumable / appendable / throttled -------------------------------------------------------
+const fakeClock = () => { const c = { t: 0, now: () => c.t, sleep: async (ms) => { c.t += ms; } }; return c; };
+
+test("embed: the token budget holds in EVERY rolling minute, on a simulated clock", { skip }, async () => {
+  const p = await db();
+  await resetHadith(p);
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["bukhari", "abudawud"] });
+  await runSyncQuran({ db: p });
+  const clock = fakeClock();
+  const calls = [];
+  const embedder = { name: "m", dims: 768, async embed(texts) { calls.push({ t: clock.now(), tokens: texts.reduce((a, s) => a + estimateTokens(s), 0), n: texts.length }); return texts.map(() => new Array(768).fill(0.01)); } };
+  const TPM = 2000; // small budget so the run needs many windows
+  const r = await runEmbed({ db: p, qdrant: mockQdrant(), embedder, tokensPerMinute: TPM, sleep: clock.sleep, now: clock.now });
+  assert.ok(r.embedded > 400 && calls.length > 5);
+  for (const c of calls) {
+    const inWindow = calls.filter((d) => d.t <= c.t && d.t > c.t - 60_000).reduce((a, d) => a + d.tokens, 0);
+    assert.ok(inWindow <= TPM, `window ending at ${c.t}ms used ${inWindow} > ${TPM}`);
+  }
+  assert.ok(calls.every((c) => c.n <= 100));
+  assert.ok(clock.now() > 60_000, "the run really was spread over simulated minutes");
+});
+
+test("embed: 429s back off 5s,10s,... and the run still completes", { skip }, async () => {
+  const p = await db();
+  await resetHadith(p);
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["bukhari"] });
+  const sleeps = [];
+  let fails = 2;
+  const embedder = { name: "m", dims: 768, async embed(texts) { if (fails-- > 0) throw new EmbeddingError("quota", 429); return texts.map(() => new Array(768).fill(0.02)); } };
+  const r = await runEmbed({ db: p, qdrant: mockQdrant(), embedder, tokensPerMinute: 0, limit: 2, sleep: async (ms) => { sleeps.push(ms); } });
+  assert.equal(r.embedded, 2);
+  assert.deepEqual(sleeps, [5000, 10000]);
+});
+
+test("embed: crash mid-run, rerun resumes — no row is embedded twice", { skip }, async () => {
+  const p = await db();
+  await resetHadith(p);
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["bukhari", "abudawud"] });
+  await runSyncQuran({ db: p });
+  const total = (await p.query("SELECT count(*)::int n FROM islamic_texts")).rows[0].n;
+  const q = mockQdrant();
+  const seen = new Map();
+  let calls = 0;
+  const flaky = { name: "m", dims: 768, async embed(texts) {
+    calls++;
+    if (calls === 3) throw new EmbeddingError("invalid API key", 401);          // not retryable -> the run dies
+    for (const t of texts) seen.set(t, (seen.get(t) ?? 0) + 1);
+    return texts.map(() => new Array(768).fill(0.03));
+  } };
+  await assert.rejects(() => runEmbed({ db: p, qdrant: q, embedder: flaky, tokensPerMinute: 0, batchSize: 100, sleep: async () => {} }), /invalid API key/);
+  const done = (await p.query("SELECT count(*)::int n FROM islamic_texts WHERE embedded_at IS NOT NULL")).rows[0].n;
+  assert.equal(done, 200, "the two completed calls are already marked in Supabase");
+  assert.equal(q.store.size, 200);
+  const ok = { name: "m", dims: 768, async embed(texts) { for (const t of texts) seen.set(t, (seen.get(t) ?? 0) + 1); return texts.map(() => new Array(768).fill(0.03)); } };
+  const r = await runEmbed({ db: p, qdrant: q, embedder: ok, tokensPerMinute: 0, sleep: async () => {} });
+  assert.equal(r.embedded, total - 200);
+  assert.equal(q.store.size, total);
+  const sent = [...seen.values()].reduce((a, n) => a + n, 0);
+  assert.equal(sent, total, "total texts sent to the embedding API == number of rows: nothing re-embedded");
+});
+
+test("append: loading another book later embeds ONLY the new rows into the same collection", { skip }, async () => {
+  const p = await db();
+  await resetHadith(p);
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["bukhari"] });
+  await runSyncQuran({ db: p });
+  const q = mockQdrant();
+  let sentTexts = 0;
+  const embedder = { name: "m", dims: 768, async embed(texts) { sentTexts += texts.length; return texts.map(() => new Array(768).fill(0.04)); } };
+  await runEmbed({ db: p, qdrant: q, embedder, tokensPerMinute: 0, sleep: async () => {} });
+  const firstSize = q.store.size, firstSent = sentTexts;
+  const idsBefore = new Set(q.store.keys());
+
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["abudawud"] });    // a new book arrives later
+  const r = await runEmbed({ db: p, qdrant: q, embedder, tokensPerMinute: 0, sleep: async () => {} });
+  assert.equal(r.embedded, 1, "only the one new abudawud hadith");
+  assert.equal(sentTexts, firstSent + 1);
+  assert.equal(q.store.size, firstSize + 1);
+  assert.equal(q.created, 1, "same collection, created once");
+  for (const id of idsBefore) assert.ok(q.store.has(id));
+  const again = await runEmbed({ db: p, qdrant: q, embedder, tokensPerMinute: 0, sleep: async () => {} });
+  assert.equal(again.pending, 0);
+});
+
+test("init is idempotent; dry-run touches nothing and estimates tokens", { skip }, async () => {
+  const q = mockQdrant();
+  assert.deepEqual(await runInitQdrant({ qdrant: q }), { created: true });
+  assert.deepEqual(await runInitQdrant({ qdrant: q }), { created: false });
+  assert.equal(q.created, 1);
+
+  const p = await db();
+  await resetHadith(p);
+  await runLoadHadith({ db: p, dir: writeEditions(), collections: ["bukhari"] });
+  const q2 = mockQdrant();
+  let called = 0;
+  const embedder = { name: "m", dims: 768, async embed() { called++; return []; } };
+  const logs = [];
+  const r = await runEmbed({ db: p, qdrant: q2, embedder, dryRun: true, log: (m) => logs.push(m) });
+  assert.equal(called, 0);
+  assert.equal(q2.created, 0, "dry run must not create the collection");
+  assert.ok(r.estimatedTokens > 1000);
+  assert.ok(logs.some((l) => /dry run: ~[\d,]+ tokens .* about \d+ min/.test(l)), logs.join(" | "));
+  const unembedded = (await p.query("SELECT count(*)::int n FROM islamic_texts WHERE embedded_at IS NOT NULL")).rows[0].n;
+  assert.equal(unembedded, 0);
 });
