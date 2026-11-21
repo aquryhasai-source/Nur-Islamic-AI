@@ -5,7 +5,8 @@
   "description": "One-off ingestion: authentic hadith + Quran -> Supabase (text) and Qdrant (vectors)",
   "scripts": {
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
-    "ingest": "node --experimental-strip-types ingest.ts"
+    "ingest": "node --experimental-strip-types ingest.ts",
+    "download": "node download.mjs"
   },
   "dependencies": {
     "pg": "^8.13.0"

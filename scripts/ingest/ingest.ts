@@ -38,33 +38,89 @@ const sleepReal = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 // ---------------------------------------------------------------------------------------------
 // Retry with backoff (429 / 5xx / timeouts / network)
 // ---------------------------------------------------------------------------------------------
-function isRetryable(err: unknown): { retry: boolean; waitMs?: number } {
+function isRetryable(err: unknown): { retry: boolean; waitMs?: number; rateLimited?: boolean } {
   if (err instanceof EmbeddingError) {
     const st = err.status;
-    return { retry: st === undefined || st === 429 || st >= 500, waitMs: err.retryAfterMs };
+    return { retry: st === undefined || st === 429 || st >= 500, waitMs: err.retryAfterMs, rateLimited: st === 429 };
   }
   if (err instanceof QdrantError) {
-    return { retry: err.kind === "timeout" || err.kind === "network" || err.status === 429 || (err.status ?? 0) >= 500 };
+    return { retry: err.kind === "timeout" || err.kind === "network" || err.status === 429 || (err.status ?? 0) >= 500, rateLimited: err.status === 429 };
   }
   return { retry: false };
 }
 
+/**
+ * Exponential backoff: 1s, 2s, 4s ... capped at 60s. Rate-limit (429) answers start at 5s (5, 10, 20, 40, 60...) because
+ * Gemini's per-minute quota will not clear in a second. A server-sent Retry-After always wins.
+ */
 export async function withRetry<T>(
   fn: () => Promise<T>, o: { attempts?: number; sleep?: (ms: number) => Promise<void>; log?: Log; what?: string } = {},
 ): Promise<T> {
-  const attempts = o.attempts ?? 6;
+  const attempts = o.attempts ?? 8;
   const sleep = o.sleep ?? sleepReal;
   for (let i = 1; ; i++) {
     try {
       return await fn();
     } catch (err) {
-      const { retry, waitMs } = isRetryable(err);
+      const { retry, waitMs, rateLimited } = isRetryable(err);
       if (!retry || i >= attempts) throw err;
-      const wait = Math.min(60_000, waitMs ?? 1000 * 2 ** (i - 1));
+      const wait = Math.min(60_000, waitMs ?? (rateLimited ? 5000 : 1000) * 2 ** (i - 1));
       (o.log ?? noop)(`  retry ${i}/${attempts - 1} for ${o.what ?? "call"} in ${Math.round(wait / 1000)}s: ${(err as Error).message}`);
       await sleep(wait);
     }
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// Token budget (free-tier tokens-per-minute) and token-capped batching
+// ---------------------------------------------------------------------------------------------
+/** Conservative estimate (3.5 chars per token; English averages ~4). Over-estimating only makes the run slightly slower. */
+export function estimateTokens(text: string): number {
+  return Math.max(1, Math.ceil(text.length / 3.5));
+}
+
+export interface TokenThrottle {
+  /** Resolves when `tokens` more tokens fit inside the rolling 60-second budget. */
+  acquire(tokens: number): Promise<void>;
+}
+
+/** Sliding-window limiter. tokensPerMinute <= 0 disables it. A single request larger than the whole budget waits for an empty window. */
+export function createTokenThrottle(o: {
+  tokensPerMinute: number; now?: () => number; sleep?: (ms: number) => Promise<void>; windowMs?: number;
+}): TokenThrottle {
+  const limit = o.tokensPerMinute;
+  const now = o.now ?? (() => Date.now());
+  const sleep = o.sleep ?? sleepReal;
+  const windowMs = o.windowMs ?? 60_000;
+  const events: Array<{ t: number; n: number }> = [];
+  return {
+    async acquire(tokens) {
+      if (!(limit > 0)) return;
+      const need = Math.min(tokens, limit);
+      for (;;) {
+        const t = now();
+        while (events.length && events[0].t <= t - windowMs) events.shift();
+        const used = events.reduce((a, e) => a + e.n, 0);
+        if (used + need <= limit) { events.push({ t, n: need }); return; }
+        let freed = 0, until = t;
+        for (const e of events) { freed += e.n; until = e.t + windowMs; if (used - freed + need <= limit) break; }
+        await sleep(Math.max(1, until - t));
+      }
+    },
+  };
+}
+
+/** Splits inputs into consecutive chunks of at most maxItems texts AND at most maxTokens estimated tokens (a lone big text is its own chunk). */
+export function chunkByTokens(texts: string[], maxItems: number, maxTokens: number): Array<[number, number]> {
+  const out: Array<[number, number]> = [];
+  let start = 0, tokens = 0;
+  for (let i = 0; i < texts.length; i++) {
+    const t = estimateTokens(texts[i]);
+    if (i > start && (i - start >= maxItems || tokens + t > maxTokens)) { out.push([start, i]); start = i; tokens = 0; }
+    tokens += t;
+  }
+  if (start < texts.length) out.push([start, texts.length]);
+  return out;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -207,16 +263,23 @@ export interface EmbedOptions {
   db: Queryable;
   qdrant: QdrantClient;
   embedder: EmbeddingProvider;
-  batchSize?: number;           // texts per embedding call / Qdrant upsert (default 50)
+  batchSize?: number;           // max texts per embedding call (default 100 = Gemini's batchEmbedContents maximum)
+  tokensPerMinute?: number;     // free-tier budget (default 25,000; 0 = unlimited)
+  maxAttempts?: number;         // per call, with exponential backoff (default 8)
   limit?: number;               // stop after N rows (smoke test)
   force?: boolean;              // re-embed rows that already have embedded_at
-  dryRun?: boolean;
-  delayMs?: number;             // pause between batches (free-tier rate limits)
+  dryRun?: boolean;             // count + estimate only; touches nothing
+  delayMs?: number;             // extra pause between calls (default 0)
+  throttle?: TokenThrottle;     // injectable for tests
   sleep?: (ms: number) => Promise<void>;
+  now?: () => number;
   log?: Log;
 }
 
-export interface EmbedResult { embedded: number; batches: number; pending: number }
+export interface EmbedResult {
+  embedded: number; batches: number; pending: number;
+  estimatedTokens?: number;     // dry-run only
+}
 
 /** The ONLY things Qdrant is allowed to hold besides the vector. No text, ever. */
 export function thinPayload(r: { source_type: string; collection: string; grade: string | null; surah_number: number | null }): ThinPayload {
@@ -232,58 +295,107 @@ export function thinPayload(r: { source_type: string; collection: string; grade:
   throw new Error(`unknown source_type ${r.source_type}`);
 }
 
+const EMBED_COLS = `id, source_type, collection, grade, surah_number, ayah_number, surah_name, book_name, chapter_title, text_en, topic_summary`;
+const toInput = (r: any) => embedText({
+  sourceType: r.source_type, textEn: r.text_en, surahName: r.surah_name, surahNumber: r.surah_number,
+  ayahNumber: r.ayah_number, topicSummary: r.topic_summary, bookName: r.book_name, chapterTitle: r.chapter_title,
+});
+
+/** Creates the Qdrant collection + payload indexes if they do not exist. Safe to run any number of times. */
+export async function runInitQdrant(o: { qdrant: QdrantClient; log?: Log }): Promise<{ created: boolean }> {
+  const log = o.log ?? noop;
+  if (await o.qdrant.collectionExists()) {
+    await o.qdrant.createPayloadIndexes();   // idempotent in Qdrant
+    log(`Qdrant collection "${o.qdrant.collection}" already exists — left as is (payload indexes ensured)`);
+    return { created: false };
+  }
+  log(`creating Qdrant collection "${o.qdrant.collection}" (768-d cosine, int8 scalar quantisation) + payload indexes`);
+  await o.qdrant.createCollection();
+  await o.qdrant.createPayloadIndexes();
+  return { created: true };
+}
+
+/**
+ * Embeds every row that has no embedded_at (all rows with `force`), oldest id first. Only rows NOT already embedded are
+ * ever sent to the embedding API, so loading more books later and re-running costs only the new rows.
+ * Each call is embed -> Qdrant upsert -> mark embedded in Supabase, so a crash/Ctrl-C loses at most the call in flight.
+ */
 export async function runEmbed(o: EmbedOptions): Promise<EmbedResult> {
   const log = o.log ?? noop;
   const sleep = o.sleep ?? sleepReal;
-  const batch = Math.max(1, Math.min(o.batchSize ?? 50, 100));
+  const now = o.now ?? (() => Date.now());
+  const maxItems = Math.max(1, Math.min(o.batchSize ?? 100, 100));
+  const tpm = o.tokensPerMinute ?? 25_000;
+  const throttle = o.throttle ?? createTokenThrottle({ tokensPerMinute: tpm, now, sleep });
+  // A call should fit comfortably inside one minute of budget (half of it), so one call can never blow the quota alone.
+  const maxCallTokens = tpm > 0 ? Math.max(1000, Math.floor(tpm / 2)) : Infinity;
 
   const cnt = await o.db.query(
     `SELECT count(*)::int AS n FROM public.islamic_texts WHERE ($1::boolean OR embedded_at IS NULL)`, [!!o.force],
   );
   const pending: number = cnt.rows[0].n;
   log(`embed: ${pending} rows ${o.force ? "(force)" : "pending"}; provider ${o.embedder.name}; collection ${o.qdrant.collection}`);
-  if (o.dryRun || pending === 0) return { embedded: 0, batches: 0, pending };
+  if (pending === 0) return { embedded: 0, batches: 0, pending };
 
-  if (!(await o.qdrant.collectionExists())) {
-    log("creating Qdrant collection (768-d cosine, int8 scalar quantisation) + payload indexes");
-    await o.qdrant.createCollection();
-    await o.qdrant.createPayloadIndexes();
+  if (o.dryRun) {
+    let last = 0, tokens = 0;
+    for (;;) {
+      const page = await o.db.query(
+        `SELECT ${EMBED_COLS} FROM public.islamic_texts WHERE id > $1 AND ($2::boolean OR embedded_at IS NULL) ORDER BY id LIMIT 1000`,
+        [last, !!o.force]);
+      if (!page.rows.length) break;
+      last = Number(page.rows[page.rows.length - 1].id);
+      for (const r of page.rows) tokens += estimateTokens(toInput(r));
+    }
+    const mins = tpm > 0 ? Math.ceil(tokens / tpm) : 0;
+    log(`dry run: ~${tokens.toLocaleString("en-US")} tokens${tpm > 0 ? ` -> about ${mins} min (${(mins / 60).toFixed(1)} h) at ${tpm.toLocaleString("en-US")} tokens/min` : ""}; nothing was sent`);
+    return { embedded: 0, batches: 0, pending, estimatedTokens: tokens };
   }
 
-  let last = 0, embedded = 0, batches = 0;
+  await runInitQdrant({ qdrant: o.qdrant, log });
+
+  let last = 0, embedded = 0, calls = 0;
   const cap = o.limit ?? Infinity;
+  const started = now();
   while (embedded < cap) {
-    const take = Math.min(batch, cap - embedded);
     const page = await o.db.query(
-      `SELECT id, source_type, collection, grade, surah_number, ayah_number, surah_name, book_name, chapter_title, text_en, topic_summary
-         FROM public.islamic_texts WHERE id > $1 AND ($2::boolean OR embedded_at IS NULL) ORDER BY id LIMIT $3`,
-      [last, !!o.force, take],
+      `SELECT ${EMBED_COLS} FROM public.islamic_texts WHERE id > $1 AND ($2::boolean OR embedded_at IS NULL) ORDER BY id LIMIT $3`,
+      [last, !!o.force, Math.min(maxItems, cap - embedded)],
     );
     if (!page.rows.length) break;
     const rows = page.rows;
     last = Number(rows[rows.length - 1].id);
-
-    const inputs = rows.map((r) => embedText({
-      sourceType: r.source_type, textEn: r.text_en, surahName: r.surah_name, surahNumber: r.surah_number,
-      ayahNumber: r.ayah_number, topicSummary: r.topic_summary, bookName: r.book_name, chapterTitle: r.chapter_title,
-    }));
+    const inputs: string[] = rows.map(toInput);
     if (inputs.some((t) => !t)) throw new Error(`empty embedding input for a row in id range ..${last}`);
 
-    const vectors = await withRetry(() => o.embedder.embed(inputs, "document"), { sleep, log, what: "embedding batch" });
-    const points: QdrantPoint[] = rows.map((r, i) => ({ id: Number(r.id), vector: vectors[i], payload: thinPayload(r) }));
-    await withRetry(() => o.qdrant.upsert(points), { sleep, log, what: "qdrant upsert" });
-
-    await o.db.query(
-      `UPDATE public.islamic_texts t SET embedded_at = now(), content_hash = v.h
-         FROM unnest($1::bigint[], $2::uuid[]) AS v(id, h) WHERE t.id = v.id`,
-      [rows.map((r) => Number(r.id)), inputs.map(contentHash)],
-    );
-    embedded += rows.length;
-    batches += 1;
-    if (batches % 10 === 0 || embedded >= cap) log(`  embedded ${embedded}/${Math.min(pending, cap)}`);
-    if (o.delayMs) await sleep(o.delayMs);
+    for (const [from, to] of chunkByTokens(inputs, maxItems, maxCallTokens)) {
+      const texts = inputs.slice(from, to);
+      const chunk = rows.slice(from, to);
+      const tokens = texts.reduce((a, t) => a + estimateTokens(t), 0);
+      // acquire INSIDE the retried function: every attempt (including after a 429) respects the budget again
+      const vectors = await withRetry(
+        async () => { await throttle.acquire(tokens); return o.embedder.embed(texts, "document"); },
+        { attempts: o.maxAttempts, sleep, log, what: "embedding call" },
+      );
+      const points: QdrantPoint[] = chunk.map((r, i) => ({ id: Number(r.id), vector: vectors[i], payload: thinPayload(r) }));
+      await withRetry(() => o.qdrant.upsert(points), { attempts: o.maxAttempts, sleep, log, what: "qdrant upsert" });
+      await o.db.query(
+        `UPDATE public.islamic_texts t SET embedded_at = now(), content_hash = v.h
+           FROM unnest($1::bigint[], $2::uuid[]) AS v(id, h) WHERE t.id = v.id`,
+        [chunk.map((r) => Number(r.id)), texts.map(contentHash)],
+      );
+      embedded += chunk.length;
+      calls += 1;
+      if (calls % 5 === 0 || embedded >= Math.min(pending, cap)) {
+        const total = Math.min(pending, cap);
+        const elapsed = (now() - started) / 60_000;
+        const left = embedded > 0 ? Math.round((elapsed / embedded) * (total - embedded)) : 0;
+        log(`  ${embedded.toLocaleString("en-US")}/${total.toLocaleString("en-US")} embedded (${calls} calls)${embedded < total ? `, ~${left} min left` : ""}`);
+      }
+      if (o.delayMs) await sleep(o.delayMs);
+    }
   }
-  return { embedded, batches, pending };
+  return { embedded, batches: calls, pending };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -316,16 +428,18 @@ async function main(): Promise<void> {
       collections: { type: "string" },
       "topics-file": { type: "string" },
       limit: { type: "string" },
-      "batch-size": { type: "string", default: "50" },
-      "delay-ms": { type: "string", default: "700" },
+      "batch-size": { type: "string", default: "100" },
+      tpm: { type: "string", default: "25000" },
+      "max-attempts": { type: "string", default: "8" },
+      "delay-ms": { type: "string", default: "0" },
       "dry-run": { type: "boolean", default: false },
       "force-embed": { type: "boolean", default: false },
       prune: { type: "boolean", default: false },
     },
   });
   const phase = positionals[0];
-  if (!["load", "embed", "all", "verify"].includes(phase ?? "")) {
-    console.error("usage: ingest.ts <load|embed|all|verify> [--hadith-dir DIR] [--collections a,b] [--topics-file F.jsonl] [--limit N] [--batch-size N] [--delay-ms N] [--dry-run] [--force-embed] [--prune]");
+  if (!["load", "init", "embed", "all", "verify"].includes(phase ?? "")) {
+    console.error("usage: ingest.ts <load|init|embed|all|verify> [--hadith-dir DIR] [--collections a,b] [--topics-file F.jsonl] [--limit N] [--batch-size N] [--tpm N] [--max-attempts N] [--dry-run] [--force-embed] [--prune]");
     process.exit(2);
   }
   const log: Log = (m) => console.log(m);
@@ -333,7 +447,7 @@ async function main(): Promise<void> {
   const limit = values.limit ? Number(values.limit) : undefined;
   if (limit !== undefined && (!Number.isInteger(limit) || limit <= 0)) throw new Error("--limit must be a positive integer");
 
-  const needsDb = !(values["dry-run"] && phase === "load");
+  const needsDb = !(values["dry-run"] && phase === "load") && phase !== "init";
   let pool: { query: Queryable["query"]; end(): Promise<void> } | null = null;
   if (needsDb) {
     const url = env("DATABASE_URL");
@@ -363,12 +477,17 @@ async function main(): Promise<void> {
         await runSyncQuran({ db, topics, dryRun: values["dry-run"], log });
       }
     }
+    if (phase === "init") {
+      if (!qdrant) throw new Error("QDRANT_URL / QDRANT_API_KEY are not set");
+      await runInitQdrant({ qdrant, log });
+    }
     if (phase === "embed" || phase === "all") {
       if (!qdrant) throw new Error("QDRANT_URL / QDRANT_API_KEY are not set");
       const embedder = embeddingProviderFromEnv(env);
       if (!embedder) throw new Error("no embedding provider: set GEMINI_API_KEY or OPENAI_API_KEY");
       const r = await runEmbed({
-        db, qdrant, embedder, batchSize: Number(values["batch-size"]), limit, force: values["force-embed"],
+        db, qdrant, embedder, batchSize: Number(values["batch-size"]), tokensPerMinute: Number(values.tpm),
+        maxAttempts: Number(values["max-attempts"]), limit, force: values["force-embed"],
         dryRun: values["dry-run"], delayMs: Number(values["delay-ms"]), log,
       });
       log(`embed: ${r.embedded} rows in ${r.batches} batches (${r.pending} were pending)`);
