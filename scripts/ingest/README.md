@@ -12,7 +12,7 @@ search service (which drops anything else at hydration).
 | Collection | Rule |
 |---|---|
 | Sahih al-Bukhari, Sahih Muslim | whole collection accepted as Sahih (agreed-upon collections) |
-| Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah, Muwatta Malik | accepted only if it has ≥1 grader AND **every** grader who rated it gave a clear Sahih/Hasan verdict. Lowest grade wins (`Hasan Sahih` → Hasan). |
+| Abu Dawud, Tirmidhi, Nasa'i, Ibn Majah, Muwatta Malik | accepted only if ≥1 grader gave a verdict AND **every** grader who gave one said a clear Sahih/Hasan. A grader who recorded `-` (no verdict) abstains. Lowest grade wins (`Hasan Sahih` → Hasan). Bracketed references like `Sahih Bukhari (98) Sahih Muslim (884)` are fine: it means the hadith also appears in the Sahihayn. |
 
 Rejected on purpose, even though they contain the word "Sahih": `Sahih Isnaad` / `Isnaad Hasan` (chain only, not a verdict
 on the text), `Mauquf …` / `Maqtu …` (a Companion's or Successor's report, not a Prophetic hadith), `-` (no verdict),
@@ -21,7 +21,7 @@ anything with a weakness term, anything unrecognised. Hadith with no English tex
 Musnad Ahmad, Mustadrak, etc. are **not** loaded: the source has no per-hadith grades for them, and "always authentic"
 means we do not guess.
 
-Result on the current source files (fawazahmed0/hadith-api): **24,481 hadith** (21,034 Sahih, 3,447 Hasan) + 6,236 Quran verses.
+Result on the current source files (fawazahmed0/hadith-api): **26,180 hadith** (22,656 Sahih, 3,524 Hasan) + 6,236 Quran verses.
 
 ## Setup
 
@@ -66,7 +66,7 @@ also removes their Qdrant points).
 ## What is embedded
 
 * Hadith: `Book. Chapter title. Matn` — the isnad, narrator lead-in, hadith number and grade are **not** embedded.
-  The full Arabic text (isnad + matn) stays in `text_ar`; `isnad_ar` is filled only where a safe split was found (~41%).
+  The full Arabic text (isnad + matn) stays in `text_ar`; `isnad_ar` is filled only where a safe split was found (~40%).
   "Chapter title" is the *book* (kitab) title: the source files carry no per-chapter (bab) headings.
 * Quran: `Surah <name> <n>:<v>. <English translation>` plus `Topic: …` when a topic line exists. Only the clean verse is
   displayed. Topic lines come from an optional JSONL file (`{"ref":"2:255","topic":"…"}`, ≤200 chars each) — none exist yet.

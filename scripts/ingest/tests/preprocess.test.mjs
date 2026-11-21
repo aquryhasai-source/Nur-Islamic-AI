@@ -10,7 +10,9 @@ const C = (slug) => COLLECTIONS.find((c) => c.slug === slug);
 test("classifyGrade: only clear positive verdicts on the hadith itself count", () => {
   const ok = { "Sahih": "Sahih", "sahih": "Sahih", "Hasan": "Hasan", "Hasan Sahih": "Hasan", "Sahih - Agreed Upon": "Sahih",
     "Sahih Muslim": "Sahih", "Sahih Bukhari": "Sahih", "Sahih - Bukhari And Muslim": "Sahih", "Sahih Lighairihi": "Sahih",
-    "Hasan Lighairihi": "Hasan", "Sahih Hadith": "Sahih", "Sahih Mutawatir": "Sahih" };
+    "Hasan Lighairihi": "Hasan", "Sahih Hadith": "Sahih", "Sahih Mutawatir": "Sahih",
+    // also appears in the Sahihayn: bracketed reference numbers are ignored
+    "Sahih Bukhari (98) Sahih Muslim (884)": "Sahih", "Sahih Muslim (2099)": "Sahih", "Sahih  Witness Sahih Muslim (843/ 312)": "Sahih" };
   for (const [raw, want] of Object.entries(ok)) assert.equal(classifyGrade(raw), want, raw);
   const rejected = ["Daif", "Very Daif", "Mawdu", "Munkar", "Shadh", "Daif Isnaad", "Sahih Isnaad", "Isnaad Sahih", "Isnaad Hasan",
     "Hasan Isnaad", "Mauquf Sahih", "Maqtu Sahih", "Sahih Muquf", "Sahih Maqtu", "Sahih Isnaad Maqtu", "Hasan Sahih Isnaad",
@@ -28,7 +30,12 @@ test("decideGrade: Bukhari/Muslim collection-level Sahih; others need unanimous 
   assert.equal(decideGrade(C("tirmidhi"), g(["A", "Sahih"], ["B", "Hasan Sahih"])).decision.grade, "Hasan");
   assert.deepEqual(decideGrade(C("abudawud"), g(["A", "Sahih"], ["B", "Daif"])), { ok: false, reason: "not_all_graders_authentic" });
   assert.deepEqual(decideGrade(C("abudawud"), g(["A", "Sahih"], ["B", "Sahih Isnaad"])), { ok: false, reason: "not_all_graders_authentic" });
-  assert.deepEqual(decideGrade(C("nasai"), g(["A", "Sahih"], ["B", "-"])), { ok: false, reason: "not_all_graders_authentic" });
+  // a grader who recorded "-" abstains: not a vote against, but a real verdict is still required
+  assert.equal(decideGrade(C("nasai"), g(["Ghuddah", "-"], ["Zai", "Hasan"])).decision.grade, "Hasan");
+  assert.equal(decideGrade(C("nasai"), g(["A", "Sahih"], ["B", "-"])).decision.grade, "Sahih");
+  assert.deepEqual(decideGrade(C("nasai"), g(["A", "-"], ["B", "-"])), { ok: false, reason: "no_grades" });
+  assert.deepEqual(decideGrade(C("nasai"), g(["A", "-"], ["B", "Daif"])), { ok: false, reason: "not_all_graders_authentic" });
+  assert.deepEqual(decideGrade(C("nasai"), g(["A", "Sahih"], ["B", "Daif (Sahih Muslim 5)"])), { ok: false, reason: "not_all_graders_authentic" });
   assert.deepEqual(decideGrade(C("nasai"), []), { ok: false, reason: "no_grades" });
   assert.deepEqual(decideGrade(C("malik"), undefined), { ok: false, reason: "no_grades" });
 });
