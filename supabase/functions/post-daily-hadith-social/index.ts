@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { keepQdrantAlive } from "./qdrantKeepAlive.ts";
 
 const PAGE_ACCESS_TOKEN = Deno.env.get("META_PAGE_ACCESS_TOKEN")!;
 const PAGE_ID = Deno.env.get("META_PAGE_ID")!;
@@ -110,6 +111,10 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json" },
     });
   }
+
+  // Keep the free Qdrant Cloud cluster from being suspended for inactivity. Fire-and-forget: runs in the background,
+  // never throws, and cannot delay or fail the post below.
+  keepQdrantAlive();
 
   try {
     // Light housekeeping so the dedup table doesn't grow forever
