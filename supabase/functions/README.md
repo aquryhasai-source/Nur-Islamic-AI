@@ -15,4 +15,9 @@ Secrets (Supabase → Edge Functions → Secrets): GROQ_API_KEY, RESEND_API_KEY,
 RAZORPAY_WEBHOOK_SECRET (required — webhook rejects everything without it), LS_WEBHOOK_SECRET, LS_API_KEY,
 VAPID_*, META_*. Optional: NUR_REQUIRE_DEVICE_KEY=1 (set only after the new app version has been live a few days),
 NUR_GLOBAL_DAILY_CAP (default 5000), RZP_PRO_LINK_IDS / RZP_PRO_SHORT_URLS / RZP_PRO_AMOUNT_PAISE.
+Hybrid search (Qdrant + Supabase lexical — see migration 007 and scripts/ingest/README.md): QDRANT_URL, QDRANT_API_KEY,
+and one of GEMINI_API_KEY / OPENAI_API_KEY (optional: EMBEDDING_PROVIDER, EMBEDDING_MODEL, QDRANT_COLLECTION).
+These MUST be set as Edge Function secrets — Vercel env vars are not visible to Edge Functions.
+post-daily-hadith-social pings Qdrant (GET /collections) once a day, in the background, so the free cluster is not
+suspended; it never throws and cannot fail the post.
 Vercel env: NUR_INTERNAL_SECRET (must equal Vault secret `internal_secret`).

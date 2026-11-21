@@ -1,0 +1,13 @@
+{
+  "name": "nur-ingest",
+  "private": true,
+  "type": "module",
+  "description": "One-off ingestion: authentic hadith + Quran -> Supabase (text) and Qdrant (vectors)",
+  "scripts": {
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "ingest": "node --experimental-strip-types ingest.ts"
+  },
+  "dependencies": {
+    "pg": "^8.13.0"
+  }
+}
